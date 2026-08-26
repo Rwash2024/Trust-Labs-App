@@ -1,0 +1,27 @@
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F9FBFA; /* matches the splash video's own off-white background so the letterbox edges blend in */
+  opacity: 1;
+  transition: opacity 350ms ease;
+}
+
+.splash--fade {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash__video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+}
+
+.splash__video--ready {
+  opacity: 1;
+}

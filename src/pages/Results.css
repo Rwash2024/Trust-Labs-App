@@ -1,0 +1,100 @@
+.results {
+  padding-bottom: var(--space-8);
+}
+
+.results__hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--gradient-hero);
+  border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+  padding: var(--space-8) var(--space-6) var(--space-10);
+  text-align: center;
+}
+
+.results__blob {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  animation: float-blob 7s ease-in-out infinite;
+}
+
+.results__blob--1 { width: 120px; height: 120px; top: -40px; inset-inline-end: -30px; }
+
+.results__logo {
+  position: relative;
+  z-index: 1;
+  height: 52px;
+  width: auto;
+  margin: 0 auto var(--space-5);
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15));
+}
+
+.results__title {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-size: var(--text-h2-size);
+  font-weight: var(--font-weight-extrabold);
+}
+
+.results__subtitle {
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: var(--space-2);
+  line-height: var(--text-body-lg-line);
+}
+
+.results__body {
+  margin: calc(-1 * var(--space-6)) var(--space-5) 0;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.results__cta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: var(--color-primary);
+  color: var(--text-inverse);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--text-body-lg-size);
+  padding: var(--space-4);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-float-lg);
+  transition: transform 200ms var(--ease-bounce), box-shadow 200ms var(--ease-out);
+}
+
+@media (hover: hover) {
+  .results__cta:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-float-lg);
+  }
+}
+
+.results__hint {
+  color: var(--text-muted);
+  font-size: var(--text-small-size);
+  text-align: center;
+  line-height: 1.7;
+  padding: 0 var(--space-4);
+}
+
+.results__help {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-primary-dark);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--text-small-size);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-pill);
+}
