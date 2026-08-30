@@ -147,22 +147,6 @@ export default function Home() {
       </section>
 
       <section className="home__section">
-        <Link className="home__banner" to="/packages">
-          <span className="home__banner-blob" />
-          <span className="home__banner-icon">
-            <FlaskIcon width={44} height={44} />
-          </span>
-          <span className="home__banner-badge">الأكثر طلبًا</span>
-          <span className="home__banner-title">الباقة الذهبية</span>
-          <span className="home__banner-desc">20 تحليل شامل بسعر خاص — أفضل تقييم صحي متكامل</span>
-          <span className="home__banner-cta">
-            اعرض التفاصيل
-            <ArrowIcon />
-          </span>
-        </Link>
-      </section>
-
-      <section className="home__section">
         <Link className="home__banner home__banner--card" to="/trust-card">
           <span className="home__banner-blob" />
           <span className="home__banner-badge">خصم 25%</span>
