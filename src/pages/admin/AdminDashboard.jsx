@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAdminAuth } from '../../context/AdminAuthContext'
 import PackagesTab from './PackagesTab'
 import TestsTab from './TestsTab'
+import FeaturedTestsTab from './FeaturedTestsTab'
 import BranchesTab from './BranchesTab'
 import PrepTab from './PrepTab'
 import logoWhiteFull from '../../assets/logo-white-full.png'
@@ -10,6 +11,7 @@ import './Admin.css'
 const tabs = [
   { key: 'packages', label: 'الباقات' },
   { key: 'tests', label: 'التحاليل' },
+  { key: 'featured', label: 'تحاليل مميزة' },
   { key: 'branches', label: 'الفروع' },
   { key: 'prep', label: 'شروط التحضير' },
 ]
@@ -46,6 +48,7 @@ export default function AdminDashboard() {
       <main className="admin-content">
         {activeTab === 'packages' && <PackagesTab />}
         {activeTab === 'tests' && <TestsTab />}
+        {activeTab === 'featured' && <FeaturedTestsTab />}
         {activeTab === 'branches' && <BranchesTab />}
         {activeTab === 'prep' && <PrepTab />}
       </main>

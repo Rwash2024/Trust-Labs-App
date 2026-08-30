@@ -3,6 +3,7 @@ import { packages as staticPackages, prepInstructions as staticPrepInstructions 
 import { packageImages } from '../data/packageImages'
 import { allTests as staticAllTests } from '../data/tests'
 import { popularTests as staticPopularTests } from '../data/popularTests'
+import { featuredTests as staticFeaturedTests } from '../data/featuredTests'
 import { branches as staticBranchGroups, mapsUrl, whatsappUrl } from '../data/branches'
 
 export async function fetchPackages() {
@@ -15,7 +16,20 @@ export async function fetchPackages() {
     price: row.price,
     testCount: row.test_count,
     tests: row.tests,
-    image: packageImages[row.image_key] ?? packageImages[row.id],
+    image: row.image_url || packageImages[row.image_key] || packageImages[row.id],
+  }))
+}
+
+export async function fetchFeaturedTests() {
+  if (!supabase) return staticFeaturedTests
+  const { data, error } = await supabase.from('featured_tests').select('*').order('sort_order')
+  if (error || !data || data.length === 0) return staticFeaturedTests
+  return data.map((row) => ({
+    code: `featured-${row.id}`,
+    name: row.name,
+    price: row.price,
+    highlight: row.highlight,
+    image: row.image_url,
   }))
 }
 

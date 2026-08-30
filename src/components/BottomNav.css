@@ -48,6 +48,11 @@
   box-shadow: var(--shadow-float-sm);
 }
 
+.bottom-nav__item:not(.active):active .bottom-nav__icon {
+  background: var(--color-primary-light);
+  transform: scale(0.88);
+}
+
 @media (hover: hover) {
   .bottom-nav__item:not(.active):hover {
     color: var(--color-primary-dark);

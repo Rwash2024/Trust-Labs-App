@@ -123,6 +123,15 @@
   transition: transform 220ms var(--ease-bounce), box-shadow 220ms var(--ease-out);
 }
 
+.about__pillar:active {
+  transform: scale(0.97);
+  box-shadow: var(--shadow-card-rest);
+}
+
+.about__pillar:active .about__pillar-icon {
+  transform: rotate(-6deg) scale(1.05);
+}
+
 @media (hover: hover) {
   .about__pillar:hover {
     transform: translateY(-4px);
@@ -181,6 +190,10 @@
   overflow: hidden;
   box-shadow: var(--shadow-float);
   transition: transform 220ms var(--ease-bounce), box-shadow 220ms var(--ease-out);
+}
+
+.about__team-card:active .about__team-photo-wrap {
+  transform: scale(0.96);
 }
 
 @media (hover: hover) {
@@ -247,6 +260,20 @@
   transform: scaleX(0);
   transform-origin: right;
   transition: transform 320ms var(--ease-out);
+}
+
+.about__accreditation:active {
+  transform: scale(0.97);
+  border-color: transparent;
+}
+
+.about__accreditation:active::before {
+  transform: scaleX(1);
+}
+
+.about__accreditation:active .about__accreditation-glow {
+  opacity: 1;
+  transform: scale(1);
 }
 
 @media (hover: hover) {

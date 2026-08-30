@@ -67,6 +67,11 @@
   transition: transform 220ms var(--ease-bounce), box-shadow 220ms var(--ease-out);
 }
 
+.contact__card:active {
+  transform: scale(0.97);
+  box-shadow: var(--shadow-card-rest);
+}
+
 @media (hover: hover) {
   .contact__card:hover {
     transform: translateY(-4px);
@@ -191,6 +196,12 @@
   justify-content: center;
   box-shadow: var(--shadow-card-rest);
   transition: transform 220ms var(--ease-bounce), box-shadow 220ms var(--ease-out), background 200ms, color 200ms;
+}
+
+.contact__social-link:active {
+  background: var(--color-primary);
+  color: #fff;
+  transform: scale(0.9);
 }
 
 @media (hover: hover) {

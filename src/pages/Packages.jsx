@@ -1,28 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchPackages, fetchPopularTests, fetchAllTests } from '../lib/data'
+import { testToCartItem } from '../lib/cart'
 import { CheckIcon, PlusIcon, ArrowIcon, SearchIcon, CartIcon } from '../components/icons'
 import { useBooking } from '../context/BookingContext'
+import BannerCarousel from '../components/BannerCarousel'
+import BannerCard from '../components/BannerCard'
+import '../styles/modal.css'
 import './Packages.css'
-
-function testToCartItem(test) {
-  return { id: `test-${test.code}`, name: test.name, price: test.price, testCount: 1, tests: [test.name] }
-}
-
-function PackageCarouselCard({ pkg, isAdded, onOpen }) {
-  return (
-    <button type="button" className="pkg-card" onClick={onOpen}>
-      <img className="pkg-card__img" src={pkg.image} alt="" />
-      <span className="pkg-card__info">
-        <span className="pkg-card__name">{pkg.name}</span>
-        <span className="pkg-card__price">{pkg.price.toLocaleString('en-US')} جنيه</span>
-        <span className={`pkg-card__add${isAdded ? ' added' : ''}`}>
-          {isAdded ? <CheckIcon width={16} height={16} /> : <PlusIcon width={16} height={16} />}
-        </span>
-      </span>
-    </button>
-  )
-}
 
 function PackageModal({ pkg, isAdded, onAdd, onClose }) {
   return (
@@ -155,16 +140,21 @@ export default function Packages() {
             <span className="packages__section-head-link">الكل</span>
             <span className="packages__section-head-title">الباقات</span>
           </div>
-          <div className="packages__carousel">
-            {packages.map((pkg) => (
-              <PackageCarouselCard
+          <BannerCarousel
+            items={packages}
+            keyFn={(pkg) => pkg.id}
+            renderItem={(pkg, index, cardRef) => (
+              <BannerCard
                 key={pkg.id}
-                pkg={pkg}
-                isAdded={addedIds.includes(pkg.id)}
-                onOpen={() => setModalPkg(pkg)}
+                cardRef={cardRef}
+                index={index}
+                image={pkg.image}
+                name={pkg.name}
+                price={pkg.price}
+                onClick={() => setModalPkg(pkg)}
               />
-            ))}
-          </div>
+            )}
+          />
 
           <div className="packages__section-head">
             <span className="packages__section-head-link">الكل</span>

@@ -9,6 +9,7 @@ import './Booking.css'
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
 const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : null
 const HOME_VISIT_FEE = 75
+const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
 
 function testToCartItem(test) {
   return { id: `test-${test.code}`, name: test.name, price: test.price, testCount: 1, tests: [test.name] }
@@ -52,8 +53,19 @@ export default function Booking() {
 
   const updateField = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
 
+  const updatePhone = (e) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 11)
+    setForm((prev) => ({ ...prev, phone: digitsOnly }))
+  }
+
+  const isPhoneValid = EGYPT_PHONE_REGEX.test(form.phone)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!isPhoneValid) {
+      setStatus('invalid-phone')
+      return
+    }
     if (!FORMSPREE_ENDPOINT) {
       setStatus('error')
       return
@@ -222,10 +234,15 @@ export default function Booking() {
               required
               type="tel"
               inputMode="numeric"
+              pattern="01[0125][0-9]{8}"
               value={form.phone}
-              onChange={updateField('phone')}
+              onChange={updatePhone}
               placeholder="01xxxxxxxxx"
+              aria-invalid={form.phone.length > 0 && !isPhoneValid}
             />
+            {form.phone.length > 0 && !isPhoneValid && (
+              <span className="booking__field-error">لازم يكون رقم موبايل مصري صحيح (11 رقم، يبدأ بـ 010 أو 011 أو 012 أو 015)</span>
+            )}
           </label>
 
           {mode === 'home' ? (
@@ -264,6 +281,10 @@ export default function Booking() {
             <span>ملاحظات (اختياري)</span>
             <textarea rows={2} value={form.notes} onChange={updateField('notes')} placeholder="أي تفاصيل إضافية" />
           </label>
+
+          {status === 'invalid-phone' && (
+            <p className="booking__error">من فضلك اكتب رقم موبايل مصري صحيح قبل تأكيد الحجز.</p>
+          )}
 
           {status === 'error' && (
             <p className="booking__error">

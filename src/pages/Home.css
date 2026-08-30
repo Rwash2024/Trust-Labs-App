@@ -50,6 +50,8 @@
   transition: transform 200ms var(--ease-bounce);
 }
 
+.home__bell:active { transform: scale(0.9); }
+
 @media (hover: hover) {
   .home__bell:hover { transform: translateY(-2px) scale(1.05); }
 }
@@ -117,6 +119,12 @@
   font-weight: var(--font-weight-extrabold);
   margin-bottom: var(--space-4);
   color: var(--text-heading);
+}
+
+/* Featured tests banner carousel styles now live in ../components/BannerCarousel.css (shared with Packages.jsx).
+   .home__section--tight already pads horizontally, so cancel the carousel's own inset to avoid stacking. */
+.home__section--tight .banner-carousel {
+  --banner-carousel-inset: 0px;
 }
 
 /* ---- Bento grid ---- */
@@ -242,6 +250,10 @@
   margin-top: var(--space-2);
   box-shadow: var(--shadow-float-sm);
   transition: transform 200ms var(--ease-bounce), box-shadow 200ms var(--ease-out);
+}
+
+.home__banner-cta:active {
+  transform: scale(0.95);
 }
 
 @media (hover: hover) {

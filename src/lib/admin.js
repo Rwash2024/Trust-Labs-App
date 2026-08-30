@@ -5,6 +5,49 @@ function requireClient() {
   return supabase
 }
 
+const IMAGES_BUCKET = 'trust-labs-images'
+
+// ---- Image uploads (packages photos + featured test photos) ----
+export async function adminUploadImage(file, folder) {
+  const client = requireClient()
+  const ext = file.name.split('.').pop() || 'jpg'
+  const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+  const { error } = await client.storage.from(IMAGES_BUCKET).upload(path, file, { cacheControl: '3600' })
+  if (error) throw error
+  const { data } = client.storage.from(IMAGES_BUCKET).getPublicUrl(path)
+  return data.publicUrl
+}
+
+// ---- Featured tests (home page carousel) ----
+export async function adminListFeaturedTests() {
+  const { data, error } = await requireClient().from('featured_tests').select('*').order('sort_order')
+  if (error) throw error
+  return data
+}
+
+export async function adminSaveFeaturedTest(item) {
+  const payload = {
+    name: item.name,
+    price: item.price,
+    highlight: item.highlight,
+    image_url: item.image_url || null,
+    sort_order: item.sort_order ?? 0,
+    updated_at: new Date().toISOString(),
+  }
+  if (item.id) {
+    const { error } = await requireClient().from('featured_tests').update(payload).eq('id', item.id)
+    if (error) throw error
+  } else {
+    const { error } = await requireClient().from('featured_tests').insert(payload)
+    if (error) throw error
+  }
+}
+
+export async function adminDeleteFeaturedTest(id) {
+  const { error } = await requireClient().from('featured_tests').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ---- Packages ----
 export async function adminListPackages() {
   const { data, error } = await requireClient().from('packages').select('*').order('sort_order')
@@ -20,6 +63,7 @@ export async function adminSavePackage(pkg) {
     test_count: pkg.tests.length,
     tests: pkg.tests,
     image_key: pkg.image_key || pkg.id,
+    image_url: pkg.image_url || null,
     sort_order: pkg.sort_order ?? 0,
     updated_at: new Date().toISOString(),
   })

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { adminListPackages, adminSavePackage, adminDeletePackage } from '../../lib/admin'
+import ImageUploadField from '../../components/admin/ImageUploadField'
 
 const emptyPackage = { id: '', name: '', price: 0, tests: [], sort_order: 0 }
 
@@ -79,6 +80,14 @@ export default function PackagesTab() {
       {editing && (
         <form className="admin-form" onSubmit={handleSave}>
           <h3>{packages.some((p) => p.id === editing.id) ? 'تعديل باقة' : 'باقة جديدة'}</h3>
+
+          <ImageUploadField
+            label="صورة الباقة"
+            folder="packages"
+            value={editing.image_url}
+            onChange={(url) => setEditing({ ...editing, image_url: url })}
+          />
+
           <div className="admin-form__row">
             <label>
               <span>المعرّف (id) — إنجليزي، بدون مسافات</span>

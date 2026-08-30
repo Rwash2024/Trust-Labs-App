@@ -300,6 +300,58 @@
   gap: var(--space-4);
 }
 
+.admin-image-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.admin-image-upload__label {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--text-small-size);
+  color: var(--text-muted);
+}
+
+.admin-image-upload__body {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.admin-image-upload__preview {
+  width: 120px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+}
+
+.admin-image-upload__placeholder {
+  width: 120px;
+  height: 60px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.admin-image-upload__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.admin-image-upload__hint {
+  width: 100%;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
 .admin-form__checkbox {
   flex-direction: row !important;
   align-items: center;

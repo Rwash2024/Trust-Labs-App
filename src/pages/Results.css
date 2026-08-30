@@ -72,6 +72,10 @@
   transition: transform 200ms var(--ease-bounce), box-shadow 200ms var(--ease-out);
 }
 
+.results__cta:active {
+  transform: scale(0.97);
+}
+
 @media (hover: hover) {
   .results__cta:hover {
     transform: translateY(-3px);

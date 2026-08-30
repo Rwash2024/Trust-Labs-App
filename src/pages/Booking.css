@@ -306,6 +306,11 @@
   font-size: var(--text-small-size);
 }
 
+.booking__field-error {
+  color: var(--color-error);
+  font-size: var(--text-small-size);
+}
+
 .booking__submit {
   background: var(--color-primary);
   color: var(--text-inverse);

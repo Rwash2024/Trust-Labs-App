@@ -99,6 +99,15 @@
   }
 }
 
+.trust-card__benefit:active {
+  transform: scale(0.97);
+  box-shadow: var(--shadow-card-rest);
+}
+
+.trust-card__benefit:active .trust-card__benefit-icon {
+  transform: rotate(-6deg) scale(1.05);
+}
+
 @media (hover: hover) {
   .trust-card__benefit:hover {
     transform: translateY(-4px);
@@ -154,6 +163,10 @@
   border: none;
   box-shadow: var(--shadow-float-sm);
   transition: transform 200ms var(--ease-bounce), box-shadow 200ms var(--ease-out);
+}
+
+.trust-card__cta:active {
+  transform: scale(0.97);
 }
 
 @media (hover: hover) {
