@@ -14,6 +14,7 @@ import Booking from './pages/Booking'
 import Contact from './pages/Contact'
 import TrustCard from './pages/TrustCard'
 import Results from './pages/Results'
+import PrepInstructions from './pages/PrepInstructions'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 
@@ -32,6 +33,7 @@ function PatientApp() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/trust-card" element={<TrustCard />} />
           <Route path="/results" element={<Results />} />
+          <Route path="/prep-instructions" element={<PrepInstructions />} />
         </Routes>
       </main>
       <BottomNav />

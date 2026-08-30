@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FlaskIcon, MapPinIcon, PhoneIcon, WhatsAppIcon, CalendarIcon, BellIcon, SearchIcon, ArrowIcon, InfoIcon, ResultsIcon, CheckIcon, PlusIcon } from '../components/icons'
+import { FlaskIcon, MapPinIcon, PhoneIcon, WhatsAppIcon, CalendarIcon, BellIcon, SearchIcon, ArrowIcon, InfoIcon, ResultsIcon, CheckIcon, PlusIcon, ShieldIcon } from '../components/icons'
 import BannerCarousel from '../components/BannerCarousel'
 import BannerCard from '../components/BannerCard'
 import { fetchFeaturedTests } from '../lib/data'
@@ -45,6 +45,7 @@ const quickLinks = [
   { to: '/branches', label: 'فروعنا', Icon: MapPinIcon },
   { href: whatsappUrl, label: 'موافقات التأمين', Icon: WhatsAppIcon },
   { to: '/about', label: 'من نحن', Icon: InfoIcon },
+  { to: '/prep-instructions', label: 'شروط تحضير التحاليل', Icon: ShieldIcon },
 ]
 
 export default function Home() {

@@ -106,6 +106,19 @@
   outline: none;
 }
 
+.packages__prep-link {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--text-small-size);
+  margin-top: var(--space-3);
+}
+
 .packages__section-head {
   display: flex;
   align-items: center;

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchPackages, fetchPopularTests, fetchAllTests } from '../lib/data'
 import { testToCartItem } from '../lib/cart'
-import { CheckIcon, PlusIcon, ArrowIcon, SearchIcon, CartIcon } from '../components/icons'
+import { CheckIcon, PlusIcon, ArrowIcon, SearchIcon, CartIcon, ShieldIcon } from '../components/icons'
 import { useBooking } from '../context/BookingContext'
 import BannerCarousel from '../components/BannerCarousel'
 import BannerCard from '../components/BannerCard'
@@ -115,6 +115,11 @@ export default function Packages() {
             placeholder="ابحث عن أي تحليل بالاسم..."
           />
         </div>
+
+        <Link className="packages__prep-link" to="/prep-instructions">
+          <ShieldIcon width={18} height={18} />
+          شروط تحضير التحاليل
+        </Link>
       </section>
 
       {loading ? (
