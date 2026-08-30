@@ -49,7 +49,12 @@ export async function fetchAllTests() {
 
 export async function fetchPopularTests() {
   if (!supabase) return staticPopularTests
-  const { data, error } = await supabase.from('tests').select('code, name, price').eq('popular', true).order('name')
+  const { data, error } = await supabase
+    .from('tests')
+    .select('code, name, price')
+    .eq('popular', true)
+    .order('price')
+    .limit(20)
   if (error || !data || data.length === 0) return staticPopularTests
   return data
 }
