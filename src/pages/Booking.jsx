@@ -106,7 +106,7 @@ export default function Booking() {
     const bookingType = mode === 'home' ? 'زيارة منزلية' : 'حجز فرع'
     const paymentLabel = paymentMethod === 'visa' ? 'فيزا (أونلاين)' : 'كاش'
     const branchLabel = mode === 'branch' ? form.branchName : 'زيارة منزلية'
-    const patientType = hasCard ? (cardType === 'insurance' ? 'لديه كارنيه تأمين' : 'لديه كارنيه نادي') : 'نورمال'
+    const patientType = hasCard ? (cardType === 'insurance' ? 'لديه كارنيه تأمين' : 'لديه كارنيه نادي') : 'Normal'
     const bookingRef = generateBookingRef()
 
     const data = new FormData()
@@ -370,7 +370,7 @@ export default function Booking() {
           <p className="booking__payment-hint">
             {paymentMethod === 'cash'
               ? mode === 'home'
-                ? 'هتدفع كاش لفني السحب لما ييجي المنزل'
+                ? 'هتدفع كاش لـ كيميائي السحب لما ييجي المنزل'
                 : 'هتدفع كاش لموظف الاستقبال في الفرع'
               : 'هتتحول لصفحة الدفع الإلكتروني الآمنة عشان تدخل بيانات الفيزا'}
           </p>
