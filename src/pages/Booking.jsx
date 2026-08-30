@@ -8,8 +8,10 @@ import './Booking.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
 const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : null
+const PAYMOB_LINK = import.meta.env.VITE_PAYMOB_LINK
 const HOME_VISIT_FEE = 75
 const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
+const MAX_CARD_IMAGE_MB = 8
 
 function testToCartItem(test) {
   return { id: `test-${test.code}`, name: test.name, price: test.price, testCount: 1, tests: [test.name] }
@@ -18,11 +20,16 @@ function testToCartItem(test) {
 export default function Booking() {
   const { selectedPackages, togglePackage, removePackage, clearCart } = useBooking()
   const [mode, setMode] = useState('home')
-  const [status, setStatus] = useState('idle') // idle | submitting | success | error
+  const [status, setStatus] = useState('idle') // idle | submitting | success | success-visa | error
   const [form, setForm] = useState({ name: '', phone: '', address: '', branchName: '', date: '', notes: '' })
   const [testQuery, setTestQuery] = useState('')
   const [allBranches, setAllBranches] = useState([])
   const [allTests, setAllTests] = useState([])
+  const [paymentMethod, setPaymentMethod] = useState('cash')
+  const [hasCard, setHasCard] = useState(false)
+  const [cardType, setCardType] = useState('insurance') // insurance | club
+  const [cardImage, setCardImage] = useState(null)
+  const [cardImageError, setCardImageError] = useState('')
 
   useEffect(() => {
     trackEvent(AnalyticsEvents.BOOKING_STARTED)
@@ -60,6 +67,22 @@ export default function Booking() {
 
   const isPhoneValid = EGYPT_PHONE_REGEX.test(form.phone)
 
+  const handleCardImageChange = (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setCardImageError('')
+    if (!file.type.startsWith('image/')) {
+      setCardImageError('لازم ترفع صورة (jpg أو png)')
+      return
+    }
+    if (file.size > MAX_CARD_IMAGE_MB * 1024 * 1024) {
+      setCardImageError(`الصورة كبيرة أوي — الحد الأقصى ${MAX_CARD_IMAGE_MB}MB`)
+      return
+    }
+    setCardImage(file)
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!isPhoneValid) {
@@ -72,43 +95,57 @@ export default function Booking() {
     }
 
     setStatus('submitting')
-    const payload = {
-      name: form.name,
-      phone: form.phone,
-      bookingType: mode === 'home' ? 'زيارة منزلية' : 'حجز فرع',
-      address: mode === 'home' ? form.address : undefined,
-      branch: mode === 'branch' ? form.branchName : undefined,
-      date: form.date,
-      notes: form.notes,
-      packages: selectedPackages.map((p) => p.name).join(', '),
-      subtotal,
-      homeVisitFee,
-      total,
-    }
+    const bookingType = mode === 'home' ? 'زيارة منزلية' : 'حجز فرع'
+    const paymentLabel = paymentMethod === 'visa' ? 'فيزا (أونلاين)' : 'كاش'
+
+    const data = new FormData()
+    data.append('name', form.name)
+    data.append('phone', form.phone)
+    data.append('bookingType', bookingType)
+    if (mode === 'home') data.append('address', form.address)
+    if (mode === 'branch') data.append('branch', form.branchName)
+    data.append('date', form.date)
+    data.append('notes', form.notes)
+    data.append('packages', selectedPackages.map((p) => p.name).join(', '))
+    data.append('subtotal', subtotal)
+    data.append('homeVisitFee', homeVisitFee)
+    data.append('total', total)
+    data.append('paymentMethod', paymentLabel)
+    data.append('hasInsuranceOrClubCard', hasCard ? (cardType === 'insurance' ? 'كارنيه تأمين' : 'كارنيه نادي') : 'لا')
+    if (hasCard && cardImage) data.append('cardImage', cardImage)
 
     try {
       const res = await fetch(FORMSPREE_ENDPOINT, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(payload),
+        headers: { Accept: 'application/json' },
+        body: data,
       })
       if (!res.ok) throw new Error('submit failed')
-      setStatus('success')
-      trackEvent(AnalyticsEvents.BOOKING_COMPLETED, { booking_type: payload.bookingType })
+      trackEvent(AnalyticsEvents.BOOKING_COMPLETED, { booking_type: bookingType, payment_method: paymentMethod })
       clearCart()
+
+      if (paymentMethod === 'visa' && PAYMOB_LINK) {
+        window.location.href = PAYMOB_LINK
+        return
+      }
+      setStatus(paymentMethod === 'visa' ? 'success-visa' : 'success')
     } catch {
       setStatus('error')
     }
   }
 
-  if (status === 'success') {
+  if (status === 'success' || status === 'success-visa') {
     return (
       <div className="booking booking--done">
         <span className="booking__done-icon">
           <CheckIcon />
         </span>
         <h1>تم إرسال طلب الحجز</h1>
-        <p>هيتواصل معاك فريق خدمة العملاء لتأكيد الموعد في أقرب وقت.</p>
+        {status === 'success-visa' ? (
+          <p>الدفع الإلكتروني هيتفعل قريبًا — هيتواصل معاك فريق خدمة العملاء لتأكيد الموعد وإتمام الدفع بالفيزا.</p>
+        ) : (
+          <p>هيتواصل معاك فريق خدمة العملاء لتأكيد الموعد في أقرب وقت.</p>
+        )}
         <Link className="booking__done-cta" to="/">
           الرجوع للرئيسية
         </Link>
@@ -222,6 +259,86 @@ export default function Booking() {
           </div>
         )}
 
+        <div className="booking__payment">
+          <h2 className="booking__section-title">طريقة الدفع</h2>
+          <div className="booking__toggle">
+            <button
+              type="button"
+              className={`booking__toggle-btn${paymentMethod === 'cash' ? ' active' : ''}`}
+              onClick={() => setPaymentMethod('cash')}
+            >
+              كاش
+            </button>
+            <button
+              type="button"
+              className={`booking__toggle-btn${paymentMethod === 'visa' ? ' active' : ''}`}
+              onClick={() => setPaymentMethod('visa')}
+            >
+              فيزا (أونلاين)
+            </button>
+          </div>
+          <p className="booking__payment-hint">
+            {paymentMethod === 'cash'
+              ? mode === 'home'
+                ? 'هتدفع كاش لفني السحب لما ييجي المنزل'
+                : 'هتدفع كاش لموظف الاستقبال في الفرع'
+              : 'هتتحول لصفحة الدفع الإلكتروني الآمنة عشان تدخل بيانات الفيزا'}
+          </p>
+
+          <div className="booking__card-question">
+            <span>عندك كارنيه تأمين أو كارنيه نادي؟</span>
+            <div className="booking__toggle booking__toggle--sm">
+              <button
+                type="button"
+                className={`booking__toggle-btn${!hasCard ? ' active' : ''}`}
+                onClick={() => setHasCard(false)}
+              >
+                لا
+              </button>
+              <button
+                type="button"
+                className={`booking__toggle-btn${hasCard ? ' active' : ''}`}
+                onClick={() => setHasCard(true)}
+              >
+                أيوه
+              </button>
+            </div>
+          </div>
+
+          {hasCard && (
+            <div className="booking__card-details">
+              <div className="booking__toggle booking__toggle--sm">
+                <button
+                  type="button"
+                  className={`booking__toggle-btn${cardType === 'insurance' ? ' active' : ''}`}
+                  onClick={() => setCardType('insurance')}
+                >
+                  كارنيه تأمين
+                </button>
+                <button
+                  type="button"
+                  className={`booking__toggle-btn${cardType === 'club' ? ' active' : ''}`}
+                  onClick={() => setCardType('club')}
+                >
+                  كارنيه نادي
+                </button>
+              </div>
+
+              <label className="booking__card-upload">
+                <input type="file" accept="image/*" hidden onChange={handleCardImageChange} />
+                <PlusIcon width={16} height={16} />
+                {cardImage ? 'تغيير صورة الكارنيه' : 'رفع صورة الكارنيه'}
+              </label>
+              {cardImage && <span className="booking__card-filename">{cardImage.name}</span>}
+              {cardImageError && <p className="booking__error">{cardImageError}</p>}
+
+              <p className="booking__card-hint">
+                هيشوف موظف خدمة العملاء بياناتك وصورة الكارنيه، وهيقولك السعر بعد خصم التأمين لما يتواصل معاك.
+              </p>
+            </div>
+          )}
+        </div>
+
         <form className="booking__form" onSubmit={handleSubmit}>
           <label className="booking__field">
             <span>الاسم بالكامل</span>
@@ -295,7 +412,11 @@ export default function Booking() {
           )}
 
           <button className="booking__submit" type="submit" disabled={status === 'submitting'}>
-            {status === 'submitting' ? 'جاري الإرسال...' : 'تأكيد الحجز'}
+            {status === 'submitting'
+              ? 'جاري الإرسال...'
+              : paymentMethod === 'visa'
+                ? 'تأكيد ودفع بالفيزا'
+                : 'تأكيد الحجز'}
           </button>
         </form>
 
