@@ -37,6 +37,11 @@
   transition: background 220ms var(--ease-out), color 220ms var(--ease-out), box-shadow 220ms var(--ease-out), transform 220ms var(--ease-bounce);
 }
 
+.bottom-nav__item--big .bottom-nav__icon {
+  width: 42px;
+  height: 42px;
+}
+
 .bottom-nav__item.active {
   color: var(--color-primary-dark);
   transform: translateY(-6px);
