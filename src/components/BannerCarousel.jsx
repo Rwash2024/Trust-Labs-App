@@ -32,16 +32,30 @@ export default function BannerCarousel({ items, keyFn, renderItem }) {
     return () => observer.disconnect()
   }, [items])
 
-  // Autoplay: advance to the next card every few seconds, looping back to the
-  // start. Pauses while the user is actively swiping/scrolling the carousel.
+  // Scrolls the carousel container directly (never scrollIntoView) — scrollIntoView
+  // can nudge an ancestor's vertical scroll position too, which showed up as a stray
+  // vertical scrollbar flash whenever the carousel advanced.
+  const scrollToCard = (index, behavior) => {
+    const container = containerRef.current
+    const card = cardRefs.current[index]
+    if (!container || !card) return
+    const offset = card.offsetLeft - (container.clientWidth - card.clientWidth) / 2
+    container.scrollTo({ left: offset, behavior })
+  }
+
+  // Autoplay: advance to the next card every few seconds. Looping from the last
+  // card back to the first jumps instantly (no animation) instead of smooth-scrolling
+  // backward across the whole row, so the visible motion always reads as one
+  // direction only.
   useEffect(() => {
     if (items.length <= 1) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     const id = setInterval(() => {
       if (pausedRef.current) return
+      const isWrapping = activeIndexRef.current === items.length - 1
       const nextIndex = (activeIndexRef.current + 1) % items.length
-      cardRefs.current[nextIndex]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+      scrollToCard(nextIndex, isWrapping ? 'auto' : 'smooth')
     }, AUTOPLAY_INTERVAL_MS)
 
     return () => clearInterval(id)
