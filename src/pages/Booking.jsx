@@ -17,11 +17,18 @@ function testToCartItem(test) {
   return { id: `test-${test.code}`, name: test.name, price: test.price, testCount: 1, tests: [test.name] }
 }
 
+function generateBookingRef() {
+  const now = new Date()
+  const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
+  const randomDigits = String(Math.floor(Math.random() * 1000)).padStart(3, '0')
+  return `TL-${dateStr}-${randomDigits}`
+}
+
 export default function Booking() {
   const { selectedPackages, togglePackage, removePackage, clearCart } = useBooking()
   const [mode, setMode] = useState('home')
   const [status, setStatus] = useState('idle') // idle | submitting | success | success-visa | error
-  const [form, setForm] = useState({ name: '', phone: '', address: '', branchName: '', date: '', notes: '' })
+  const [form, setForm] = useState({ name: '', phone: '', dob: '', address: '', branchName: '', date: '', notes: '' })
   const [testQuery, setTestQuery] = useState('')
   const [allBranches, setAllBranches] = useState([])
   const [allTests, setAllTests] = useState([])
@@ -30,6 +37,7 @@ export default function Booking() {
   const [cardType, setCardType] = useState('insurance') // insurance | club
   const [cardImage, setCardImage] = useState(null)
   const [cardImageError, setCardImageError] = useState('')
+  const [receipt, setReceipt] = useState(null)
 
   useEffect(() => {
     trackEvent(AnalyticsEvents.BOOKING_STARTED)
@@ -97,10 +105,15 @@ export default function Booking() {
     setStatus('submitting')
     const bookingType = mode === 'home' ? 'زيارة منزلية' : 'حجز فرع'
     const paymentLabel = paymentMethod === 'visa' ? 'فيزا (أونلاين)' : 'كاش'
+    const branchLabel = mode === 'branch' ? form.branchName : 'زيارة منزلية'
+    const patientType = hasCard ? (cardType === 'insurance' ? 'لديه كارنيه تأمين' : 'لديه كارنيه نادي') : 'نورمال'
+    const bookingRef = generateBookingRef()
 
     const data = new FormData()
+    data.append('bookingRef', bookingRef)
     data.append('name', form.name)
     data.append('phone', form.phone)
+    data.append('dob', form.dob)
     data.append('bookingType', bookingType)
     if (mode === 'home') data.append('address', form.address)
     if (mode === 'branch') data.append('branch', form.branchName)
@@ -111,7 +124,7 @@ export default function Booking() {
     data.append('homeVisitFee', homeVisitFee)
     data.append('total', total)
     data.append('paymentMethod', paymentLabel)
-    data.append('hasInsuranceOrClubCard', hasCard ? (cardType === 'insurance' ? 'كارنيه تأمين' : 'كارنيه نادي') : 'لا')
+    data.append('hasInsuranceOrClubCard', patientType)
     if (hasCard && cardImage) data.append('cardImage', cardImage)
 
     try {
@@ -122,6 +135,22 @@ export default function Booking() {
       })
       if (!res.ok) throw new Error('submit failed')
       trackEvent(AnalyticsEvents.BOOKING_COMPLETED, { booking_type: bookingType, payment_method: paymentMethod })
+
+      setReceipt({
+        bookingRef,
+        branchLabel,
+        name: form.name,
+        dob: form.dob,
+        phone: form.phone,
+        address: mode === 'home' ? form.address : null,
+        date: form.date,
+        packages: selectedPackages.map((p) => p.name),
+        patientType,
+        subtotal,
+        homeVisitFee,
+        total,
+        mode,
+      })
       clearCart()
 
       if (paymentMethod === 'visa' && PAYMOB_LINK) {
@@ -134,7 +163,7 @@ export default function Booking() {
     }
   }
 
-  if (status === 'success' || status === 'success-visa') {
+  if ((status === 'success' || status === 'success-visa') && receipt) {
     return (
       <div className="booking booking--done">
         <span className="booking__done-icon">
@@ -146,6 +175,67 @@ export default function Booking() {
         ) : (
           <p>هيتواصل معاك فريق خدمة العملاء لتأكيد الموعد في أقرب وقت.</p>
         )}
+
+        <div className="booking__receipt">
+          <div className="booking__receipt-header">
+            <span className="booking__receipt-brand">Trust Labs</span>
+            <span className="booking__receipt-branch">{receipt.branchLabel}</span>
+          </div>
+
+          <div className="booking__receipt-row">
+            <span>اسم المريض</span>
+            <span>{receipt.name}</span>
+          </div>
+          <div className="booking__receipt-row">
+            <span>تاريخ الميلاد</span>
+            <span>{receipt.dob || '—'}</span>
+          </div>
+          <div className="booking__receipt-row">
+            <span>رقم التواصل</span>
+            <span dir="ltr">{receipt.phone}</span>
+          </div>
+          {receipt.address && (
+            <div className="booking__receipt-row">
+              <span>العنوان</span>
+              <span>{receipt.address}</span>
+            </div>
+          )}
+
+          <div className="booking__receipt-divider" />
+
+          <div className="booking__receipt-row booking__receipt-row--block">
+            <span>التحاليل</span>
+            <span>{receipt.packages.join('، ') || '—'}</span>
+          </div>
+          <div className="booking__receipt-row">
+            <span>حالة المريض</span>
+            <span>{receipt.patientType}</span>
+          </div>
+          <div className="booking__receipt-row">
+            <span>يوم الزيارة</span>
+            <span>{receipt.date}</span>
+          </div>
+
+          <div className="booking__receipt-divider" />
+
+          <div className="booking__receipt-row">
+            <span>التكلفة</span>
+            <span>{receipt.subtotal.toLocaleString('en-US')} جنيه</span>
+          </div>
+          {receipt.mode === 'home' && (
+            <div className="booking__receipt-row">
+              <span>تكلفة الزيارة</span>
+              <span>{receipt.homeVisitFee.toLocaleString('en-US')} جنيه</span>
+            </div>
+          )}
+          <div className="booking__receipt-row booking__receipt-row--total">
+            <span>الإجمالي</span>
+            <span>{receipt.total.toLocaleString('en-US')} جنيه</span>
+          </div>
+
+          <div className="booking__receipt-ref">رقم الحجز: {receipt.bookingRef}</div>
+        </div>
+
         <Link className="booking__done-cta" to="/">
           الرجوع للرئيسية
         </Link>
@@ -360,6 +450,11 @@ export default function Booking() {
             {form.phone.length > 0 && !isPhoneValid && (
               <span className="booking__field-error">لازم يكون رقم موبايل مصري صحيح (11 رقم، يبدأ بـ 010 أو 011 أو 012 أو 015)</span>
             )}
+          </label>
+
+          <label className="booking__field">
+            <span>تاريخ الميلاد</span>
+            <input required type="date" value={form.dob} onChange={updateField('dob')} />
           </label>
 
           {mode === 'home' ? (
