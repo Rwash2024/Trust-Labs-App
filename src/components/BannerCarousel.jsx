@@ -15,6 +15,8 @@ export default function BannerCarousel({ items, keyFn, renderItem }) {
   const containerRef = useRef(null)
   const pausedRef = useRef(false)
   const resumeTimeoutRef = useRef(null)
+  const isAutoScrollingRef = useRef(false)
+  const autoScrollClearRef = useRef(null)
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -34,11 +36,21 @@ export default function BannerCarousel({ items, keyFn, renderItem }) {
 
   // Scrolls the carousel container directly (never scrollIntoView) — scrollIntoView
   // can nudge an ancestor's vertical scroll position too, which showed up as a stray
-  // vertical scrollbar flash whenever the carousel advanced.
+  // vertical scrollbar flash whenever the carousel advanced. Marks the scroll as
+  // "ours" for a moment so the scroll listener below doesn't mistake it for a user
+  // swipe and pause autoplay because of it.
   const scrollToCard = (index, behavior) => {
     const container = containerRef.current
     const card = cardRefs.current[index]
     if (!container || !card) return
+    isAutoScrollingRef.current = true
+    clearTimeout(autoScrollClearRef.current)
+    autoScrollClearRef.current = setTimeout(
+      () => {
+        isAutoScrollingRef.current = false
+      },
+      behavior === 'smooth' ? 500 : 50
+    )
     const offset = card.offsetLeft - (container.clientWidth - card.clientWidth) / 2
     container.scrollTo({ left: offset, behavior })
   }
@@ -69,17 +81,26 @@ export default function BannerCarousel({ items, keyFn, renderItem }) {
     }, RESUME_AFTER_INTERACTION_MS)
   }
 
-  useEffect(() => () => clearTimeout(resumeTimeoutRef.current), [])
+  // Only pause for scrolls we didn't trigger ourselves — a touch that merely passes
+  // over the carousel while the page scrolls vertically (very common on a phone)
+  // used to arm a 6s pause too, and repeated incidental touches kept re-arming it,
+  // which looked like the carousel getting stuck. A real swipe moves the container's
+  // own scrollLeft, so listening to its `scroll` event is a much more accurate signal.
+  const handleScroll = () => {
+    if (isAutoScrollingRef.current) return
+    pauseAutoplay()
+  }
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(resumeTimeoutRef.current)
+      clearTimeout(autoScrollClearRef.current)
+    }
+  }, [])
 
   return (
     <>
-      <div
-        ref={containerRef}
-        className="banner-carousel"
-        onPointerDown={pauseAutoplay}
-        onTouchStart={pauseAutoplay}
-        onWheel={pauseAutoplay}
-      >
+      <div ref={containerRef} className="banner-carousel" onScroll={handleScroll}>
         {items.map((item, index) => renderItem(item, index, (el) => (cardRefs.current[index] = el)))}
       </div>
       {items.length > 1 && (
