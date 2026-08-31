@@ -72,7 +72,7 @@ export async function fetchBranchGroups() {
       address: b.address,
       phone: b.phone,
       hours: b.hours,
-      mapsUrl: mapsUrl(`${b.name} ${b.address}`),
+      mapsUrl: b.maps_url || mapsUrl(`${b.name} ${b.address}`),
       whatsappUrl: whatsappUrl(b.phone, b.name),
     })
   }

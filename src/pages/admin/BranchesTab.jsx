@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminListBranches, adminSaveBranch, adminDeleteBranch } from '../../lib/admin'
 
-const emptyBranch = { governorate: '', name: '', address: '', phone: '', hours: '8ص - 11م', sort_order: 0 }
+const emptyBranch = { governorate: '', name: '', address: '', phone: '', hours: '8ص - 11م', maps_url: '', sort_order: 0 }
 
 export default function BranchesTab() {
   const [branches, setBranches] = useState([])
@@ -85,6 +85,18 @@ export default function BranchesTab() {
               <input required value={editing.hours} onChange={(e) => setEditing({ ...editing, hours: e.target.value })} />
             </label>
           </div>
+          <label>
+            <span>لينك اللوكيشن (Google Maps) — اختياري</span>
+            <input
+              dir="ltr"
+              placeholder="https://maps.app.goo.gl/..."
+              value={editing.maps_url || ''}
+              onChange={(e) => setEditing({ ...editing, maps_url: e.target.value })}
+            />
+            <small className="admin-form__hint">
+              افتح الفرع على خرائط جوجل، اضغط "مشاركة"، وانسخ اللينك هنا. لو سبته فاضي، هيتولّد لينك بحث تلقائي من اسم وعنوان الفرع.
+            </small>
+          </label>
           <div className="admin-form__actions">
             <button type="button" className="admin-btn" onClick={() => setEditing(null)}>
               إلغاء

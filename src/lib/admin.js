@@ -114,6 +114,7 @@ export async function adminSaveBranch(branch) {
     address: branch.address,
     phone: branch.phone,
     hours: branch.hours,
+    maps_url: branch.maps_url || null,
     sort_order: branch.sort_order ?? 0,
   }
   if (branch.id) {

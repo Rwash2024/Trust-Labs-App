@@ -290,6 +290,12 @@
   border-color: var(--border-focus);
 }
 
+.admin-form__hint {
+  font-size: var(--text-caption-size, 12px);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-muted, #888);
+}
+
 .admin-form input:disabled {
   opacity: 0.6;
 }
