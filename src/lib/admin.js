@@ -150,3 +150,29 @@ export async function adminDeletePrepInstruction(testName) {
   const { error } = await requireClient().from('prep_instructions').delete().eq('test_name', testName)
   if (error) throw error
 }
+
+// ---- About page content ----
+export async function adminGetAboutContent() {
+  const { data, error } = await requireClient().from('about_content').select('*').eq('id', 1).maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function adminSaveAboutContent(content) {
+  const { error } = await requireClient()
+    .from('about_content')
+    .upsert({
+      id: 1,
+      tagline: content.tagline,
+      founded_year: content.founded_year,
+      branches_count: content.branches_count,
+      cases_count: content.cases_count,
+      story_p1: content.story_p1,
+      story_p2: content.story_p2,
+      pillars: content.pillars,
+      team: content.team,
+      accreditations: content.accreditations,
+      updated_at: new Date().toISOString(),
+    })
+  if (error) throw error
+}

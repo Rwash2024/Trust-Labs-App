@@ -4,11 +4,10 @@ import { adminUploadImage } from '../../lib/admin'
 // Recommended banner-card image size: 2:1 landscape (matches the featured-tests /
 // packages carousel's aspect-ratio in CSS). Enforced with tolerance rather than an
 // exact pixel match, since demanding an exact size is brittle for real-world photos.
-const TARGET_WIDTH = 800
-const TARGET_HEIGHT = 400
-const TARGET_RATIO = TARGET_WIDTH / TARGET_HEIGHT
-const RATIO_TOLERANCE = 0.15
-const MIN_WIDTH = 600
+const DEFAULT_TARGET_WIDTH = 800
+const DEFAULT_TARGET_HEIGHT = 400
+const DEFAULT_RATIO_TOLERANCE = 0.15
+const DEFAULT_MIN_WIDTH = 600
 
 function readImageDimensions(file) {
   return new Promise((resolve, reject) => {
@@ -26,10 +25,20 @@ function readImageDimensions(file) {
   })
 }
 
-export default function ImageUploadField({ label, folder, value, onChange }) {
+export default function ImageUploadField({
+  label,
+  folder,
+  value,
+  onChange,
+  targetWidth = DEFAULT_TARGET_WIDTH,
+  targetHeight = DEFAULT_TARGET_HEIGHT,
+  ratioTolerance = DEFAULT_RATIO_TOLERANCE,
+  minWidth = DEFAULT_MIN_WIDTH,
+}) {
   const inputRef = useRef(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const targetRatio = targetWidth / targetHeight
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0]
@@ -40,13 +49,13 @@ export default function ImageUploadField({ label, folder, value, onChange }) {
     try {
       const { width, height } = await readImageDimensions(file)
       const ratio = width / height
-      if (width < MIN_WIDTH) {
-        setError(`الصورة صغيرة أوي (${width}×${height}px) — المقاس المطلوب ${TARGET_WIDTH}×${TARGET_HEIGHT}px على الأقل`)
+      if (width < minWidth) {
+        setError(`الصورة صغيرة أوي (${width}×${height}px) — المقاس المطلوب ${targetWidth}×${targetHeight}px على الأقل`)
         return
       }
-      if (Math.abs(ratio - TARGET_RATIO) / TARGET_RATIO > RATIO_TOLERANCE) {
+      if (Math.abs(ratio - targetRatio) / targetRatio > ratioTolerance) {
         setError(
-          `نسبة الصورة (${width}×${height}px) مش مناسبة — المقاس المطلوب عريض بنسبة 2:1 تقريبًا (زي ${TARGET_WIDTH}×${TARGET_HEIGHT}px)`
+          `نسبة الصورة (${width}×${height}px) مش مناسبة — المقاس المطلوب زي ${targetWidth}×${targetHeight}px تقريبًا`
         )
         return
       }
@@ -87,7 +96,7 @@ export default function ImageUploadField({ label, folder, value, onChange }) {
         </div>
         <input ref={inputRef} type="file" accept="image/*" hidden onChange={handleFile} />
         <p className="admin-image-upload__hint">
-          المقاس المفضّل: {TARGET_WIDTH}×{TARGET_HEIGHT}px (عرضي بنسبة 2:1)
+          المقاس المفضّل: {targetWidth}×{targetHeight}px
         </p>
         {error && <p className="admin-error">{error}</p>}
       </div>

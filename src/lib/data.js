@@ -5,6 +5,7 @@ import { allTests as staticAllTests } from '../data/tests'
 import { popularTests as staticPopularTests } from '../data/popularTests'
 import { featuredTests as staticFeaturedTests } from '../data/featuredTests'
 import { branches as staticBranchGroups, mapsUrl, whatsappUrl } from '../data/branches'
+import { defaultAboutContent } from '../data/aboutContent'
 
 export async function fetchPackages() {
   if (!supabase) return staticPackages
@@ -77,4 +78,21 @@ export async function fetchBranchGroups() {
     })
   }
   return Array.from(groups.entries()).map(([governorate, list]) => ({ governorate, list }))
+}
+
+export async function fetchAboutContent() {
+  if (!supabase) return defaultAboutContent
+  const { data, error } = await supabase.from('about_content').select('*').eq('id', 1).maybeSingle()
+  if (error || !data) return defaultAboutContent
+  return {
+    tagline: data.tagline || defaultAboutContent.tagline,
+    founded_year: data.founded_year ?? defaultAboutContent.founded_year,
+    branches_count: data.branches_count ?? defaultAboutContent.branches_count,
+    cases_count: data.cases_count || defaultAboutContent.cases_count,
+    story_p1: data.story_p1 || defaultAboutContent.story_p1,
+    story_p2: data.story_p2 || defaultAboutContent.story_p2,
+    pillars: data.pillars?.length ? data.pillars : defaultAboutContent.pillars,
+    team: data.team?.length ? data.team : defaultAboutContent.team,
+    accreditations: data.accreditations?.length ? data.accreditations : defaultAboutContent.accreditations,
+  }
 }

@@ -1225,3 +1225,31 @@ insert into branches (governorate, name, address, phone, hours, sort_order) valu
 ('الغردقة', 'فرع الغردقة', 'مول سفن ستارز - أعلى سبينيس - شارع النصر - الغردقة', '01101866557', '8ص - 11م', 16),
 ('شرم الشيخ', 'فرع شرم الشيخ 1 (نبق)', 'ريكسوس بريميوم سي جيت - خليج نبق - شرم الشيخ', '01101866117', '8ص - 11م', 17),
 ('شرم الشيخ', 'فرع شرم الشيخ 2 (حي النور)', 'حي النور - سنتر الشروق - الدور الأول - شرم الشيخ', '01101866133', '8ص - 11م', 18);
+
+-- ---------------------------------------------------------------------------
+-- About page content ("من نحن") — added so the admin panel can edit the page
+-- text, stats, pillars, team members and accreditation logos.
+-- Safe to run again: creates the table only if missing and does not touch
+-- existing data. Leave the table empty — the app falls back to the built-in
+-- defaults (src/data/aboutContent.js) until an admin saves from the "من نحن"
+-- tab, which is when real Supabase Storage image URLs get written here.
+-- ---------------------------------------------------------------------------
+create table if not exists about_content (
+  id integer primary key default 1,
+  tagline text,
+  founded_year text,
+  branches_count text,
+  cases_count text,
+  story_p1 text,
+  story_p2 text,
+  pillars jsonb not null default '[]'::jsonb,
+  team jsonb not null default '[]'::jsonb,
+  accreditations jsonb not null default '[]'::jsonb,
+  updated_at timestamptz default now(),
+  constraint about_content_singleton check (id = 1)
+);
+
+alter table about_content enable row level security;
+
+drop policy if exists "public read about_content" on about_content;
+create policy "public read about_content" on about_content for select using (true);

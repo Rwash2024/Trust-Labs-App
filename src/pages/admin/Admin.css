@@ -230,6 +230,14 @@
   margin-bottom: var(--space-4);
 }
 
+.admin-success {
+  color: #1a7f3c;
+  background: #e6f7ec;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+}
+
 .admin-search {
   width: 100%;
   font-family: var(--font-family);
