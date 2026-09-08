@@ -18,8 +18,11 @@ const STATUSES = [
 ]
 
 const emptyItem = { booking_ref: '', patient_name: '', phone: '', branch_name: '' }
+const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
 
 function SampleForm({ title, value, branches, saving, onChange, onCancel, onSubmit }) {
+  const isPhoneValid = EGYPT_PHONE_REGEX.test(value.phone)
+
   return (
     <form className="admin-form" onSubmit={onSubmit}>
       <h3>{title}</h3>
@@ -34,9 +37,15 @@ function SampleForm({ title, value, branches, saving, onChange, onCancel, onSubm
           dir="ltr"
           type="tel"
           inputMode="numeric"
+          pattern="01[0125][0-9]{8}"
+          placeholder="01xxxxxxxxx"
           value={value.phone}
           onChange={(e) => onChange({ ...value, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+          aria-invalid={value.phone.length > 0 && !isPhoneValid}
         />
+        {value.phone.length > 0 && !isPhoneValid && (
+          <span className="admin-form__hint">لازم يكون رقم موبايل مصري صحيح (11 رقم، يبدأ بـ 010 أو 011 أو 012 أو 015)</span>
+        )}
       </label>
       <label>
         <span>رقم الحجز (اختياري، لو متوفر من الإيميل اللي بيوصل من الحجز)</span>
