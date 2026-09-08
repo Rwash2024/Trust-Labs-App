@@ -223,26 +223,6 @@
   gap: var(--space-2);
 }
 
-.booking__card-upload {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  background: var(--color-primary-light);
-  color: var(--color-primary-dark);
-  font-weight: var(--font-weight-bold);
-  font-size: var(--text-small-size);
-  padding: var(--space-3);
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-}
-
-.booking__card-filename {
-  color: var(--text-muted);
-  font-size: var(--text-small-size);
-  text-align: center;
-}
-
 .booking__card-hint {
   color: var(--text-muted);
   font-size: var(--text-small-size);
@@ -368,6 +348,27 @@
 .booking__field textarea:focus {
   outline: none;
   border-color: var(--border-focus);
+}
+
+.booking__terms {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: var(--text-small-size);
+  color: var(--text-body);
+  cursor: pointer;
+}
+
+.booking__terms input {
+  margin-top: 3px;
+  accent-color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.booking__terms a {
+  color: var(--color-primary-dark);
+  font-weight: var(--font-weight-bold);
+  text-decoration: underline;
 }
 
 .booking__error {

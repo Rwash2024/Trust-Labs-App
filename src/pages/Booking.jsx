@@ -11,7 +11,6 @@ const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID
 const PAYMOB_LINK = import.meta.env.VITE_PAYMOB_LINK
 const HOME_VISIT_FEE = 75
 const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
-const MAX_CARD_IMAGE_MB = 8
 
 function testToCartItem(test) {
   return { id: `test-${test.code}`, name: test.name, price: test.price, testCount: 1, tests: [test.name] }
@@ -35,8 +34,8 @@ export default function Booking() {
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [hasCard, setHasCard] = useState(false)
   const [cardType, setCardType] = useState('insurance') // insurance | club
-  const [cardImage, setCardImage] = useState(null)
-  const [cardImageError, setCardImageError] = useState('')
+  const [cardIssuer, setCardIssuer] = useState('')
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [receipt, setReceipt] = useState(null)
 
   useEffect(() => {
@@ -75,26 +74,14 @@ export default function Booking() {
 
   const isPhoneValid = EGYPT_PHONE_REGEX.test(form.phone)
 
-  const handleCardImageChange = (e) => {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-    setCardImageError('')
-    if (!file.type.startsWith('image/')) {
-      setCardImageError('لازم ترفع صورة (jpg أو png)')
-      return
-    }
-    if (file.size > MAX_CARD_IMAGE_MB * 1024 * 1024) {
-      setCardImageError(`الصورة كبيرة أوي — الحد الأقصى ${MAX_CARD_IMAGE_MB}MB`)
-      return
-    }
-    setCardImage(file)
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!isPhoneValid) {
       setStatus('invalid-phone')
+      return
+    }
+    if (!agreedToTerms) {
+      setStatus('terms-required')
       return
     }
     if (!FORMSPREE_ENDPOINT) {
@@ -125,7 +112,7 @@ export default function Booking() {
     data.append('total', total)
     data.append('paymentMethod', paymentLabel)
     data.append('hasInsuranceOrClubCard', patientType)
-    if (hasCard && cardImage) data.append('cardImage', cardImage)
+    if (hasCard && cardIssuer.trim()) data.append('cardIssuer', cardIssuer.trim())
 
     try {
       const res = await fetch(FORMSPREE_ENDPOINT, {
@@ -133,7 +120,17 @@ export default function Booking() {
         headers: { Accept: 'application/json' },
         body: data,
       })
-      if (!res.ok) throw new Error('submit failed')
+      if (!res.ok) {
+        let detail = ''
+        try {
+          const body = await res.json()
+          detail = body?.errors?.map((err) => err.message).join('; ') || ''
+        } catch {
+          // response wasn't JSON — ignore
+        }
+        console.error('Booking submission failed', res.status, detail || '(no detail returned)')
+        throw new Error(`submit failed: ${res.status} ${detail}`)
+      }
       trackEvent(AnalyticsEvents.BOOKING_COMPLETED, { booking_type: bookingType, payment_method: paymentMethod })
 
       setReceipt({
@@ -158,7 +155,8 @@ export default function Booking() {
         return
       }
       setStatus(paymentMethod === 'visa' ? 'success-visa' : 'success')
-    } catch {
+    } catch (err) {
+      console.error('Booking submission error', err)
       setStatus('error')
     }
   }
@@ -414,16 +412,18 @@ export default function Booking() {
                 </button>
               </div>
 
-              <label className="booking__card-upload">
-                <input type="file" accept="image/*" hidden onChange={handleCardImageChange} />
-                <PlusIcon width={16} height={16} />
-                {cardImage ? 'تغيير صورة الكارنيه' : 'رفع صورة الكارنيه'}
+              <label className="booking__field">
+                <span>{cardType === 'insurance' ? 'اسم شركة التأمين (اختياري)' : 'اسم النادي (اختياري)'}</span>
+                <input
+                  type="text"
+                  value={cardIssuer}
+                  onChange={(e) => setCardIssuer(e.target.value)}
+                  placeholder={cardType === 'insurance' ? 'مثال: ميدنت، جي آي جي...' : 'مثال: النادي الأهلي...'}
+                />
               </label>
-              {cardImage && <span className="booking__card-filename">{cardImage.name}</span>}
-              {cardImageError && <p className="booking__error">{cardImageError}</p>}
 
               <p className="booking__card-hint">
-                هيشوف موظف خدمة العملاء بياناتك وصورة الكارنيه، وهيقولك السعر بعد خصم التأمين لما يتواصل معاك.
+                فريق خدمة العملاء هيتواصل معاك لتأكيد الموعد، وساعتها ابعتله صورة الكارنيه على واتساب عشان يحسب السعر بعد خصم التأمين.
               </p>
             </div>
           )}
@@ -498,11 +498,32 @@ export default function Booking() {
             <p className="booking__error">من فضلك اكتب رقم موبايل مصري صحيح قبل تأكيد الحجز.</p>
           )}
 
+          <label className="booking__terms">
+            <input
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => {
+                setAgreedToTerms(e.target.checked)
+                if (e.target.checked && status === 'terms-required') setStatus('idle')
+              }}
+            />
+            <span>
+              موافق على{' '}
+              <Link to="/terms" target="_blank" rel="noopener noreferrer">
+                الشروط والأحكام
+              </Link>
+            </span>
+          </label>
+
+          {status === 'terms-required' && (
+            <p className="booking__error">لازم توافق على الشروط والأحكام قبل تأكيد الحجز.</p>
+          )}
+
           {status === 'error' && (
             <p className="booking__error">
               {FORMSPREE_ENDPOINT
-                ? 'حصل خطأ أثناء إرسال الطلب، حاول تاني أو تواصل معنا على الهوتلاين 16183.'
-                : 'الحجز أونلاين لسه مش متفعّل بالكامل — كلّم فريقنا على الهوتلاين 16183 أو واتساب الكول سنتر.'}
+                ? 'حصل خطأ أثناء إرسال الطلب، حاول تاني أو تواصل معنا على الخط الساخن 16183.'
+                : 'الحجز أونلاين لسه مش متفعّل بالكامل — كلّم فريقنا على الخط الساخن 16183 أو واتساب الكول سنتر.'}
             </p>
           )}
 
