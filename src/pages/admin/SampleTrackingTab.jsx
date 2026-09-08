@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { adminListSamples, adminCreateSample, adminUpdateSampleStatus } from '../../lib/admin'
+import { fetchBranchGroups } from '../../lib/data'
 
 const STATUSES = [
   'تم تسجيل الطلب',
@@ -14,6 +15,7 @@ const emptyItem = { booking_ref: '', patient_name: '', phone: '', branch_name: '
 
 export default function SampleTrackingTab() {
   const [items, setItems] = useState([])
+  const [branches, setBranches] = useState([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -28,6 +30,12 @@ export default function SampleTrackingTab() {
   }
 
   useEffect(load, [])
+
+  useEffect(() => {
+    fetchBranchGroups().then((groups) => {
+      setBranches(groups.flatMap((g) => g.list.map((b) => b.name)))
+    })
+  }, [])
 
   const handleCreate = async (e) => {
     e.preventDefault()
@@ -97,11 +105,21 @@ export default function SampleTrackingTab() {
             />
           </label>
           <label>
-            <span>الفرع (اختياري)</span>
-            <input
+            <span>الفرع</span>
+            <select
+              required
               value={adding.branch_name}
               onChange={(e) => setAdding({ ...adding, branch_name: e.target.value })}
-            />
+            >
+              <option value="" disabled>
+                اختار الفرع
+              </option>
+              {branches.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </label>
           <div className="admin-form__actions">
             <button type="button" className="admin-btn" onClick={() => setAdding(null)}>
@@ -121,6 +139,7 @@ export default function SampleTrackingTab() {
             <th>الموبايل</th>
             <th>رقم الحجز</th>
             <th>الفرع</th>
+            <th>وقت التسجيل</th>
             <th>الحالة</th>
           </tr>
         </thead>
@@ -131,6 +150,7 @@ export default function SampleTrackingTab() {
               <td dir="ltr">{i.phone}</td>
               <td dir="ltr">{i.booking_ref || '—'}</td>
               <td>{i.branch_name || '—'}</td>
+              <td>{new Date(i.created_at).toLocaleString('ar-EG')}</td>
               <td>
                 <select
                   className="admin-select"
