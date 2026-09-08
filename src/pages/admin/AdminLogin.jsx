@@ -5,13 +5,13 @@ import logoWhiteFull from '../../assets/logo-white-full.png'
 import './Admin.css'
 
 export default function AdminLogin() {
-  const { session, signIn } = useAdminAuth()
+  const { session, isAdmin, signIn } = useAdminAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  if (session) return <Navigate to="/admin" replace />
+  if (session) return <Navigate to={isAdmin ? '/admin' : '/admin/samples'} replace />
 
   const handleSubmit = async (e) => {
     e.preventDefault()

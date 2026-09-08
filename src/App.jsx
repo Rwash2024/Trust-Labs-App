@@ -19,6 +19,7 @@ import Terms from './pages/Terms'
 import TrackSample from './pages/TrackSample'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import BranchSamplesDashboard from './pages/admin/BranchSamplesDashboard'
 
 function PatientApp() {
   return (
@@ -61,8 +62,16 @@ export default function App() {
             <Route
               path="/admin"
               element={
-                <AdminProtectedRoute>
+                <AdminProtectedRoute requireAdmin>
                   <AdminDashboard />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/samples"
+              element={
+                <AdminProtectedRoute>
+                  <BranchSamplesDashboard />
                 </AdminProtectedRoute>
               }
             />
