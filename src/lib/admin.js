@@ -179,6 +179,24 @@ export async function adminUpdateSampleStatus(id, status) {
   if (error) throw error
 }
 
+export async function adminUpdateSample(id, { booking_ref, patient_name, phone, branch_name }) {
+  const { error } = await requireClient()
+    .from('sample_tracking')
+    .update({
+      booking_ref: booking_ref?.trim() || null,
+      patient_name: patient_name.trim(),
+      phone: phone.trim(),
+      branch_name: branch_name?.trim() || null,
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function adminDeleteSample(id) {
+  const { error } = await requireClient().from('sample_tracking').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ---- About page content ----
 export async function adminGetAboutContent() {
   const { data, error } = await requireClient().from('about_content').select('*').eq('id', 1).maybeSingle()

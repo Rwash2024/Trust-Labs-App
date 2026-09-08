@@ -56,7 +56,7 @@ export default function AdminDashboard() {
         {activeTab === 'branches' && <BranchesTab />}
         {activeTab === 'prep' && <PrepTab />}
         {activeTab === 'about' && <AboutTab />}
-        {activeTab === 'samples' && <SampleTrackingTab />}
+        {activeTab === 'samples' && <SampleTrackingTab canManage />}
       </main>
     </div>
   )
