@@ -40,7 +40,12 @@ function SampleForm({ title, value, branches, saving, onChange, onCancel, onSubm
       </label>
       <label>
         <span>رقم الحجز (اختياري، لو متوفر من الإيميل اللي بيوصل من الحجز)</span>
-        <input dir="ltr" value={value.booking_ref} onChange={(e) => onChange({ ...value, booking_ref: e.target.value })} />
+        <input
+          dir="ltr"
+          inputMode="numeric"
+          value={value.booking_ref}
+          onChange={(e) => onChange({ ...value, booking_ref: e.target.value.replace(/\D/g, '') })}
+        />
       </label>
       <label>
         <span>الفرع</span>

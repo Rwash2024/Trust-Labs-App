@@ -20,7 +20,7 @@ function generateBookingRef() {
   const now = new Date()
   const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`
   const randomDigits = String(Math.floor(Math.random() * 1000)).padStart(3, '0')
-  return `TL-${dateStr}-${randomDigits}`
+  return `${dateStr}${randomDigits}`
 }
 
 export default function Booking() {
