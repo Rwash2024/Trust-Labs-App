@@ -21,6 +21,13 @@ export async function fetchPackages() {
   }))
 }
 
+export async function fetchSampleStatusByPhone(phone) {
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('get_sample_status_by_phone', { p_phone: phone })
+  if (error || !data) return []
+  return data
+}
+
 export async function fetchFeaturedTests() {
   if (!supabase) return staticFeaturedTests
   const { data, error } = await supabase.from('featured_tests').select('*').order('sort_order')

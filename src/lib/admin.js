@@ -151,6 +151,34 @@ export async function adminDeletePrepInstruction(testName) {
   if (error) throw error
 }
 
+// ---- Sample tracking ----
+export async function adminListSamples() {
+  const { data, error } = await requireClient()
+    .from('sample_tracking')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function adminCreateSample({ booking_ref, patient_name, phone, branch_name }) {
+  const { error } = await requireClient().from('sample_tracking').insert({
+    booking_ref: booking_ref?.trim() || null,
+    patient_name: patient_name.trim(),
+    phone: phone.trim(),
+    branch_name: branch_name?.trim() || null,
+  })
+  if (error) throw error
+}
+
+export async function adminUpdateSampleStatus(id, status) {
+  const { error } = await requireClient()
+    .from('sample_tracking')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
 // ---- About page content ----
 export async function adminGetAboutContent() {
   const { data, error } = await requireClient().from('about_content').select('*').eq('id', 1).maybeSingle()

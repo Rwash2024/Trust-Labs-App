@@ -1,5 +1,14 @@
 import { Link } from 'react-router-dom'
-import { PhoneIcon, WhatsAppIcon, MapPinIcon, ArrowIcon, FacebookIcon, InstagramIcon, LinkedInIcon } from '../components/icons'
+import {
+  PhoneIcon,
+  WhatsAppIcon,
+  MapPinIcon,
+  ArrowIcon,
+  FacebookIcon,
+  InstagramIcon,
+  LinkedInIcon,
+  ShieldIcon,
+} from '../components/icons'
 import logoWhiteFull from '../assets/logo-white-full.png'
 import './Contact.css'
 
@@ -48,6 +57,17 @@ export default function Contact() {
           </span>
           <ArrowIcon className="contact__card-arrow" />
         </a>
+
+        <Link className="contact__card" to="/track-sample">
+          <span className="contact__card-icon">
+            <ShieldIcon color="#fff" />
+          </span>
+          <span className="contact__card-info">
+            <span className="contact__card-title">تتبع حالة عينتك</span>
+            <span className="contact__card-value">اعرف عينتك وصلت فين برقم موبايلك</span>
+          </span>
+          <ArrowIcon className="contact__card-arrow" />
+        </Link>
       </div>
 
       <section className="contact__hours">

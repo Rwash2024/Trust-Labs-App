@@ -16,6 +16,7 @@ import TrustCard from './pages/TrustCard'
 import Results from './pages/Results'
 import PrepInstructions from './pages/PrepInstructions'
 import Terms from './pages/Terms'
+import TrackSample from './pages/TrackSample'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 
@@ -36,6 +37,7 @@ function PatientApp() {
           <Route path="/results" element={<Results />} />
           <Route path="/prep-instructions" element={<PrepInstructions />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/track-sample" element={<TrackSample />} />
         </Routes>
       </main>
       <BottomNav />

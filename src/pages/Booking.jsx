@@ -234,6 +234,11 @@ export default function Booking() {
           <div className="booking__receipt-ref">رقم الحجز: {receipt.bookingRef}</div>
         </div>
 
+        <p className="booking__track-hint">
+          هتعرف تتابع حالة عينتك بعدين بس بكتابة رقم موبايلك في{' '}
+          <Link to="/track-sample">صفحة تتبع العينة</Link>
+        </p>
+
         <Link className="booking__done-cta" to="/">
           الرجوع للرئيسية
         </Link>

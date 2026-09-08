@@ -6,6 +6,7 @@ import FeaturedTestsTab from './FeaturedTestsTab'
 import BranchesTab from './BranchesTab'
 import PrepTab from './PrepTab'
 import AboutTab from './AboutTab'
+import SampleTrackingTab from './SampleTrackingTab'
 import logoWhiteFull from '../../assets/logo-white-full.png'
 import './Admin.css'
 
@@ -16,6 +17,7 @@ const tabs = [
   { key: 'branches', label: 'الفروع' },
   { key: 'prep', label: 'شروط التحضير' },
   { key: 'about', label: 'من نحن' },
+  { key: 'samples', label: 'تتبع العينات' },
 ]
 
 export default function AdminDashboard() {
@@ -54,6 +56,7 @@ export default function AdminDashboard() {
         {activeTab === 'branches' && <BranchesTab />}
         {activeTab === 'prep' && <PrepTab />}
         {activeTab === 'about' && <AboutTab />}
+        {activeTab === 'samples' && <SampleTrackingTab />}
       </main>
     </div>
   )
