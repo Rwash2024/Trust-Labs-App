@@ -220,10 +220,12 @@ export default function Home() {
       <section className="home__section">
         <h2 className="home__section-title home__section-title--center">شركاء النجاح</h2>
         <div className="partners-grid">
-          {partnerLogos.map((partner) => (
-            <span className="partners-grid__logo" key={partner.name}>
-              {partner.src ? <img src={partner.src} alt={partner.name} /> : partner.name}
-            </span>
+          {partnerLogos.map((partner, i) => (
+            <div className="partners-grid__logo" key={partner.name} style={{ animationDelay: `${i * 70}ms` }}>
+              <span className="partners-grid__glow" />
+              {partner.src ? <img src={partner.src} alt={partner.name} /> : null}
+              <span className="partners-grid__name">{partner.name}</span>
+            </div>
           ))}
         </div>
       </section>

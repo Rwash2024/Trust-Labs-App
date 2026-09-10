@@ -144,37 +144,109 @@
   text-align: center;
 }
 
-/* ---- Partners grid: static, no animation — every logo just sits in a wrapping grid. ---- */
+/* ---- Partners grid: static, same card treatment as About's "الاعتمادات والشهادات"
+   (about__accreditation) — fade-up on load, top gradient bar + glow + lift on
+   hover/tap, logo with its name underneath. ---- */
 .partners-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
 }
 
 .partners-grid__logo {
-  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card-rest);
+  padding: var(--space-3) var(--space-2);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 88px;
-  height: 48px;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--surface-sunken);
-  color: var(--text-muted);
-  font-weight: var(--font-weight-bold);
-  font-size: 10px;
-  line-height: 1.2;
+  gap: var(--space-2);
+  min-height: 88px;
+  opacity: 0;
+  animation: fade-up 480ms var(--ease-out) forwards;
+  transition: transform 220ms var(--ease-bounce), box-shadow 220ms var(--ease-out), border-color 220ms;
+}
+
+.partners-grid__logo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  inset-inline-start: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--gradient-chip);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 320ms var(--ease-out);
+}
+
+.partners-grid__logo:active {
+  transform: scale(0.97);
+  border-color: transparent;
+}
+
+.partners-grid__logo:active::before {
+  transform: scaleX(1);
+}
+
+.partners-grid__logo:active .partners-grid__glow {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (hover: hover) {
+  .partners-grid__logo:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-float);
+    border-color: transparent;
+  }
+  .partners-grid__logo:hover::before {
+    transform: scaleX(1);
+  }
+  .partners-grid__logo:hover .partners-grid__glow {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.partners-grid__glow {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(57, 183, 110, 0.16) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 320ms var(--ease-out), transform 320ms var(--ease-out);
+  pointer-events: none;
+}
+
+.partners-grid__name {
+  position: relative;
+  font-size: 11px;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-heading);
+  letter-spacing: 0.2px;
   text-align: center;
-  white-space: normal;
-  overflow: hidden;
 }
 
 .partners-grid__logo img {
-  width: 100%;
-  height: 100%;
+  position: relative;
+  max-width: 100%;
+  max-height: 36px;
   object-fit: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partners-grid__logo {
+    opacity: 1;
+    animation: none;
+  }
 }
 
 /* Featured tests banner carousel styles now live in ../components/BannerCarousel.css (shared with Packages.jsx).
