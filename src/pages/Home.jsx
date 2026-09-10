@@ -223,8 +223,7 @@ export default function Home() {
           {partnerLogos.map((partner, i) => (
             <div className="partners-grid__logo" key={partner.name} style={{ animationDelay: `${i * 70}ms` }}>
               <span className="partners-grid__glow" />
-              {partner.src ? <img src={partner.src} alt={partner.name} /> : null}
-              <span className="partners-grid__name">{partner.name}</span>
+              {partner.src ? <img src={partner.src} alt={partner.name} /> : <span className="partners-grid__name">{partner.name}</span>}
             </div>
           ))}
         </div>

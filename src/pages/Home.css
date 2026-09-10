@@ -146,7 +146,7 @@
 
 /* ---- Partners grid: static, same card treatment as About's "الاعتمادات والشهادات"
    (about__accreditation) — fade-up on load, top gradient bar + glow + lift on
-   hover/tap, logo with its name underneath. ---- */
+   hover/tap. Logo only, no name label — sized large so the logo reads clearly. ---- */
 .partners-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -160,13 +160,11 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card-rest);
-  padding: var(--space-3) var(--space-2);
+  padding: var(--space-3);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
-  min-height: 88px;
+  min-height: 76px;
   opacity: 0;
   animation: fade-up 480ms var(--ease-out) forwards;
   transition: transform 220ms var(--ease-bounce), box-shadow 220ms var(--ease-out), border-color 220ms;
@@ -238,7 +236,7 @@
 .partners-grid__logo img {
   position: relative;
   max-width: 100%;
-  max-height: 36px;
+  max-height: 56px;
   object-fit: contain;
 }
 
