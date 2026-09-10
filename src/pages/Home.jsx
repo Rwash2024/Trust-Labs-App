@@ -24,6 +24,7 @@ import nextCareLogo from '../assets/partners/nextcare.png'
 import egyCareLogo from '../assets/partners/egycare.jpg'
 import medRightLogo from '../assets/partners/medright.png'
 import globeMedLogo from '../assets/partners/globemed.png'
+import misrInsuranceLogo from '../assets/partners/misr-insurance.png'
 import '../styles/modal.css'
 import './Home.css'
 
@@ -84,6 +85,7 @@ const partnerLogosInsurance = [
   { name: 'شركة ايجي كير', src: egyCareLogo },
   { name: 'شركة ميد رايت', src: medRightLogo },
   { name: 'شركة جلوب ميد', src: globeMedLogo },
+  { name: 'مصر للتأمين', src: misrInsuranceLogo },
 ]
 
 // Static grid fallback, grouped by category order — general partners, then clubs, then
