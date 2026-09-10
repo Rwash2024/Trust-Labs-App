@@ -99,3 +99,14 @@
   color: var(--color-primary-dark);
   box-shadow: none;
 }
+
+.pkg-modal__secondary {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary-dark);
+  font-weight: var(--font-weight-bold);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
+}

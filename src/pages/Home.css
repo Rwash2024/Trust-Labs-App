@@ -37,6 +37,7 @@
 }
 
 .home__bell {
+  position: relative;
   width: 40px;
   height: 40px;
   border-radius: var(--radius-pill);
@@ -48,6 +49,24 @@
   border: none;
   box-shadow: var(--shadow-float-sm);
   transition: transform 200ms var(--ease-bounce);
+}
+
+.home__cart-badge {
+  position: absolute;
+  top: -4px;
+  inset-inline-end: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  color: var(--color-primary-dark);
+  font-size: 11px;
+  font-weight: var(--font-weight-extrabold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-float-sm);
 }
 
 .home__bell:active { transform: scale(0.9); }
@@ -119,6 +138,43 @@
   font-weight: var(--font-weight-extrabold);
   margin-bottom: var(--space-4);
   color: var(--text-heading);
+}
+
+.home__section-title--center {
+  text-align: center;
+}
+
+/* ---- Partners grid: static, no animation — every logo just sits in a wrapping grid. ---- */
+.partners-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+.partners-grid__logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 48px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-weight: var(--font-weight-bold);
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+  overflow: hidden;
+}
+
+.partners-grid__logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* Featured tests banner carousel styles now live in ../components/BannerCarousel.css (shared with Packages.jsx).

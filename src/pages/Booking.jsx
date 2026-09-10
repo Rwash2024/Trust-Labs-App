@@ -10,6 +10,7 @@ const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
 const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : null
 const PAYMOB_LINK = import.meta.env.VITE_PAYMOB_LINK
 const HOME_VISIT_FEE = 75
+const ONLINE_PAYMENT_ENABLED = false // hidden temporarily until a payment provider (Paymob/InstaPay) is finalized
 const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
 
 function testToCartItem(test) {
@@ -93,7 +94,7 @@ export default function Booking() {
     const bookingType = mode === 'home' ? 'زيارة منزلية' : 'حجز فرع'
     const paymentLabel = paymentMethod === 'visa' ? 'فيزا (أونلاين)' : 'كاش'
     const branchLabel = mode === 'branch' ? form.branchName : 'زيارة منزلية'
-    const patientType = hasCard ? (cardType === 'insurance' ? 'لديه كارنيه تأمين' : 'لديه كارنيه نادي') : 'Normal'
+    const patientType = hasCard ? (cardType === 'insurance' ? 'لديه كارنيه تأمين طبي' : 'لديه كارنيه نادي') : 'Normal'
     const bookingRef = generateBookingRef()
 
     const data = new FormData()
@@ -261,21 +262,23 @@ export default function Booking() {
             className={`booking__toggle-btn${mode === 'home' ? ' active' : ''}`}
             onClick={() => setMode('home')}
           >
-            زيارة منزلية
+            حجز زيارة منزلية
           </button>
           <button
             type="button"
             className={`booking__toggle-btn${mode === 'branch' ? ' active' : ''}`}
             onClick={() => setMode('branch')}
           >
-            حجز فرع
+            حجز/ دفع فى الفرع
           </button>
         </div>
 
         <div className="booking__tests-picker">
           <h2 className="booking__section-title">التحاليل المطلوبة</h2>
           <p className="booking__tests-hint">
-            حدّد التحاليل اللي محتاجها عشان الفني يجهّز الأنابيب والكيتات الصح لكل تحليل قبل ما ييجي.
+            {mode === 'home'
+              ? 'حدّد التحاليل اللي محتاجها عشان الكيميائي يجهّز الأنابيب والكيتات الصح لكل تحليل قبل ما ييجي.'
+              : 'حدّد التحاليل اللي محتاجها عشان الكيميائي يجهّز الأنابيب والكيتات الصح لكل تحليل قبل ما توصل الفرع.'}
           </p>
           <div className="booking__tests-search">
             <span className="booking__tests-search-icon">
@@ -354,22 +357,24 @@ export default function Booking() {
 
         <div className="booking__payment">
           <h2 className="booking__section-title">طريقة الدفع</h2>
-          <div className="booking__toggle">
-            <button
-              type="button"
-              className={`booking__toggle-btn${paymentMethod === 'cash' ? ' active' : ''}`}
-              onClick={() => setPaymentMethod('cash')}
-            >
-              كاش
-            </button>
-            <button
-              type="button"
-              className={`booking__toggle-btn${paymentMethod === 'visa' ? ' active' : ''}`}
-              onClick={() => setPaymentMethod('visa')}
-            >
-              فيزا (أونلاين)
-            </button>
-          </div>
+          {ONLINE_PAYMENT_ENABLED && (
+            <div className="booking__toggle">
+              <button
+                type="button"
+                className={`booking__toggle-btn${paymentMethod === 'cash' ? ' active' : ''}`}
+                onClick={() => setPaymentMethod('cash')}
+              >
+                كاش
+              </button>
+              <button
+                type="button"
+                className={`booking__toggle-btn${paymentMethod === 'visa' ? ' active' : ''}`}
+                onClick={() => setPaymentMethod('visa')}
+              >
+                فيزا (أونلاين)
+              </button>
+            </div>
+          )}
           <p className="booking__payment-hint">
             {paymentMethod === 'cash'
               ? mode === 'home'
@@ -379,7 +384,7 @@ export default function Booking() {
           </p>
 
           <div className="booking__card-question">
-            <span>عندك كارنيه تأمين أو كارنيه نادي؟</span>
+            <span>عندك كارنيه تأمين طبي أو كارنيه نادي؟</span>
             <div className="booking__toggle booking__toggle--sm">
               <button
                 type="button"
@@ -406,7 +411,7 @@ export default function Booking() {
                   className={`booking__toggle-btn${cardType === 'insurance' ? ' active' : ''}`}
                   onClick={() => setCardType('insurance')}
                 >
-                  كارنيه تأمين
+                  كارنيه تأمين طبي
                 </button>
                 <button
                   type="button"

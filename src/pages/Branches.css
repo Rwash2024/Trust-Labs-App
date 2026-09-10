@@ -180,10 +180,38 @@
   line-height: 1.5;
 }
 
-.branch-card__hours {
-  color: var(--color-primary-dark);
-  font-size: var(--text-small-size);
+.branch-card__hours-box {
+  margin-top: var(--space-3);
+  background: var(--surface-card);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3);
+}
+
+.branch-card__hours-title {
+  display: block;
   font-weight: var(--font-weight-bold);
+  color: var(--text-heading);
+  font-size: var(--text-small-size);
+  margin-bottom: var(--space-2);
+}
+
+.branch-card__hours-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-1) 0;
+  font-size: var(--text-small-size);
+  color: var(--text-body);
+}
+
+.branch-card__hours-row + .branch-card__hours-row {
+  border-top: 1px solid var(--border-default);
+}
+
+.branch-card__hours-note {
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .branch-card__actions {

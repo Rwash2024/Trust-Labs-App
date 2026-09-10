@@ -7,6 +7,8 @@ import BranchesTab from './BranchesTab'
 import PrepTab from './PrepTab'
 import AboutTab from './AboutTab'
 import SampleTrackingTab from './SampleTrackingTab'
+import NewsTab from './NewsTab'
+import PartnersTab from './PartnersTab'
 import logoWhiteFull from '../../assets/logo-white-full.png'
 import './Admin.css'
 
@@ -15,7 +17,9 @@ const tabs = [
   { key: 'tests', label: 'التحاليل' },
   { key: 'featured', label: 'تحاليل مميزة' },
   { key: 'branches', label: 'الفروع' },
-  { key: 'prep', label: 'شروط التحضير' },
+  { key: 'prep', label: 'شروط التحاليل' },
+  { key: 'news', label: 'أخبار المعمل' },
+  { key: 'partners', label: 'شركاء النجاح' },
   { key: 'about', label: 'من نحن' },
   { key: 'samples', label: 'تتبع العينات' },
 ]
@@ -55,6 +59,8 @@ export default function AdminDashboard() {
         {activeTab === 'featured' && <FeaturedTestsTab />}
         {activeTab === 'branches' && <BranchesTab />}
         {activeTab === 'prep' && <PrepTab />}
+        {activeTab === 'news' && <NewsTab />}
+        {activeTab === 'partners' && <PartnersTab />}
         {activeTab === 'about' && <AboutTab />}
         {activeTab === 'samples' && <SampleTrackingTab canManage />}
       </main>

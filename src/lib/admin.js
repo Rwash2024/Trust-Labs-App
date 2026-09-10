@@ -197,6 +197,64 @@ export async function adminDeleteSample(id) {
   if (error) throw error
 }
 
+// ---- News (أخبار المعمل) ----
+export async function adminListNews() {
+  const { data, error } = await requireClient().from('news').select('*').order('sort_order')
+  if (error) throw error
+  return data
+}
+
+export async function adminSaveNews(item) {
+  const payload = {
+    title: item.title,
+    description: item.description || null,
+    image_url: item.image_url || null,
+    news_date: item.news_date || null,
+    sort_order: item.sort_order ?? 0,
+    updated_at: new Date().toISOString(),
+  }
+  if (item.id) {
+    const { error } = await requireClient().from('news').update(payload).eq('id', item.id)
+    if (error) throw error
+  } else {
+    const { error } = await requireClient().from('news').insert(payload)
+    if (error) throw error
+  }
+}
+
+export async function adminDeleteNews(id) {
+  const { error } = await requireClient().from('news').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ---- Partners (شركاء النجاح) ----
+export async function adminListPartners() {
+  const { data, error } = await requireClient().from('partners').select('*').order('sort_order')
+  if (error) throw error
+  return data
+}
+
+export async function adminSavePartner(item) {
+  const payload = {
+    name: item.name,
+    image_url: item.image_url || null,
+    sort_order: item.sort_order ?? 0,
+    updated_at: new Date().toISOString(),
+  }
+  if (item.id) {
+    const { error } = await requireClient().from('partners').update(payload).eq('id', item.id)
+    if (error) throw error
+  } else {
+    const { error } = await requireClient().from('partners').insert(payload)
+    if (error) throw error
+  }
+}
+
+export async function adminDeletePartner(id) {
+  const { error } = await requireClient().from('partners').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ---- About page content ----
 export async function adminGetAboutContent() {
   const { data, error } = await requireClient().from('about_content').select('*').eq('id', 1).maybeSingle()

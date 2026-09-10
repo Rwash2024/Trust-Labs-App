@@ -1,14 +1,14 @@
 import { NavLink } from 'react-router-dom'
-import { HomeIcon, FlaskIcon, MapPinIcon, PhoneIcon, ShieldIcon } from './icons'
+import { HomeIcon, FlaskIcon, PhoneIcon, ShieldIcon, ResultsIcon } from './icons'
 import './BottomNav.css'
 
 // Order matches the RTL visual layout: index 0 renders furthest right.
-// Requested layout: الباقات والتحاليل | شروط التحضير | الرئيسية (center) | الفروع | تواصل معنا
+// Requested layout: نتائج التحاليل | تتبع العينة | الرئيسية (center) | الباقات والتحاليل | تواصل معنا
 const items = [
-  { to: '/packages', label: 'الباقات والتحاليل', Icon: FlaskIcon },
-  { to: '/prep-instructions', label: 'شروط التحضير', Icon: ShieldIcon },
+  { to: '/results', label: 'نتائج التحاليل', Icon: ResultsIcon },
+  { to: '/track-sample', label: 'تتبع العينة', Icon: ShieldIcon },
   { to: '/', label: 'الرئيسية', Icon: HomeIcon, end: true, big: true },
-  { to: '/branches', label: 'الفروع', Icon: MapPinIcon },
+  { to: '/packages', label: 'الباقات والتحاليل', Icon: FlaskIcon },
   { to: '/contact', label: 'تواصل معنا', Icon: PhoneIcon },
 ]
 

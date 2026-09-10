@@ -17,6 +17,7 @@ import Results from './pages/Results'
 import PrepInstructions from './pages/PrepInstructions'
 import Terms from './pages/Terms'
 import TrackSample from './pages/TrackSample'
+import News from './pages/News'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import BranchSamplesDashboard from './pages/admin/BranchSamplesDashboard'
@@ -39,6 +40,7 @@ function PatientApp() {
           <Route path="/prep-instructions" element={<PrepInstructions />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/track-sample" element={<TrackSample />} />
+          <Route path="/news" element={<News />} />
         </Routes>
       </main>
       <BottomNav />

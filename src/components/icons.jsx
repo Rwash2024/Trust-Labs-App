@@ -238,3 +238,13 @@ export function CartIcon(props) {
     </svg>
   )
 }
+
+export function NewsIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} {...base} {...props}>
+      <rect x="3.5" y="5" width="14" height="15" rx="1.8" />
+      <path d="M17.5 8.5H20a.5.5 0 0 1 .5.5v9a2 2 0 0 1-2 2h-1" />
+      <path d="M6.5 8.5h8M6.5 12h8M6.5 15.5h5" />
+    </svg>
+  )
+}

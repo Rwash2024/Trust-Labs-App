@@ -87,6 +87,26 @@ export async function fetchBranchGroups() {
   return Array.from(groups.entries()).map(([governorate, list]) => ({ governorate, list }))
 }
 
+export async function fetchNews() {
+  if (!supabase) return []
+  const { data, error } = await supabase.from('news').select('*').order('sort_order')
+  if (error || !data) return []
+  return data.map((row) => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    image: row.image_url,
+    date: row.news_date,
+  }))
+}
+
+export async function fetchPartners(staticFallback) {
+  if (!supabase) return staticFallback
+  const { data, error } = await supabase.from('partners').select('*').order('sort_order')
+  if (error || !data || data.length === 0) return staticFallback
+  return data.map((row) => ({ name: row.name, src: row.image_url }))
+}
+
 export async function fetchAboutContent() {
   if (!supabase) return defaultAboutContent
   const { data, error } = await supabase.from('about_content').select('*').eq('id', 1).maybeSingle()

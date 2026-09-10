@@ -1,12 +1,29 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FlaskIcon, MapPinIcon, WhatsAppIcon, CalendarIcon, BellIcon, SearchIcon, ArrowIcon, InfoIcon, ResultsIcon, CheckIcon, PlusIcon } from '../components/icons'
+import { FlaskIcon, MapPinIcon, WhatsAppIcon, CalendarIcon, CartIcon, SearchIcon, ArrowIcon, InfoIcon, ResultsIcon, CheckIcon, PlusIcon, ShieldIcon, NewsIcon } from '../components/icons'
 import BannerCarousel from '../components/BannerCarousel'
 import BannerCard from '../components/BannerCard'
-import { fetchFeaturedTests } from '../lib/data'
+import { fetchFeaturedTests, fetchPartners } from '../lib/data'
 import { testToCartItem } from '../lib/cart'
 import { useBooking } from '../context/BookingContext'
 import logoWhiteFull from '../assets/logo-white-full.png'
+import cibLogo from '../assets/partners/cib.svg'
+import tmgLogo from '../assets/partners/tmg.png'
+import cocaColaLogo from '../assets/partners/cocacola.svg'
+import rixosLogo from '../assets/partners/rixos.svg'
+import kempinskiLogo from '../assets/partners/kempinski.svg'
+import alAhlyLogo from '../assets/partners/alahly.svg'
+import zamalekLogo from '../assets/partners/zamalek.svg'
+import axaLogo from '../assets/partners/axa.svg'
+import wadiDeglaLogo from '../assets/partners/wadidegla.png'
+import seoudiLogo from '../assets/partners/seoudi.jpg'
+import saydLogo from '../assets/partners/sayd.png'
+import shamsLogo from '../assets/partners/shams.png'
+import beniSuefLogo from '../assets/partners/beni-suef.png'
+import nextCareLogo from '../assets/partners/nextcare.png'
+import egyCareLogo from '../assets/partners/egycare.jpg'
+import medRightLogo from '../assets/partners/medright.png'
+import globeMedLogo from '../assets/partners/globemed.png'
 import '../styles/modal.css'
 import './Home.css'
 
@@ -32,22 +49,59 @@ function FeaturedTestModal({ test, isAdded, onAdd, onClose }) {
             {isAdded ? <CheckIcon /> : <PlusIcon />}
             {isAdded ? 'تمت الإضافة للحجز' : 'أضف للحجز'}
           </button>
+          <Link className="pkg-modal__secondary" to="/packages">
+            المزيد من التحاليل
+          </Link>
         </div>
       </div>
     </div>
   )
 }
 
+// Grouped by category, one row per group — clubs together, insurance companies together,
+// everything else together. Ezz Steel dropped (no reliable official logo found).
+const partnerLogosGeneral = [
+  { name: 'بنك CIB', src: cibLogo },
+  { name: 'مجموعة طلعت مصطفى', src: tmgLogo },
+  { name: 'كوكاكولا', src: cocaColaLogo },
+  { name: 'سعودي ماركت', src: seoudiLogo },
+  { name: 'فنادق ريكسوس', src: rixosLogo },
+  { name: 'فنادق كمبينسكي', src: kempinskiLogo },
+]
+
+const partnerLogosClubs = [
+  { name: 'النادي الأهلي', src: alAhlyLogo },
+  { name: 'نادي الزمالك', src: zamalekLogo },
+  { name: 'نادي الصيد', src: saydLogo },
+  { name: 'نادي الشمس', src: shamsLogo },
+  { name: 'نادي وادي دجلة', src: wadiDeglaLogo },
+  { name: 'نادي بني سويف العام', src: beniSuefLogo },
+]
+
+const partnerLogosInsurance = [
+  { name: 'شركة أكسا', src: axaLogo },
+  { name: 'شركة نيكست كير', src: nextCareLogo },
+  { name: 'شركة ايجي كير', src: egyCareLogo },
+  { name: 'شركة ميد رايت', src: medRightLogo },
+  { name: 'شركة جلوب ميد', src: globeMedLogo },
+]
+
+// Static grid fallback, grouped by category order — general partners, then clubs, then
+// insurance. Used until the admin adds partners in Admin > شركاء النجاح.
+const staticPartnerLogos = [...partnerLogosGeneral, ...partnerLogosClubs, ...partnerLogosInsurance]
+
 const quickLinks = [
-  { to: '/packages', label: 'الباقات والتحاليل', Icon: FlaskIcon },
   { to: '/booking', label: 'احجز موعدك', Icon: CalendarIcon },
-  { to: '/branches', label: 'فروعنا', Icon: MapPinIcon },
   { href: whatsappUrl, label: 'موافقات التأمين', Icon: WhatsAppIcon },
+  { to: '/prep-instructions', label: 'شروط التحاليل', Icon: ShieldIcon },
+  { to: '/branches', label: 'فروعنا', Icon: MapPinIcon },
+  { to: '/news', label: 'أخبار المعمل', Icon: NewsIcon },
   { to: '/about', label: 'من نحن', Icon: InfoIcon },
 ]
 
 export default function Home() {
   const [featuredTests, setFeaturedTests] = useState([])
+  const [partnerLogos, setPartnerLogos] = useState(staticPartnerLogos)
   const [modalTest, setModalTest] = useState(null)
   const { selectedPackages, togglePackage } = useBooking()
   const addedIds = selectedPackages.map((p) => p.id)
@@ -56,6 +110,9 @@ export default function Home() {
     let cancelled = false
     fetchFeaturedTests().then((tests) => {
       if (!cancelled) setFeaturedTests(tests)
+    })
+    fetchPartners(staticPartnerLogos).then((partners) => {
+      if (!cancelled) setPartnerLogos(partners)
     })
     return () => {
       cancelled = true
@@ -70,9 +127,10 @@ export default function Home() {
 
         <div className="home__topbar">
           <img className="home__logo" src={logoWhiteFull} alt="Trust Labs" />
-          <button className="home__bell" aria-label="الإشعارات">
-            <BellIcon />
-          </button>
+          <Link className="home__bell" to="/booking" aria-label="السلة">
+            <CartIcon />
+            {selectedPackages.length > 0 && <span className="home__cart-badge">{selectedPackages.length}</span>}
+          </Link>
         </div>
 
         <h1 className="home__greeting">
@@ -89,8 +147,6 @@ export default function Home() {
       </section>
 
       <section className="home__section home__section--tight">
-        <h2 className="home__section-title">إيه اللي محتاجه؟</h2>
-
         {featuredTests.length > 0 && (
           <BannerCarousel
             items={featuredTests}
@@ -108,6 +164,8 @@ export default function Home() {
             )}
           />
         )}
+
+        <h2 className="home__section-title">إيه اللي محتاجه؟</h2>
 
         <div className="home__grid">
           {quickLinks.map(({ to, href, label, Icon }) =>
@@ -157,6 +215,17 @@ export default function Home() {
             <ArrowIcon />
           </span>
         </Link>
+      </section>
+
+      <section className="home__section">
+        <h2 className="home__section-title home__section-title--center">شركاء النجاح</h2>
+        <div className="partners-grid">
+          {partnerLogos.map((partner) => (
+            <span className="partners-grid__logo" key={partner.name}>
+              {partner.src ? <img src={partner.src} alt={partner.name} /> : partner.name}
+            </span>
+          ))}
+        </div>
       </section>
 
       {modalTest && (

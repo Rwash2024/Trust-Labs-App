@@ -23,9 +23,24 @@ function BranchCard({ branch, governorate }) {
         <span className="branch-card__info">
           <span className="branch-card__title">{branch.name}</span>
           <span className="branch-card__address">{branch.address}</span>
-          <span className="branch-card__hours">{branch.hours}</span>
         </span>
       </div>
+
+      <div className="branch-card__hours-box">
+        <span className="branch-card__hours-title">مواعيد العمل</span>
+        <div className="branch-card__hours-row">
+          <span>السبت – الخميس</span>
+          <span>8 صباحًا – 11 مساءً</span>
+        </div>
+        <div className="branch-card__hours-row">
+          <span>الجمعة</span>
+          <span>إجازة</span>
+        </div>
+        {branch.name.includes('المهندسين') && (
+          <p className="branch-card__hours-note">فرع المهندسين يعمل يوم الجمعة من 10 صباحًا حتى 10 مساءً</p>
+        )}
+      </div>
+
       <div className="branch-card__actions">
         <a className="branch-card__action" href={`tel:${branch.phone}`}>
           <PhoneIcon />

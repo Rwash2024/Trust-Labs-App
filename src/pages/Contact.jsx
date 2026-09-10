@@ -80,7 +80,7 @@ export default function Contact() {
           <span>الجمعة</span>
           <span>إجازة</span>
         </div>
-        <p className="contact__hours-note">فرع المهندسين يعمل من 10 صباحًا حتى 10 مساءً</p>
+        <p className="contact__hours-note">فرع المهندسين يعمل يوم الجمعة من الساعة 10 صباحًا حتى 10 مساءً</p>
       </section>
 
       <Link className="contact__branches-link" to="/branches">
