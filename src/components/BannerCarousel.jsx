@@ -55,6 +55,15 @@ export default function BannerCarousel({ items, keyFn, renderItem }) {
     container.scrollTo({ left: offset, behavior })
   }
 
+  // Force the very first card into view on mount. Without this, RTL + CSS scroll-snap
+  // makes some browsers settle on the second card as soon as it lays out, so the
+  // first card flashes by (or never renders as "active") before autoplay even starts.
+  useEffect(() => {
+    activeIndexRef.current = 0
+    setActiveIndex(0)
+    scrollToCard(0, 'auto')
+  }, [items])
+
   // Autoplay: advance to the next card every few seconds. Looping from the last
   // card back to the first jumps instantly (no animation) instead of smooth-scrolling
   // backward across the whole row, so the visible motion always reads as one
