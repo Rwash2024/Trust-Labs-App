@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './BannerCarousel.css'
 
-const AUTOPLAY_INTERVAL_MS = 4000
+const AUTOPLAY_INTERVAL_MS = 3000
 const RESUME_AFTER_INTERACTION_MS = 6000
 
 // Full-width snap-scroll carousel with dot pagination and autoplay, shared by the
