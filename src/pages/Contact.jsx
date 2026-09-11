@@ -12,7 +12,7 @@ import {
 import logoWhiteFull from '../assets/logo-white-full.png'
 import './Contact.css'
 
-const insuranceMessage = encodeURIComponent('السلام عليكم، عندي استفسار.')
+const insuranceMessage = encodeURIComponent('السلام عليكم، ممكن استفسر عن حاجه؟')
 const whatsappUrl = `https://wa.me/201277610492?text=${insuranceMessage}`
 
 const socialLinks = [

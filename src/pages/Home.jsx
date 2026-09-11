@@ -28,7 +28,7 @@ import misrInsuranceLogo from '../assets/partners/misr-insurance.png'
 import '../styles/modal.css'
 import './Home.css'
 
-const insuranceMessage = encodeURIComponent('السلام عليكم، عندي استفسار بخصوص موافقات التأمين.')
+const insuranceMessage = encodeURIComponent('السلام عليكم، عندي استفسار بخصوص موافقات التأمين الطبي.')
 const whatsappUrl = `https://wa.me/201277610492?text=${insuranceMessage}`
 
 function FeaturedTestModal({ test, isAdded, onAdd, onClose }) {

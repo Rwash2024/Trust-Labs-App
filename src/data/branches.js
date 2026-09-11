@@ -4,7 +4,7 @@ export function mapsUrl(query) {
 
 export function whatsappUrl(phone, branchName) {
   const international = `2${phone}`
-  const message = encodeURIComponent(`السلام عليكم، عايز أستفسر عن ${branchName}.`)
+  const message = encodeURIComponent(`السلام عليكم، عايز أعرف عنوان ${branchName} فين بالظبط؟`)
   return `https://wa.me/${international}?text=${message}`
 }
 
