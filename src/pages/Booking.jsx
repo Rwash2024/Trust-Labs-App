@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useBooking } from '../context/BookingContext'
-import { fetchBranchGroups, fetchAllTests } from '../lib/data'
+import { fetchBranchGroups, fetchAllTests, redeemLaunchOfferSeat } from '../lib/data'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import { FlaskIcon, MapPinIcon, CheckIcon, SearchIcon, PlusIcon } from '../components/icons'
+import LaunchOfferCounter from '../components/LaunchOfferCounter'
 import './Booking.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
@@ -97,6 +98,12 @@ export default function Booking() {
     const patientType = hasCard ? (cardType === 'insurance' ? 'لديه كارنيه تأمين طبي' : 'لديه كارنيه نادي') : 'Normal'
     const bookingRef = generateBookingRef()
 
+    // Claimed atomically server-side — only ever true for a home visit that
+    // actually got one of the first 100 seats (checked/reserved just now).
+    const offerApplied = mode === 'home' && (await redeemLaunchOfferSeat(form.phone, bookingRef))
+    const effectiveHomeVisitFee = offerApplied ? 0 : homeVisitFee
+    const effectiveTotal = subtotal + effectiveHomeVisitFee
+
     const data = new FormData()
     data.append('bookingRef', bookingRef)
     data.append('name', form.name)
@@ -109,10 +116,11 @@ export default function Booking() {
     data.append('notes', form.notes)
     data.append('packages', selectedPackages.map((p) => p.name).join(', '))
     data.append('subtotal', subtotal)
-    data.append('homeVisitFee', homeVisitFee)
-    data.append('total', total)
+    data.append('homeVisitFee', effectiveHomeVisitFee)
+    data.append('total', effectiveTotal)
     data.append('paymentMethod', paymentLabel)
     data.append('hasInsuranceOrClubCard', patientType)
+    data.append('launchOfferApplied', offerApplied ? 'نعم — رسوم الزيارة ملغاة' : 'لا')
     if (hasCard && cardIssuer.trim()) data.append('cardIssuer', cardIssuer.trim())
 
     try {
@@ -145,8 +153,9 @@ export default function Booking() {
         packages: selectedPackages.map((p) => p.name),
         patientType,
         subtotal,
-        homeVisitFee,
-        total,
+        homeVisitFee: effectiveHomeVisitFee,
+        total: effectiveTotal,
+        offerApplied,
         mode,
       })
       clearCart()
@@ -224,7 +233,7 @@ export default function Booking() {
           {receipt.mode === 'home' && (
             <div className="booking__receipt-row">
               <span>تكلفة الزيارة</span>
-              <span>{receipt.homeVisitFee.toLocaleString('en-US')} جنيه</span>
+              <span>{receipt.offerApplied ? 'مجانًا (عرض الإطلاق)' : `${receipt.homeVisitFee.toLocaleString('en-US')} جنيه`}</span>
             </div>
           )}
           <div className="booking__receipt-row booking__receipt-row--total">
@@ -272,6 +281,8 @@ export default function Booking() {
             حجز/ دفع فى الفرع
           </button>
         </div>
+
+        {mode === 'home' && <LaunchOfferCounter variant="inline" />}
 
         <div className="booking__tests-picker">
           <h2 className="booking__section-title">التحاليل المطلوبة</h2>
@@ -346,6 +357,9 @@ export default function Booking() {
                   <span>رسوم الزيارة المنزلية</span>
                   <span>{HOME_VISIT_FEE.toLocaleString('en-US')} جنيه</span>
                 </div>
+              )}
+              {mode === 'home' && (
+                <p className="booking__offer-note">* لو لسه فيه مقاعد فاضلة من عرض الإطلاق، الرسوم دي هتتلغي تلقائيًا عند تأكيد الحجز</p>
               )}
               <div className="booking__total-row booking__total-row--final">
                 <span>الإجمالي</span>

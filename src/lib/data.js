@@ -28,6 +28,27 @@ export async function fetchSampleStatusByPhone(phone) {
   return data
 }
 
+export const LAUNCH_OFFER_TOTAL_SEATS = 100
+
+// null = feature unavailable (Supabase not configured, or the migration hasn't
+// been run yet) — callers should hide the offer entirely in that case, not show "0".
+export async function fetchLaunchOfferRemaining() {
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc('get_launch_offer_remaining')
+  if (error || data === null || data === undefined) return null
+  return data
+}
+
+// Attempts to claim one launch-offer seat for this phone number. Resolves to
+// true only if the fee should actually be waived for this booking (a seat was
+// available and this phone hadn't already redeemed one).
+export async function redeemLaunchOfferSeat(phone, bookingRef) {
+  if (!supabase) return false
+  const { data, error } = await supabase.rpc('redeem_launch_offer', { p_phone: phone, p_booking_ref: bookingRef })
+  if (error) return false
+  return data === true
+}
+
 export async function fetchFeaturedTests() {
   if (!supabase) return staticFeaturedTests
   const { data, error } = await supabase.from('featured_tests').select('*').order('sort_order')

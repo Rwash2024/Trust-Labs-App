@@ -18,6 +18,7 @@ import PrepInstructions from './pages/PrepInstructions'
 import Terms from './pages/Terms'
 import TrackSample from './pages/TrackSample'
 import News from './pages/News'
+import OfferCounter from './pages/OfferCounter'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import BranchSamplesDashboard from './pages/admin/BranchSamplesDashboard'
@@ -51,13 +52,16 @@ function PatientApp() {
 export default function App() {
   const location = useLocation()
   const isAdmin = location.pathname.startsWith('/admin')
-  const [showSplash, setShowSplash] = useState(!isAdmin)
+  const isKiosk = location.pathname === '/offer-counter'
+  const [showSplash, setShowSplash] = useState(!isAdmin && !isKiosk)
 
   return (
     <AdminAuthProvider>
       <RouteTracker />
-      {showSplash && !isAdmin && <Splash onFinish={() => setShowSplash(false)} />}
-      {isAdmin ? (
+      {showSplash && !isAdmin && !isKiosk && <Splash onFinish={() => setShowSplash(false)} />}
+      {isKiosk ? (
+        <OfferCounter />
+      ) : isAdmin ? (
         <div className="admin-app">
           <Routes>
             <Route path="/admin/login" element={<AdminLogin />} />
