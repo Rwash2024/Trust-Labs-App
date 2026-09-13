@@ -248,3 +248,20 @@ export function NewsIcon(props) {
     </svg>
   )
 }
+
+export function ChatIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} {...base} {...props}>
+      <path d="M4 5.5h16v10.5a1.5 1.5 0 0 1-1.5 1.5H9l-4.5 3.5V17H4Z" />
+      <path d="M8 9.5h8M8 13h5" />
+    </svg>
+  )
+}
+
+export function StarIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} {...base} {...props}>
+      <path d="m12 3.5 2.6 5.4 5.9.7-4.3 4.2 1 6-5.2-2.9-5.2 2.9 1-6-4.3-4.2 5.9-.7Z" />
+    </svg>
+  )
+}
