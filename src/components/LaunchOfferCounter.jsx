@@ -30,7 +30,7 @@ export default function LaunchOfferCounter({ variant = 'inline', pollMs = 20000 
       <span className="launch-offer__count">{remaining}</span>
       <div className="launch-offer__text">
         <span className="launch-offer__title">مقعد فاضل من عرض الإطلاق</span>
-        <span className="launch-offer__desc">أول {LAUNCH_OFFER_TOTAL_SEATS} حجز زيارة منزلية بيلغى عنهم رسوم الانتقال بالكامل</span>
+        <span className="launch-offer__desc">أول {LAUNCH_OFFER_TOTAL_SEATS} حجز زيارة منزلية بدون رسوم الزيارة المنزلية بالكامل</span>
       </div>
       <div className="launch-offer__bar">
         <div className="launch-offer__bar-fill" style={{ width: `${(used / LAUNCH_OFFER_TOTAL_SEATS) * 100}%` }} />
