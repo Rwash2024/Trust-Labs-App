@@ -18,6 +18,7 @@ import PrepInstructions from './pages/PrepInstructions'
 import Terms from './pages/Terms'
 import TrackSample from './pages/TrackSample'
 import News from './pages/News'
+import Complaints from './pages/Complaints'
 import OfferCounter from './pages/OfferCounter'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -42,6 +43,7 @@ function PatientApp() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/track-sample" element={<TrackSample />} />
           <Route path="/news" element={<News />} />
+          <Route path="/complaints" element={<Complaints />} />
         </Routes>
       </main>
       <BottomNav />

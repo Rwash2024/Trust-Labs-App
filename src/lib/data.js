@@ -128,6 +128,19 @@ export async function fetchPartners(staticFallback) {
   return data.map((row) => ({ name: row.name, src: row.image_url }))
 }
 
+export async function submitComplaint({ name, phone, type, branchName, rating, message }) {
+  if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
+  const { error } = await supabase.from('complaints').insert({
+    name: name.trim(),
+    phone: phone.trim(),
+    type,
+    branch_name: branchName?.trim() || null,
+    rating: rating || null,
+    message: message.trim(),
+  })
+  if (error) throw error
+}
+
 export async function fetchAboutContent() {
   if (!supabase) return defaultAboutContent
   const { data, error } = await supabase.from('about_content').select('*').eq('id', 1).maybeSingle()

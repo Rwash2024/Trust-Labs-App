@@ -255,6 +255,29 @@ export async function adminDeletePartner(id) {
   if (error) throw error
 }
 
+// ---- Complaints & feedback ----
+export async function adminListComplaints() {
+  const { data, error } = await requireClient()
+    .from('complaints')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function adminUpdateComplaintStatus(id, status) {
+  const { error } = await requireClient()
+    .from('complaints')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function adminDeleteComplaint(id) {
+  const { error } = await requireClient().from('complaints').delete().eq('id', id)
+  if (error) throw error
+}
+
 // ---- About page content ----
 export async function adminGetAboutContent() {
   const { data, error } = await requireClient().from('about_content').select('*').eq('id', 1).maybeSingle()
