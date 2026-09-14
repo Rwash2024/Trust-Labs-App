@@ -6,7 +6,19 @@ import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import { useBooking } from '../context/BookingContext'
 import './Branches.css'
 
+// branch.hours comes from Supabase as one string like
+// "السبت - الخميس: 8ص - 11م | الجمعة: 10ص - 10م" — split it into the
+// day-range / time rows the card displays.
+function parseHours(hoursText) {
+  if (!hoursText) return []
+  return hoursText.split('|').map((part) => {
+    const [label, ...rest] = part.split(':')
+    return { label: label.trim(), value: rest.join(':').trim() }
+  })
+}
+
 function BranchCard({ branch, governorate }) {
+  const hoursRows = parseHours(branch.hours)
   const handleMapClick = () => {
     trackEvent(AnalyticsEvents.BRANCH_VIEWED, {
       branch_name: branch.name,
@@ -28,17 +40,12 @@ function BranchCard({ branch, governorate }) {
 
       <div className="branch-card__hours-box">
         <span className="branch-card__hours-title">مواعيد العمل</span>
-        <div className="branch-card__hours-row">
-          <span>السبت – الخميس</span>
-          <span>8 صباحًا – 11 مساءً</span>
-        </div>
-        <div className="branch-card__hours-row">
-          <span>الجمعة</span>
-          <span>إجازة</span>
-        </div>
-        {branch.name.includes('المهندسين') && (
-          <p className="branch-card__hours-note">فرع المهندسين يعمل يوم الجمعة من 10 صباحًا حتى 10 مساءً</p>
-        )}
+        {hoursRows.map((row) => (
+          <div className="branch-card__hours-row" key={row.label}>
+            <span>{row.label}</span>
+            <span>{row.value}</span>
+          </div>
+        ))}
       </div>
 
       <div className="branch-card__actions">
