@@ -535,6 +535,10 @@ export default function Booking() {
               موافق على{' '}
               <Link to="/terms" target="_blank" rel="noopener noreferrer">
                 الشروط والأحكام
+              </Link>{' '}
+              و{' '}
+              <Link to="/privacy" target="_blank" rel="noopener noreferrer">
+                سياسة الخصوصية
               </Link>
             </span>
           </label>
