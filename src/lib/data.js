@@ -103,11 +103,23 @@ export async function fetchPopularTests() {
 }
 
 // Foreign-patient pricing — reads tests_foreign, which only ever exposes
-// price_foreign (aliased as price), never the local price. Not wired to any
-// page yet; for the upcoming staff-installed foreign experience.
+// price_foreign (aliased as price), never the local price. Used by the
+// staff-installed /international experience.
 export async function fetchAllTestsForeign() {
   if (!supabase) return []
   const { data, error } = await supabase.from('tests_foreign').select('code, name, price').order('name')
+  if (error || !data) return []
+  return data
+}
+
+export async function fetchPopularTestsForeign() {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('tests_foreign')
+    .select('code, name, price')
+    .eq('popular', true)
+    .order('price')
+    .limit(20)
   if (error || !data) return []
   return data
 }

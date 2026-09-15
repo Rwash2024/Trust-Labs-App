@@ -9,7 +9,7 @@ const bannerGradients = [
   'linear-gradient(135deg, #39B76E 0%, #1F6B3D 100%)',
 ]
 
-export default function BannerCard({ cardRef, index, image, name, price, onClick }) {
+export default function BannerCard({ cardRef, index, image, name, price, currency = 'جنيه', onClick }) {
   return (
     <button
       type="button"
@@ -27,7 +27,7 @@ export default function BannerCard({ cardRef, index, image, name, price, onClick
         <span className="banner-card__name">{name}</span>
         <span className="banner-card__price">
           {price.toLocaleString('en-US')}
-          <small>جنيه</small>
+          <small>{currency}</small>
         </span>
       </span>
     </button>
