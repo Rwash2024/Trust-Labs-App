@@ -59,6 +59,7 @@ export async function adminSavePackage(pkg) {
   const { error } = await requireClient().from('packages').upsert({
     id: pkg.id,
     name: pkg.name,
+    name_en: pkg.name_en || null,
     price: pkg.price,
     price_foreign: pkg.price_foreign === '' || pkg.price_foreign == null ? null : Number(pkg.price_foreign),
     test_count: pkg.tests.length,

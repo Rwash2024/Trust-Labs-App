@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { adminListPackages, adminSavePackage, adminDeletePackage } from '../../lib/admin'
 import ImageUploadField from '../../components/admin/ImageUploadField'
 
-const emptyPackage = { id: '', name: '', price: 0, price_foreign: '', tests: [], sort_order: 0 }
+const emptyPackage = { id: '', name: '', name_en: '', price: 0, price_foreign: '', tests: [], sort_order: 0 }
 
 export default function PackagesTab() {
   const [packages, setPackages] = useState([])
@@ -104,6 +104,14 @@ export default function PackagesTab() {
               <input required value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
             </label>
           </div>
+          <label>
+            <span>الاسم بالإنجليزي (لنسخة الأجانب)</span>
+            <input
+              value={editing.name_en || ''}
+              onChange={(e) => setEditing({ ...editing, name_en: e.target.value })}
+              placeholder="e.g. Gold Package (Men)"
+            />
+          </label>
           <div className="admin-form__row">
             <label>
               <span>السعر (جنيه)</span>

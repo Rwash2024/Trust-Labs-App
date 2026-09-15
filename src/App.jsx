@@ -47,7 +47,6 @@ function PatientApp() {
           <Route path="/track-sample" element={<TrackSample />} />
           <Route path="/news" element={<News />} />
           <Route path="/complaints" element={<Complaints />} />
-          <Route path="/international" element={<International />} />
         </Routes>
       </main>
       <BottomNav />
@@ -59,14 +58,17 @@ export default function App() {
   const location = useLocation()
   const isAdmin = location.pathname.startsWith('/admin')
   const isKiosk = location.pathname === '/offer-counter'
-  const [showSplash, setShowSplash] = useState(!isAdmin && !isKiosk)
+  const isInternational = location.pathname === '/international'
+  const [showSplash, setShowSplash] = useState(!isAdmin && !isKiosk && !isInternational)
 
   return (
     <AdminAuthProvider>
       <RouteTracker />
-      {showSplash && !isAdmin && !isKiosk && <Splash onFinish={() => setShowSplash(false)} />}
+      {showSplash && !isAdmin && !isKiosk && !isInternational && <Splash onFinish={() => setShowSplash(false)} />}
       {isKiosk ? (
         <OfferCounter />
+      ) : isInternational ? (
+        <International />
       ) : isAdmin ? (
         <div className="admin-app">
           <Routes>
