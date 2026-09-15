@@ -7,18 +7,32 @@ import { featuredTests as staticFeaturedTests } from '../data/featuredTests'
 import { branches as staticBranchGroups, mapsUrl, whatsappUrl } from '../data/branches'
 import { defaultAboutContent } from '../data/aboutContent'
 
-export async function fetchPackages() {
-  if (!supabase) return staticPackages
-  const { data, error } = await supabase.from('packages').select('*').order('sort_order')
-  if (error || !data || data.length === 0) return staticPackages
-  return data.map((row) => ({
+function mapPackageRow(row) {
+  return {
     id: row.id,
     name: row.name,
     price: row.price,
     testCount: row.test_count,
     tests: row.tests,
     image: row.image_url || packageImages[row.image_key] || packageImages[row.id],
-  }))
+  }
+}
+
+export async function fetchPackages() {
+  if (!supabase) return staticPackages
+  const { data, error } = await supabase.from('packages_local').select('*').order('sort_order')
+  if (error || !data || data.length === 0) return staticPackages
+  return data.map(mapPackageRow)
+}
+
+// Foreign-patient pricing — reads packages_foreign, which only ever exposes
+// price_foreign (aliased as price), never the local price. Not wired to any
+// page yet; for the upcoming staff-installed foreign experience.
+export async function fetchPackagesForeign() {
+  if (!supabase) return []
+  const { data, error } = await supabase.from('packages_foreign').select('*').order('sort_order')
+  if (error || !data) return []
+  return data.map(mapPackageRow)
 }
 
 export async function fetchSampleStatusByPhone(phone) {
@@ -71,7 +85,7 @@ export async function fetchPrepInstructions() {
 
 export async function fetchAllTests() {
   if (!supabase) return staticAllTests
-  const { data, error } = await supabase.from('tests').select('code, name, price').order('name')
+  const { data, error } = await supabase.from('tests_local').select('code, name, price').order('name')
   if (error || !data || data.length === 0) return staticAllTests
   return data
 }
@@ -79,12 +93,22 @@ export async function fetchAllTests() {
 export async function fetchPopularTests() {
   if (!supabase) return staticPopularTests
   const { data, error } = await supabase
-    .from('tests')
+    .from('tests_local')
     .select('code, name, price')
     .eq('popular', true)
     .order('price')
     .limit(20)
   if (error || !data || data.length === 0) return staticPopularTests
+  return data
+}
+
+// Foreign-patient pricing — reads tests_foreign, which only ever exposes
+// price_foreign (aliased as price), never the local price. Not wired to any
+// page yet; for the upcoming staff-installed foreign experience.
+export async function fetchAllTestsForeign() {
+  if (!supabase) return []
+  const { data, error } = await supabase.from('tests_foreign').select('code, name, price').order('name')
+  if (error || !data) return []
   return data
 }
 

@@ -60,6 +60,7 @@ export async function adminSavePackage(pkg) {
     id: pkg.id,
     name: pkg.name,
     price: pkg.price,
+    price_foreign: pkg.price_foreign === '' || pkg.price_foreign == null ? null : Number(pkg.price_foreign),
     test_count: pkg.tests.length,
     tests: pkg.tests,
     image_key: pkg.image_key || pkg.id,
@@ -89,6 +90,7 @@ export async function adminSaveTest(test) {
     code: test.code,
     name: test.name,
     price: test.price,
+    price_foreign: test.price_foreign === '' || test.price_foreign == null ? null : Number(test.price_foreign),
     popular: !!test.popular,
     updated_at: new Date().toISOString(),
   })

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { adminListPackages, adminSavePackage, adminDeletePackage } from '../../lib/admin'
 import ImageUploadField from '../../components/admin/ImageUploadField'
 
-const emptyPackage = { id: '', name: '', price: 0, tests: [], sort_order: 0 }
+const emptyPackage = { id: '', name: '', price: 0, price_foreign: '', tests: [], sort_order: 0 }
 
 export default function PackagesTab() {
   const [packages, setPackages] = useState([])
@@ -115,6 +115,15 @@ export default function PackagesTab() {
               />
             </label>
             <label>
+              <span>سعر الأجانب (اختياري)</span>
+              <input
+                type="number"
+                value={editing.price_foreign ?? ''}
+                onChange={(e) => setEditing({ ...editing, price_foreign: e.target.value })}
+                placeholder="سايبها فاضية لو مفيش سعر أجانب لسه"
+              />
+            </label>
+            <label>
               <span>ترتيب العرض</span>
               <input
                 type="number"
@@ -143,6 +152,7 @@ export default function PackagesTab() {
           <tr>
             <th>الاسم</th>
             <th>السعر</th>
+            <th>سعر الأجانب</th>
             <th>عدد التحاليل</th>
             <th></th>
           </tr>
@@ -152,6 +162,7 @@ export default function PackagesTab() {
             <tr key={p.id}>
               <td>{p.name}</td>
               <td>{p.price.toLocaleString('en-US')} جنيه</td>
+              <td>{p.price_foreign ? `${Number(p.price_foreign).toLocaleString('en-US')}` : '—'}</td>
               <td>{p.tests?.length ?? 0}</td>
               <td className="admin-table__actions">
                 <button className="admin-btn admin-btn--sm" onClick={() => startEdit(p)}>
