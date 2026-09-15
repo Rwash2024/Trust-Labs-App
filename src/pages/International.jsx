@@ -4,6 +4,7 @@ import { fetchAllTestsForeign, fetchPackagesForeign } from '../lib/data'
 import { testToCartItem } from '../lib/cart'
 import { useBooking } from '../context/BookingContext'
 import { SearchIcon, CheckIcon, PlusIcon, CartIcon } from '../components/icons'
+import InternationalNav from '../components/InternationalNav'
 import './International.css'
 
 export default function International() {
@@ -27,10 +28,20 @@ export default function International() {
         <span className="intl__badge">International Patients</span>
         <h1 className="intl__title">Trust Labs</h1>
         <p className="intl__subtitle">Lab tests &amp; packages pricing for non-resident patients</p>
-        <Link className="intl__cart-link" to="/booking">
+        <Link className="intl__cart-link" to="/international/booking">
           <CartIcon />
           {selectedPackages.length > 0 && <span className="intl__cart-badge">{selectedPackages.length}</span>}
         </Link>
+      </section>
+
+      <section className="intl__section intl__quicklinks">
+        <Link to="/international/about" className="intl__chip">About Us</Link>
+        <Link to="/international/results" className="intl__chip">Test Results</Link>
+        <Link to="/international/prep-instructions" className="intl__chip">Prep Instructions</Link>
+        <Link to="/international/track-sample" className="intl__chip">Track Sample</Link>
+        <Link to="/international/trust-card" className="intl__chip">Trust Card</Link>
+        <Link to="/international/news" className="intl__chip">News</Link>
+        <Link to="/international/contact" className="intl__chip">Contact Us</Link>
       </section>
 
       <section className="intl__section">
@@ -101,9 +112,11 @@ export default function International() {
         )}
       </section>
 
-      <Link className="intl__booking-cta" to="/booking">
+      <Link className="intl__booking-cta" to="/international/booking">
         Continue to booking
       </Link>
+
+      <InternationalNav />
     </div>
   )
 }

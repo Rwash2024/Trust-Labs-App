@@ -21,6 +21,15 @@ import TrackSample from './pages/TrackSample'
 import News from './pages/News'
 import Complaints from './pages/Complaints'
 import International from './pages/International'
+import InternationalBranches from './pages/InternationalBranches'
+import InternationalBooking from './pages/InternationalBooking'
+import InternationalAbout from './pages/InternationalAbout'
+import InternationalContact from './pages/InternationalContact'
+import InternationalResults from './pages/InternationalResults'
+import InternationalTrustCard from './pages/InternationalTrustCard'
+import InternationalTrackSample from './pages/InternationalTrackSample'
+import InternationalNews from './pages/InternationalNews'
+import InternationalPrepInstructions from './pages/InternationalPrepInstructions'
 import OfferCounter from './pages/OfferCounter'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -58,7 +67,7 @@ export default function App() {
   const location = useLocation()
   const isAdmin = location.pathname.startsWith('/admin')
   const isKiosk = location.pathname === '/offer-counter'
-  const isInternational = location.pathname === '/international'
+  const isInternational = location.pathname.startsWith('/international')
   const [showSplash, setShowSplash] = useState(!isAdmin && !isKiosk && !isInternational)
 
   return (
@@ -68,7 +77,18 @@ export default function App() {
       {isKiosk ? (
         <OfferCounter />
       ) : isInternational ? (
-        <International />
+        <Routes>
+          <Route path="/international" element={<International />} />
+          <Route path="/international/branches" element={<InternationalBranches />} />
+          <Route path="/international/booking" element={<InternationalBooking />} />
+          <Route path="/international/about" element={<InternationalAbout />} />
+          <Route path="/international/contact" element={<InternationalContact />} />
+          <Route path="/international/results" element={<InternationalResults />} />
+          <Route path="/international/trust-card" element={<InternationalTrustCard />} />
+          <Route path="/international/track-sample" element={<InternationalTrackSample />} />
+          <Route path="/international/news" element={<InternationalNews />} />
+          <Route path="/international/prep-instructions" element={<InternationalPrepInstructions />} />
+        </Routes>
       ) : isAdmin ? (
         <div className="admin-app">
           <Routes>

@@ -78,6 +78,22 @@
   margin-bottom: var(--space-3);
 }
 
+.intl__quicklinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: var(--space-4);
+}
+
+.intl__chip {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: var(--text-small-size);
+  font-weight: var(--font-weight-bold);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill, 999px);
+}
+
 .intl__empty {
   color: var(--color-gray);
   font-size: var(--text-body-size);
