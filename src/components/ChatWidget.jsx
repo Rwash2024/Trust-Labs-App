@@ -1,19 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { QUICK_ACTIONS, FLOWS, HOTLINE, EGYPT_PHONE_REGEX, normalizeDigits, trackSampleByPhone } from '../lib/chatFlows'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import './ChatWidget.css'
 
-const QUICK_ACTIONS = [
-  { q: 'عايز أعرف حالة عينتي', label: '📦 تتبع عينتي' },
-  { q: 'نتيجة تحليلي جاهزة ولا لسه؟', label: '🧪 نتيجة تحليلي' },
-  { q: 'عايز أحجز معاد لسحب عينة', label: '📅 حجز موعد' },
-  { q: 'فيه ايه من باقات وعروض دلوقتي؟', label: '💳 الأسعار والباقات' },
-  { q: 'عايزني أعرفك على التحاليل المميزة', label: '⭐ التحاليل المميزة' },
-  { q: 'عايز أقدم شكوى', label: '📝 تقديم شكوى' },
-]
-
 const WELCOME = 'أهلاً بيك 👋\nأنا المساعد الذكي لـ Trust Labs، تقدر تسألني أي سؤال هنا، أو تختار من الاختيارات دي:'
-const FALLBACK_ERROR = 'معلش، فيه مشكلة في الاتصال بالمساعد دلوقتي 🙏 جرب تاني كمان شوية، أو كلّم الخط الساخن 16183.'
+const FALLBACK_ERROR = `معلش، مش قادر أرد على الأسئلة الحرة دلوقتي 🙏 اختار من القائمة تحت، أو كلّم الخط الساخن ${HOTLINE}.`
+const FLOW_ERROR = 'معلش، حصلت مشكلة وأنا بجيب المعلومة دي 🙏 جرب تاني كمان شوية.'
 
 function timeNow() {
   const d = new Date()
@@ -34,11 +28,13 @@ export default function ChatWidget() {
   ])
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [awaiting, setAwaiting] = useState(null)
   const [privacyNoteShown, setPrivacyNoteShown] = useState(false)
   const [hasChatted, setHasChatted] = useState(false)
   const [showRating, setShowRating] = useState(false)
   const [rated, setRated] = useState(null)
   const bodyRef = useRef(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight
@@ -49,33 +45,90 @@ export default function ChatWidget() {
     trackEvent(AnalyticsEvents.CHAT_OPENED)
   }
 
-  function addMessage(role, text) {
-    setMessages((prev) => [...prev, { id: nextId++, role, type: 'text', text, time: timeNow() }])
+  function addMessage(role, text, link) {
+    setMessages((prev) => [...prev, { id: nextId++, role, type: 'text', text, link, time: timeNow() }])
+  }
+
+  function appendMenu() {
+    setMessages((prev) => [...prev.filter((m) => m.type !== 'menu'), { id: nextId++, role: 'bot', type: 'menu' }])
   }
 
   function openMenu() {
+    setAwaiting(null)
     addMessage('bot', 'تحت أمرك 🙌 اختار من الاختيارات دي:')
-    setMessages((prev) => [...prev, { id: nextId++, role: 'bot', type: 'menu' }])
+    appendMenu()
   }
 
-  function pickQuickAction(menuId, q) {
+  function openLink(link) {
+    if (link.href) {
+      window.open(link.href, '_blank', 'noopener')
+      return
+    }
+    setOpen(false)
+    navigate(link.to)
+  }
+
+  // Quick-action buttons are answered straight from the app's data (no AI call).
+  async function pickQuickAction(menuId, action) {
+    if (sending) return
     setMessages((prev) => prev.filter((m) => m.id !== menuId))
-    sendMessage(q)
+    setHasChatted(true)
+    addMessage('user', action.label)
+    setSending(true)
+    trackEvent(AnalyticsEvents.CHAT_MESSAGE_SENT)
+    try {
+      const flow = await FLOWS[action.id]()
+      addMessage('bot', flow.text, flow.link)
+      setAwaiting(flow.awaiting || null)
+      if (flow.awaiting) setPrivacyNoteShown(true)
+      else appendMenu()
+    } catch {
+      addMessage('bot', FLOW_ERROR)
+      appendMenu()
+    } finally {
+      setSending(false)
+    }
   }
 
   async function sendMessage(text) {
-    if (!text.trim() || sending) return
+    const trimmed = text.trim()
+    if (!trimmed || sending) return
     setHasChatted(true)
-    addMessage('user', text)
+    addMessage('user', trimmed)
     setInput('')
     setSending(true)
     trackEvent(AnalyticsEvents.CHAT_MESSAGE_SENT)
 
     if (!privacyNoteShown) setPrivacyNoteShown(true)
 
+    // Waiting for a phone number (sample tracking) — answered from the database, no AI.
+    if (awaiting === 'track_phone') {
+      const digits = normalizeDigits(trimmed).replace(/[\s-]/g, '')
+      if (EGYPT_PHONE_REGEX.test(digits)) {
+        try {
+          const flow = await trackSampleByPhone(digits)
+          addMessage('bot', flow.text, flow.link)
+          setAwaiting(null)
+          appendMenu()
+        } catch {
+          addMessage('bot', FLOW_ERROR)
+        } finally {
+          setSending(false)
+        }
+        return
+      }
+      if (/^[\d+]+$/.test(digits)) {
+        addMessage('bot', 'الرقم مش صحيح، اكتب رقم موبايل من 11 رقم زي 01012345678 📱')
+        setSending(false)
+        return
+      }
+      setAwaiting(null)
+    }
+
     if (!supabase) {
       setTimeout(() => {
         addMessage('bot', FALLBACK_ERROR)
+        appendMenu()
         setSending(false)
       }, 500)
       return
@@ -95,6 +148,7 @@ export default function ChatWidget() {
       addMessage('bot', data?.reply || FALLBACK_ERROR)
     } catch {
       addMessage('bot', FALLBACK_ERROR)
+      appendMenu()
     } finally {
       setSending(false)
     }
@@ -155,12 +209,15 @@ export default function ChatWidget() {
             m.type === 'menu' ? (
               <div key={m.id} className="chatw-menu-msg">
                 {QUICK_ACTIONS.map((a) => (
-                  <button key={a.q} className="chatw-chip" onClick={() => pickQuickAction(m.id, a.q)}>{a.label}</button>
+                  <button key={a.id} className="chatw-chip" onClick={() => pickQuickAction(m.id, a)}>{a.label}</button>
                 ))}
               </div>
             ) : (
               <div key={m.id} className={`chatw-msg-wrap chatw-msg-wrap--${m.role}`}>
                 <div className={`chatw-msg chatw-msg--${m.role}`} style={{ whiteSpace: 'pre-line' }}>{m.text}</div>
+                {m.link && (
+                  <button className="chatw-link-btn" onClick={() => openLink(m.link)}>{m.link.label}</button>
+                )}
                 <div className="chatw-msg-time">{m.time}</div>
               </div>
             )

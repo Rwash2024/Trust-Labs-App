@@ -299,3 +299,17 @@
   cursor: pointer;
 }
 .chatw-rate-card__thanks { font-size: 13px; font-weight: var(--font-weight-bold); color: var(--color-primary-dark); }
+
+.chatw-link-btn {
+  margin-top: var(--space-2);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: var(--font-weight-bold);
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.chatw-link-btn:hover { background: #DFF3E7; }
