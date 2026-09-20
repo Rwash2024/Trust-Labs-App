@@ -26,6 +26,8 @@ export const QUICK_ACTIONS = [
 ]
 
 const price = (n) => `${n} جنيه`
+// Keeps an English test name (with digits/dashes) from scrambling inside an Arabic line.
+const isolate = (s) => `⁨${s}⁩`
 
 export const FLOWS = {
   track: async () => ({
@@ -51,7 +53,7 @@ export const FLOWS = {
 
   featured: async () => {
     const tests = await fetchFeaturedTests()
-    const lines = tests.map((t) => `• ${t.name} — ${price(t.price)}`)
+    const lines = tests.map((t) => `• ${isolate(t.name)} — ${price(t.price)}`)
     return {
       text: `التحاليل المميزة ⭐\n${lines.join('\n')}`,
       link: { to: '/booking', label: 'احجز الآن' },
@@ -131,7 +133,7 @@ export async function trackSampleByPhone(phone) {
 
 async function packagesFlow() {
   const packages = await fetchPackages()
-  const lines = packages.map((p) => `• ${p.name} — ${price(p.price)}${p.testCount ? ` (${p.testCount} تحليل)` : ''}`)
+  const lines = packages.map((p) => `• ${isolate(p.name)} — ${price(p.price)}${p.testCount ? ` (${p.testCount} تحليل)` : ''}`)
   return {
     text: `الباقات المتاحة دلوقتي 💳\n${lines.join('\n')}`,
     link: { to: '/packages', label: 'شوف تفاصيل الباقات' },
@@ -216,7 +218,7 @@ export async function priceLookup(query) {
         return pkgWords.every((w) => name.includes(w))
       })
     : []
-  for (const p of pkgMatches) results.push(`📦 ${p.name} — ${price(p.price)}${p.testCount ? ` (${p.testCount} تحليل)` : ''}`)
+  for (const p of pkgMatches) results.push(`📦 ${isolate(p.name)} — ${price(p.price)}${p.testCount ? ` (${p.testCount} تحليل)` : ''}`)
 
   // 2) Tests: Arabic aliases first, else English words typed by the patient
   const aliasTerms = new Set()
@@ -233,7 +235,7 @@ export async function priceLookup(query) {
   // Most-requested tests first, then the simpler (shorter) names.
   tests.sort((a, b) => Number(!!b.popular) - Number(!!a.popular) || a.name.length - b.name.length)
   const shown = tests.slice(0, MAX_RESULTS)
-  for (const t of shown) results.push(`🧪 ${t.name} — ${price(t.price)}`)
+  for (const t of shown) results.push(`🧪 ${isolate(t.name)} — ${price(t.price)}`)
   const more = tests.length - shown.length
 
   if (results.length === 0) {
