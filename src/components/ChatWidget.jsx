@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { QUICK_ACTIONS, FLOWS, HOTLINE, EGYPT_PHONE_REGEX, normalizeDigits, trackSampleByPhone, priceLookup } from '../lib/chatFlows'
+import { QUICK_ACTIONS, FLOWS, HOTLINE, EGYPT_PHONE_REGEX, normalizeDigits, trackSampleByPhone, priceLookup, branchesByGovernorate } from '../lib/chatFlows'
 import { isGreeting } from '../lib/greeting'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import './ChatWidget.css'
@@ -47,8 +47,12 @@ export default function ChatWidget() {
     trackEvent(AnalyticsEvents.CHAT_OPENED)
   }
 
-  function addMessage(role, text, link) {
-    setMessages((prev) => [...prev, { id: nextId++, role, type: 'text', text, link, time: timeNow() }])
+  // extra: { link?, links?, choices? } — a flow result can be passed straight in.
+  function addMessage(role, text, extra = {}) {
+    const links = extra.links || (extra.link ? [extra.link] : undefined)
+    const msg = { id: nextId++, role, type: 'text', text, links, choices: extra.choices, time: timeNow() }
+    // Only the latest set of choices stays clickable.
+    setMessages((prev) => [...(extra.choices ? prev.map((m) => (m.choices ? { ...m, choices: undefined } : m)) : prev), msg])
   }
 
   function appendMenu() {
@@ -63,11 +67,37 @@ export default function ChatWidget() {
 
   function openLink(link) {
     if (link.href) {
-      window.open(link.href, '_blank', 'noopener')
+      if (link.href.startsWith('tel:')) window.location.href = link.href
+      else window.open(link.href, '_blank', 'noopener')
       return
     }
     setOpen(false)
     navigate(link.to)
+  }
+
+  // Governorate picker (branches): shows that governorate's branch cards.
+  async function pickChoice(msgId, choice) {
+    if (sending) return
+    setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, choices: undefined } : m)))
+    if (choice.kind === 'menu') {
+      openMenu()
+      return
+    }
+    setAwaiting(null)
+    addMessage('user', choice.value)
+    setSending(true)
+    trackEvent(AnalyticsEvents.CHAT_MESSAGE_SENT)
+    try {
+      const res = await branchesByGovernorate(choice.value)
+      addMessage('bot', res.intro)
+      for (const card of res.cards) addMessage('bot', card.text, card)
+      addMessage('bot', 'تحب تشوف محافظة تانية؟', { choices: res.choices })
+    } catch {
+      addMessage('bot', FLOW_ERROR)
+      appendMenu()
+    } finally {
+      setSending(false)
+    }
   }
 
   // Quick-action buttons are answered straight from the app's data (no AI call).
@@ -80,10 +110,10 @@ export default function ChatWidget() {
     trackEvent(AnalyticsEvents.CHAT_MESSAGE_SENT)
     try {
       const flow = await FLOWS[action.id]()
-      addMessage('bot', flow.text, flow.link)
+      addMessage('bot', flow.text, flow)
       setAwaiting(flow.awaiting || null)
       if (flow.awaiting) setPrivacyNoteShown(true)
-      else appendMenu()
+      else if (!flow.choices) appendMenu()
     } catch {
       addMessage('bot', FLOW_ERROR)
       appendMenu()
@@ -109,7 +139,7 @@ export default function ChatWidget() {
       if (EGYPT_PHONE_REGEX.test(digits)) {
         try {
           const flow = await trackSampleByPhone(digits)
-          addMessage('bot', flow.text, flow.link)
+          addMessage('bot', flow.text, flow)
           setAwaiting(null)
           appendMenu()
         } catch {
@@ -132,7 +162,7 @@ export default function ChatWidget() {
       try {
         const flow = await priceLookup(trimmed)
         if (flow) {
-          addMessage('bot', flow.text, flow.link)
+          addMessage('bot', flow.text, flow)
           appendMenu()
           setSending(false)
           return
@@ -244,10 +274,21 @@ export default function ChatWidget() {
             ) : (
               <div key={m.id} className={`chatw-msg-wrap chatw-msg-wrap--${m.role}`}>
                 <div className={`chatw-msg chatw-msg--${m.role}`} style={{ whiteSpace: 'pre-line' }}>{m.text}</div>
-                {m.link && (
-                  <button className="chatw-link-btn" onClick={() => openLink(m.link)}>{m.link.label}</button>
+                {m.links && (
+                  <div className="chatw-links">
+                    {m.links.map((l) => (
+                      <button key={l.label} className="chatw-link-btn" onClick={() => openLink(l)}>{l.label}</button>
+                    ))}
+                  </div>
                 )}
                 <div className="chatw-msg-time">{m.time}</div>
+                {m.choices && (
+                  <div className="chatw-menu-msg">
+                    {m.choices.map((c) => (
+                      <button key={c.label} className="chatw-chip" onClick={() => pickChoice(m.id, c)}>{c.label}</button>
+                    ))}
+                  </div>
+                )}
               </div>
             )
           )}

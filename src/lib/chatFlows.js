@@ -60,12 +60,7 @@ export const FLOWS = {
 
   branches: async () => {
     const groups = await fetchBranchGroups()
-    const count = (n) => (n === 1 ? 'فرع واحد' : n === 2 ? 'فرعين' : n <= 10 ? `${n} فروع` : `${n} فرع`)
-    const lines = groups.map((g) => `• ${g.governorate}: ${count(g.list.length)}`)
-    return {
-      text: `فروعنا 📍\n${lines.join('\n')}\n\nتفاصيل كل فرع (العنوان والمواعيد والموقع) في صفحة الفروع.`,
-      link: { to: '/branches', label: 'شوف كل الفروع' },
-    }
+    return { text: 'اختار المحافظة عشان أوريك فروعها 📍', choices: governorateChoices(groups) }
   },
 
   prep: async () => ({
@@ -77,6 +72,38 @@ export const FLOWS = {
     text: 'يهمنا نسمع منك 🙏 تقدر تسجّل شكوى أو اقتراح، وفريق الجودة هيتواصل معاك.',
     link: { to: '/complaints', label: 'سجّل شكوى أو اقتراح' },
   }),
+}
+
+// ---- Branches by governorate ----------------------------------------------
+
+function governorateChoices(groups) {
+  return [
+    ...groups.map((g) => ({ label: `${g.governorate} (${g.list.length})`, kind: 'governorate', value: g.governorate })),
+    { label: '🏠 القائمة الرئيسية', kind: 'menu' },
+  ]
+}
+
+// One card per branch: address, phone, hours, plus location / call / WhatsApp buttons.
+export async function branchesByGovernorate(governorate) {
+  const groups = await fetchBranchGroups()
+  const group = groups.find((g) => g.governorate === governorate)
+  if (!group) return { intro: 'مش لاقي فروع للمحافظة دي 🤔', cards: [], choices: governorateChoices(groups) }
+
+  const cards = group.list.map((b) => ({
+    text: [`🏥 ${b.name}`, `📍 ${b.address}`, b.phone ? `📞 ${b.phone}` : null, b.hours ? `🕒 ${b.hours}` : null]
+      .filter(Boolean)
+      .join('\n'),
+    links: [
+      { href: b.mapsUrl, label: '📍 الموقع على الخريطة' },
+      b.phone ? { href: `tel:${b.phone}`, label: '📞 اتصال' } : null,
+      b.phone ? { href: b.whatsappUrl, label: '💬 واتساب' } : null,
+    ].filter(Boolean),
+  }))
+  return {
+    intro: `فروع ${governorate} 📍`,
+    cards,
+    choices: governorateChoices(groups),
+  }
 }
 
 export async function trackSampleByPhone(phone) {

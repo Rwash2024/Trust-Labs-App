@@ -313,3 +313,5 @@
   cursor: pointer;
 }
 .chatw-link-btn:hover { background: #DFF3E7; }
+
+.chatw-links { display: flex; flex-wrap: wrap; gap: var(--space-2); }
