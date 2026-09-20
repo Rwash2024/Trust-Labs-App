@@ -22,6 +22,20 @@ function timeNow() {
 
 let nextId = 1
 
+const FAB_KEY = 'chatw-fab-pos'
+const FAB_SIZE = 56
+const FAB_MARGIN = 16
+
+function loadFabPos() {
+  try {
+    const p = JSON.parse(localStorage.getItem(FAB_KEY))
+    if (p && (p.side === 'left' || p.side === 'right') && Number.isFinite(p.bottom)) return p
+  } catch {
+    // ignore — fall back to the default spot
+  }
+  return { side: 'left', bottom: null }
+}
+
 export default function ChatWidget() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([
@@ -37,6 +51,11 @@ export default function ChatWidget() {
   const [rated, setRated] = useState(null)
   const bodyRef = useRef(null)
   const navigate = useNavigate()
+  const [navH, setNavH] = useState(0)
+  const [fabPos, setFabPos] = useState(loadFabPos)
+  const [live, setLive] = useState(null)
+  const drag = useRef(null)
+  const justDragged = useRef(false)
 
   useEffect(() => {
     if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight
@@ -45,6 +64,78 @@ export default function ChatWidget() {
   function openChat() {
     setOpen(true)
     trackEvent(AnalyticsEvents.CHAT_OPENED)
+  }
+
+  // Keep the button above the bottom nav (its height varies with font size / wrapped labels).
+  useEffect(() => {
+    const nav = document.querySelector('.bottom-nav')
+    if (!nav) return
+    const update = () => setNavH(nav.getBoundingClientRect().height)
+    update()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(update)
+    ro.observe(nav)
+    return () => ro.disconnect()
+  }, [])
+
+  const minBottom = navH + 8
+  const defaultBottom = navH + 14
+  const restBottom = Math.max(fabPos.bottom ?? defaultBottom, minBottom)
+  const fabStyle = live
+    ? { left: live.left, right: 'auto', bottom: live.bottom, transition: 'none' }
+    : fabPos.side === 'right'
+      ? { left: 'auto', right: FAB_MARGIN, bottom: restBottom }
+      : { left: FAB_MARGIN, right: 'auto', bottom: restBottom }
+
+  // Drag the button anywhere along the screen; on release it snaps to the nearest side.
+  function onFabDown(e) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    drag.current = {
+      x: e.clientX,
+      y: e.clientY,
+      left: rect.left,
+      bottom: window.innerHeight - rect.bottom,
+      moved: false,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  function onFabMove(e) {
+    const d = drag.current
+    if (!d) return
+    const dx = e.clientX - d.x
+    const dy = e.clientY - d.y
+    if (!d.moved && Math.hypot(dx, dy) > 6) d.moved = true
+    if (!d.moved) return
+    const maxLeft = window.innerWidth - FAB_SIZE - FAB_MARGIN
+    const maxBottom = window.innerHeight - FAB_SIZE - FAB_MARGIN
+    setLive({
+      left: Math.min(Math.max(d.left + dx, FAB_MARGIN), maxLeft),
+      bottom: Math.min(Math.max(d.bottom - dy, minBottom), maxBottom),
+    })
+  }
+
+  function onFabUp() {
+    const d = drag.current
+    drag.current = null
+    if (!d || !d.moved || !live) return
+    justDragged.current = true
+    const next = { side: live.left + FAB_SIZE / 2 < window.innerWidth / 2 ? 'left' : 'right', bottom: live.bottom }
+    setFabPos(next)
+    setLive(null)
+    try {
+      localStorage.setItem(FAB_KEY, JSON.stringify(next))
+    } catch {
+      // storage unavailable — position just won't persist
+    }
+  }
+
+  function onFabClick() {
+    if (justDragged.current) {
+      justDragged.current = false
+      return
+    }
+    openChat()
   }
 
   // extra: { link?, links?, choices? } — a flow result can be passed straight in.
@@ -237,7 +328,16 @@ export default function ChatWidget() {
 
   return (
     <>
-      <button className="chatw-fab" onClick={openChat} aria-label="افتح المساعد الذكي">
+      <button
+        className="chatw-fab"
+        style={fabStyle}
+        onClick={onFabClick}
+        onPointerDown={onFabDown}
+        onPointerMove={onFabMove}
+        onPointerUp={onFabUp}
+        onPointerCancel={onFabUp}
+        aria-label="افتح المساعد الذكي"
+      >
         <span className="chatw-fab__badge" />
         <svg viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 2a7.5 7.5 0 0 0-7.5 7.5v3.75A1.75 1.75 0 0 0 6.25 15h.75a1.75 1.75 0 0 0 1.75-1.75v-2.5A1.75 1.75 0 0 0 7 9h-.94a5.94 5.94 0 0 1 11.88 0H17a1.75 1.75 0 0 0-1.75 1.75v2.5c0 .3.07.58.2.83a4.4 4.4 0 0 1-4.2 3.17h-.5a1.25 1.25 0 1 0 0 2.5h.5a6.9 6.9 0 0 0 6.62-4.9A1.75 1.75 0 0 0 19.5 13.5V9.5A7.5 7.5 0 0 0 12 2Z" />

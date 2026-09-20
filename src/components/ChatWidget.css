@@ -1,7 +1,5 @@
 .chatw-fab {
   position: fixed;
-  left: var(--space-4);
-  bottom: calc(78px + env(safe-area-inset-bottom));
   width: 56px;
   height: 56px;
   border-radius: var(--radius-pill);
@@ -315,3 +313,6 @@
 .chatw-link-btn:hover { background: #DFF3E7; }
 
 .chatw-links { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+.chatw-fab { touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+.chatw-fab:active { cursor: grabbing; }
