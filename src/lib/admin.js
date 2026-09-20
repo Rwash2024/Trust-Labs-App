@@ -281,6 +281,24 @@ export async function adminDeleteComplaint(id) {
   if (error) throw error
 }
 
+// ---- Bookings (created via the chat assistant) ----
+export async function adminListBookings() {
+  const { data, error } = await requireClient()
+    .from('bookings')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function adminUpdateBookingStatus(id, status) {
+  const { error } = await requireClient()
+    .from('bookings')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
 // ---- About page content ----
 export async function adminGetAboutContent() {
   const { data, error } = await requireClient().from('about_content').select('*').eq('id', 1).maybeSingle()

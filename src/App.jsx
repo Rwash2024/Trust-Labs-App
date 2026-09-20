@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import BottomNav from './components/BottomNav'
+import ChatWidget from './components/ChatWidget'
 import RouteTracker from './components/RouteTracker'
 import Splash from './components/Splash'
 import { AdminAuthProvider } from './context/AdminAuthContext'
@@ -59,6 +60,7 @@ function PatientApp() {
         </Routes>
       </main>
       <BottomNav />
+      <ChatWidget />
     </>
   )
 }

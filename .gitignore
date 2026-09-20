@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local env import file + Supabase CLI temp files
+vercel-env-import.env
+supabase/.temp
