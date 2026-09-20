@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { QUICK_ACTIONS, FLOWS, HOTLINE, EGYPT_PHONE_REGEX, normalizeDigits, trackSampleByPhone } from '../lib/chatFlows'
+import { isGreeting } from '../lib/greeting'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import './ChatWidget.css'
 
 const WELCOME = 'أهلاً بيك 👋\nأنا المساعد الذكي لـ Trust Labs، تقدر تسألني أي سؤال هنا، أو تختار من الاختيارات دي:'
 const FALLBACK_ERROR = `معلش، مش قادر أرد على الأسئلة الحرة دلوقتي 🙏 اختار من القائمة تحت، أو كلّم الخط الساخن ${HOTLINE}.`
+const GREETING_REPLY = 'أهلاً بيك في Trust Labs 👋\nأقدر أساعدك في إيه؟ اختار من القائمة:'
 const FLOW_ERROR = 'معلش، حصلت مشكلة وأنا بجيب المعلومة دي 🙏 جرب تاني كمان شوية.'
 
 function timeNow() {
@@ -123,6 +125,14 @@ export default function ChatWidget() {
         return
       }
       setAwaiting(null)
+    }
+
+    // Plain greetings get an instant canned reply — no AI call, no cost.
+    if (isGreeting(trimmed)) {
+      addMessage('bot', GREETING_REPLY)
+      appendMenu()
+      setSending(false)
+      return
     }
 
     if (!supabase) {
