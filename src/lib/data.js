@@ -83,6 +83,28 @@ export async function fetchPrepInstructions() {
   return Object.fromEntries(data.map((row) => [row.test_name, row.instruction]))
 }
 
+// Searches the local-price test catalog by name. mode 'all': every term must appear;
+// mode 'any': at least one term. (Server-side, since the catalog is bigger than one
+// PostgREST page; falls back to the bundled static list.)
+export async function searchTests(terms, mode = 'all') {
+  const clean = terms.map((t) => t.replace(/[%,()*]/g, '').trim()).filter(Boolean)
+  if (clean.length === 0) return []
+  if (supabase) {
+    let q = supabase.from('tests_local').select('code, name, price, popular').limit(80)
+    if (mode === 'all') {
+      for (const t of clean) q = q.ilike('name', `%${t}%`)
+    } else {
+      q = q.or(clean.map((t) => `name.ilike.*${t}*`).join(','))
+    }
+    const { data, error } = await q.order('name')
+    if (!error && data) return data
+  }
+  const has = (name, t) => name.toLowerCase().includes(t.toLowerCase())
+  return staticAllTests
+    .filter((t) => (mode === 'all' ? clean.every((c) => has(t.name, c)) : clean.some((c) => has(t.name, c))))
+    .slice(0, 80)
+}
+
 export async function fetchAllTests() {
   if (!supabase) return staticAllTests
   const { data, error } = await supabase.from('tests_local').select('code, name, price').order('name')

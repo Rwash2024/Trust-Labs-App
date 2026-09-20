@@ -1,4 +1,5 @@
-import { fetchPackages, fetchFeaturedTests, fetchBranchGroups, fetchSampleStatusByPhone } from './data'
+import { fetchPackages, fetchFeaturedTests, fetchBranchGroups, fetchSampleStatusByPhone, searchTests } from './data'
+import { normalize } from './greeting'
 
 // Rule-based answers for the chat widget's quick-action buttons. These read
 // straight from the same tables as the app pages, so they work without the AI
@@ -17,7 +18,7 @@ export const QUICK_ACTIONS = [
   { id: 'track', label: '📦 تتبع عينتي' },
   { id: 'results', label: '🧪 نتيجة تحليلي' },
   { id: 'booking', label: '📅 حجز موعد' },
-  { id: 'packages', label: '💳 الأسعار والباقات' },
+  { id: 'prices', label: '💳 أسعار التحاليل والباقات' },
   { id: 'featured', label: '⭐ التحاليل المميزة' },
   { id: 'branches', label: '📍 الفروع' },
   { id: 'prep', label: '📋 تعليمات التحضير' },
@@ -42,14 +43,11 @@ export const FLOWS = {
     link: { to: '/booking', label: 'اذهب لصفحة الحجز' },
   }),
 
-  packages: async () => {
-    const packages = await fetchPackages()
-    const lines = packages.map((p) => `• ${p.name} — ${price(p.price)}${p.testCount ? ` (${p.testCount} تحليل)` : ''}`)
-    return {
-      text: `الباقات المتاحة دلوقتي 💳\n${lines.join('\n')}`,
-      link: { to: '/packages', label: 'شوف تفاصيل الباقات' },
-    }
-  },
+  prices: async () => ({
+    text: 'اكتب اسم التحليل اللي عايز تعرف سعره (زي: فيتامين د، سكر، CBC، TSH) وأقولك السعر 💳\nولو عايز تشوف كل الباقات اكتب "الباقات".',
+    link: { to: '/packages', label: 'شوف كل الباقات' },
+    awaiting: 'price_query',
+  }),
 
   featured: async () => {
     const tests = await fetchFeaturedTests()
@@ -99,5 +97,131 @@ export async function trackSampleByPhone(phone) {
   return {
     text: blocks.join('\n\n'),
     link: { to: '/track-sample', label: 'تفاصيل التتبع' },
+  }
+}
+
+// ---- Price lookup ---------------------------------------------------------
+
+async function packagesFlow() {
+  const packages = await fetchPackages()
+  const lines = packages.map((p) => `• ${p.name} — ${price(p.price)}${p.testCount ? ` (${p.testCount} تحليل)` : ''}`)
+  return {
+    text: `الباقات المتاحة دلوقتي 💳\n${lines.join('\n')}`,
+    link: { to: '/packages', label: 'شوف تفاصيل الباقات' },
+    awaiting: 'price_query',
+  }
+}
+
+// Test names in the catalog are English, so common Arabic names map to English keywords.
+// Keys are in normalized form (see normalize()); longer keys come first so they win.
+const ARABIC_ALIASES = [
+  ['فيتامين د', ['vitamin d']],
+  ['فيتامين ب12', ['vitamin b12', 'b12']],
+  ['ب12', ['vitamin b12', 'b12']],
+  ['سكر تراكمي', ['hba1c', 'glycosylated', 'glycated']],
+  ['هيموجلوبين سكري', ['hba1c', 'glycosylated', 'glycated']],
+  ['سكر', ['glucose']],
+  ['جلوكوز', ['glucose']],
+  ['صوره دم', ['complete blood picture']],
+  ['cbc', ['complete blood picture']],
+  ['cbp', ['complete blood picture']],
+  ['وظايف كبد', ['sgpt', 'sgot', 'bilirubin']],
+  ['وظائف كبد', ['sgpt', 'sgot', 'bilirubin']],
+  ['انزيمات كبد', ['sgpt', 'sgot']],
+  ['كبد', ['sgpt', 'sgot', 'bilirubin']],
+  ['وظايف كلي', ['creatinine', 'urea']],
+  ['وظائف كلي', ['creatinine', 'urea']],
+  ['كلي', ['creatinine', 'urea']],
+  ['كرياتينين', ['creatinine']],
+  ['يوريا', ['urea']],
+  ['بولينا', ['urea']],
+  ['حمض اليوريك', ['uric acid']],
+  ['غده درقيه', ['tsh', 't3', 't4']],
+  ['درقيه', ['tsh', 't3', 't4']],
+  ['كوليسترول', ['cholesterol']],
+  ['دهون', ['triglycerides', 'cholesterol']],
+  ['حديد', ['iron', 'ferritin']],
+  ['فيريتين', ['ferritin']],
+  ['حمل', ['hcg', 'pregnancy']],
+  ['كالسيوم', ['calcium']],
+  ['صوديوم', ['sodium']],
+  ['بوتاسيوم', ['potassium']],
+  ['بروستاتا', ['psa']],
+  ['كورتيزول', ['cortisol']],
+  ['تستوستيرون', ['testosterone']],
+  ['بروجسترون', ['progesterone']],
+  ['برولاكتين', ['prolactin']],
+  ['براز', ['stool']],
+]
+
+// Words that don't help identify a test ("سعر تحليل الكبد" -> "كبد").
+const STOP_WORDS = new Set([
+  'سعر', 'اسعار', 'بكام', 'كام', 'تحليل', 'تحاليل', 'عايز', 'عاوز', 'اعرف', 'ايه', 'عن', 'في', 'ده', 'دي',
+  'لو', 'سمحت', 'ممكن', 'هو', 'هي', 'price', 'of', 'the', 'test', 'how', 'much', 'is',
+])
+const PACKAGE_WORDS = new Set(['باقات', 'باقه', 'الباقات', 'الباقه', 'كل', 'العروض'])
+
+const escapeRegex = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+const hasTerm = (name, term) => new RegExp(`(^|[^a-z0-9])${escapeRegex(term)}([^a-z0-9]|$)`, 'i').test(name)
+const stripAl = (w) => (w.startsWith('ال') && w.length > 3 ? w.slice(2) : w)
+
+const MAX_RESULTS = 8
+
+// Answers "how much is X?" from the packages and the test catalog. Returns null when
+// nothing matched and the message looks like a real question (so the assistant can take it).
+export async function priceLookup(query) {
+  const q = normalize(query)
+  const words = q.split(/\s+/).filter(Boolean)
+  const keywords = words.filter((w) => !STOP_WORDS.has(w))
+
+  if (keywords.length > 0 && keywords.length <= 3 && keywords.every((w) => PACKAGE_WORDS.has(w))) {
+    return packagesFlow()
+  }
+
+  const results = []
+
+  // 1) Packages by (Arabic) name
+  const packages = await fetchPackages()
+  const pkgWords = keywords.map(stripAl).filter((w) => w.length >= 2)
+  const pkgMatches = pkgWords.length
+    ? packages.filter((p) => {
+        const name = normalize(p.name)
+        return pkgWords.every((w) => name.includes(w))
+      })
+    : []
+  for (const p of pkgMatches) results.push(`📦 ${p.name} — ${price(p.price)}${p.testCount ? ` (${p.testCount} تحليل)` : ''}`)
+
+  // 2) Tests: Arabic aliases first, else English words typed by the patient
+  const aliasTerms = new Set()
+  for (const [key, terms] of ARABIC_ALIASES) if (q.includes(key)) terms.forEach((t) => aliasTerms.add(t))
+
+  let tests = []
+  if (aliasTerms.size > 0) {
+    const found = await searchTests([...aliasTerms], 'any')
+    tests = found.filter((t) => [...aliasTerms].some((term) => hasTerm(t.name, term)))
+  } else {
+    const latin = keywords.filter((w) => /[a-z]/.test(w))
+    if (latin.length > 0) tests = await searchTests(latin, 'all')
+  }
+  // Most-requested tests first, then the simpler (shorter) names.
+  tests.sort((a, b) => Number(!!b.popular) - Number(!!a.popular) || a.name.length - b.name.length)
+  const shown = tests.slice(0, MAX_RESULTS)
+  for (const t of shown) results.push(`🧪 ${t.name} — ${price(t.price)}`)
+  const more = tests.length - shown.length
+
+  if (results.length === 0) {
+    if (words.length > 4) return null
+    return {
+      text: `مش لاقي تحليل أو باقة بالاسم ده 🤔\nجرّب اسم تاني (بالعربي أو الإنجليزي)، أو كلّم الخط الساخن ${HOTLINE} وهيقولوك السعر.`,
+      link: { to: '/packages', label: 'ابحث في كل التحاليل' },
+      awaiting: 'price_query',
+    }
+  }
+
+  const moreLine = more > 0 ? `\n… و${more} نتيجة تانية، اكتب اسم أدق لو عايز تحليل معين` : ''
+  return {
+    text: `${results.join('\n')}${moreLine}\n\nتقدر تكتب اسم تحليل تاني، أو تختار من القائمة.`,
+    link: { to: '/booking', label: 'احجز الآن' },
+    awaiting: 'price_query',
   }
 }

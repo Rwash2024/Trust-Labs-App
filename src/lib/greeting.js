@@ -15,7 +15,7 @@ const FILLER_WORDS = new Set([
   'جدا', 'كلكم', 'الجميع', 'فريق', 'تمام', 'الحمد', 'لله', 'ليكم', 'لكم', 'you', 'are', 'there', 'trust', 'labs', 'lab',
 ])
 
-function normalize(text) {
+export function normalize(text) {
   return text
     .toLowerCase()
     .replace(/[ً-ٰٟـ]/g, '') // harakat + tatweel

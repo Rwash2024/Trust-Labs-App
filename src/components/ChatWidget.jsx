@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { QUICK_ACTIONS, FLOWS, HOTLINE, EGYPT_PHONE_REGEX, normalizeDigits, trackSampleByPhone } from '../lib/chatFlows'
+import { QUICK_ACTIONS, FLOWS, HOTLINE, EGYPT_PHONE_REGEX, normalizeDigits, trackSampleByPhone, priceLookup } from '../lib/chatFlows'
 import { isGreeting } from '../lib/greeting'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import './ChatWidget.css'
@@ -127,8 +127,27 @@ export default function ChatWidget() {
       setAwaiting(null)
     }
 
+    // Waiting for a test/package name — answered from the price list, no AI.
+    if (awaiting === 'price_query' && !isGreeting(trimmed)) {
+      try {
+        const flow = await priceLookup(trimmed)
+        if (flow) {
+          addMessage('bot', flow.text, flow.link)
+          appendMenu()
+          setSending(false)
+          return
+        }
+        setAwaiting(null)
+      } catch {
+        addMessage('bot', FLOW_ERROR)
+        setSending(false)
+        return
+      }
+    }
+
     // Plain greetings get an instant canned reply — no AI call, no cost.
     if (isGreeting(trimmed)) {
+      setAwaiting(null)
       addMessage('bot', GREETING_REPLY)
       appendMenu()
       setSending(false)
