@@ -7,6 +7,7 @@ import { useBooking } from '../context/BookingContext'
 import BannerCarousel from '../components/BannerCarousel'
 import BannerCard from '../components/BannerCard'
 import '../styles/modal.css'
+import { filterTests } from '../lib/testSearch'
 import './Packages.css'
 
 function PackageModal({ pkg, isAdded, onAdd, onClose }) {
@@ -81,9 +82,7 @@ export default function Packages() {
   }, [])
 
   const searchResults = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return []
-    return allTests.filter((t) => t.name.toLowerCase().includes(q)).slice(0, 40)
+    return filterTests(allTests, query, 40)
   }, [query, allTests])
 
   const isSearching = query.trim().length > 0

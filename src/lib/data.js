@@ -83,6 +83,18 @@ export async function fetchPrepInstructions() {
   return Object.fromEntries(data.map((row) => [row.test_name, row.instruction]))
 }
 
+// PostgREST returns at most 1000 rows per request, so read big tables page by page.
+async function selectAll(build) {
+  const rows = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await build().range(from, from + 999)
+    if (error) return { data: null, error }
+    rows.push(...data)
+    if (data.length < 1000) break
+  }
+  return { data: rows, error: null }
+}
+
 // Searches the local-price test catalog by name. mode 'all': every term must appear;
 // mode 'any': at least one term. (Server-side, since the catalog is bigger than one
 // PostgREST page; falls back to the bundled static list.)
@@ -107,7 +119,7 @@ export async function searchTests(terms, mode = 'all') {
 
 export async function fetchAllTests() {
   if (!supabase) return staticAllTests
-  const { data, error } = await supabase.from('tests_local').select('code, name, price').order('name')
+  const { data, error } = await selectAll(() => supabase.from('tests_local').select('code, name, price').order('name').order('code'))
   if (error || !data || data.length === 0) return staticAllTests
   return data
 }
@@ -129,7 +141,7 @@ export async function fetchPopularTests() {
 // staff-installed /international experience.
 export async function fetchAllTestsForeign() {
   if (!supabase) return []
-  const { data, error } = await supabase.from('tests_foreign').select('code, name, price').order('name')
+  const { data, error } = await selectAll(() => supabase.from('tests_foreign').select('code, name, price').order('name').order('code'))
   if (error || !data) return []
   return data
 }

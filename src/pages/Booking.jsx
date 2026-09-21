@@ -5,6 +5,7 @@ import { fetchBranchGroups, fetchAllTests, redeemLaunchOfferSeat } from '../lib/
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import { FlaskIcon, MapPinIcon, CheckIcon, SearchIcon, PlusIcon } from '../components/icons'
 import LaunchOfferCounter from '../components/LaunchOfferCounter'
+import { filterTests } from '../lib/testSearch'
 import './Booking.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
@@ -62,9 +63,7 @@ export default function Booking() {
   const total = subtotal + homeVisitFee
 
   const testSearchResults = useMemo(() => {
-    const q = testQuery.trim().toLowerCase()
-    if (!q) return []
-    return allTests.filter((t) => t.name.toLowerCase().includes(q)).slice(0, 30)
+    return filterTests(allTests, testQuery, 30)
   }, [testQuery, allTests])
 
   const updateField = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))

@@ -1,5 +1,6 @@
 import { fetchPackages, fetchFeaturedTests, fetchBranchGroups, fetchSampleStatusByPhone, searchTests } from './data'
 import { normalize } from './greeting'
+import { ARABIC_ALIASES, hasTerm } from './testSearch'
 
 // Rule-based answers for the chat widget's quick-action buttons. These read
 // straight from the same tables as the app pages, so they work without the AI
@@ -141,48 +142,6 @@ async function packagesFlow() {
   }
 }
 
-// Test names in the catalog are English, so common Arabic names map to English keywords.
-// Keys are in normalized form (see normalize()); longer keys come first so they win.
-const ARABIC_ALIASES = [
-  ['فيتامين د', ['vitamin d']],
-  ['فيتامين ب12', ['vitamin b12', 'b12']],
-  ['ب12', ['vitamin b12', 'b12']],
-  ['سكر تراكمي', ['hba1c', 'glycosylated', 'glycated']],
-  ['هيموجلوبين سكري', ['hba1c', 'glycosylated', 'glycated']],
-  ['سكر', ['glucose']],
-  ['جلوكوز', ['glucose']],
-  ['صوره دم', ['complete blood picture']],
-  ['cbc', ['complete blood picture']],
-  ['cbp', ['complete blood picture']],
-  ['وظايف كبد', ['sgpt', 'sgot', 'bilirubin']],
-  ['وظائف كبد', ['sgpt', 'sgot', 'bilirubin']],
-  ['انزيمات كبد', ['sgpt', 'sgot']],
-  ['كبد', ['sgpt', 'sgot', 'bilirubin']],
-  ['وظايف كلي', ['creatinine', 'urea']],
-  ['وظائف كلي', ['creatinine', 'urea']],
-  ['كلي', ['creatinine', 'urea']],
-  ['كرياتينين', ['creatinine']],
-  ['يوريا', ['urea']],
-  ['بولينا', ['urea']],
-  ['حمض اليوريك', ['uric acid']],
-  ['غده درقيه', ['tsh', 't3', 't4']],
-  ['درقيه', ['tsh', 't3', 't4']],
-  ['كوليسترول', ['cholesterol']],
-  ['دهون', ['triglycerides', 'cholesterol']],
-  ['حديد', ['iron', 'ferritin']],
-  ['فيريتين', ['ferritin']],
-  ['حمل', ['hcg', 'pregnancy']],
-  ['كالسيوم', ['calcium']],
-  ['صوديوم', ['sodium']],
-  ['بوتاسيوم', ['potassium']],
-  ['بروستاتا', ['psa']],
-  ['كورتيزول', ['cortisol']],
-  ['تستوستيرون', ['testosterone']],
-  ['بروجسترون', ['progesterone']],
-  ['برولاكتين', ['prolactin']],
-  ['براز', ['stool']],
-]
-
 // Words that don't help identify a test ("سعر تحليل الكبد" -> "كبد").
 const STOP_WORDS = new Set([
   'سعر', 'اسعار', 'بكام', 'كام', 'تحليل', 'تحاليل', 'عايز', 'عاوز', 'اعرف', 'ايه', 'عن', 'في', 'ده', 'دي',
@@ -190,8 +149,6 @@ const STOP_WORDS = new Set([
 ])
 const PACKAGE_WORDS = new Set(['باقات', 'باقه', 'الباقات', 'الباقه', 'كل', 'العروض'])
 
-const escapeRegex = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-const hasTerm = (name, term) => new RegExp(`(^|[^a-z0-9])${escapeRegex(term)}([^a-z0-9]|$)`, 'i').test(name)
 const stripAl = (w) => (w.startsWith('ال') && w.length > 3 ? w.slice(2) : w)
 
 const MAX_RESULTS = 8
