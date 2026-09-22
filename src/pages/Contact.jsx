@@ -9,6 +9,7 @@ import {
   LinkedInIcon,
   ShieldIcon,
   ChatIcon,
+  StarIcon,
 } from '../components/icons'
 import logoWhiteFull from '../assets/logo-white-full.png'
 import './Contact.css'
@@ -66,6 +67,17 @@ export default function Contact() {
           <span className="contact__card-info">
             <span className="contact__card-title">تتبع حالة عينتك</span>
             <span className="contact__card-value">اعرف عينتك وصلت فين برقم موبايلك</span>
+          </span>
+          <ArrowIcon className="contact__card-arrow" />
+        </Link>
+
+        <Link className="contact__card" to="/rate-visit">
+          <span className="contact__card-icon">
+            <StarIcon color="#fff" />
+          </span>
+          <span className="contact__card-info">
+            <span className="contact__card-title">قيّم زيارتك</span>
+            <span className="contact__card-value">30 ثانية بس تساعدنا نتحسن</span>
           </span>
           <ArrowIcon className="contact__card-arrow" />
         </Link>

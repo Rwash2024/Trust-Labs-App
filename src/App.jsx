@@ -21,6 +21,7 @@ import Privacy from './pages/Privacy'
 import TrackSample from './pages/TrackSample'
 import News from './pages/News'
 import Complaints from './pages/Complaints'
+import RateVisit from './pages/RateVisit'
 import International from './pages/International'
 import InternationalBranches from './pages/InternationalBranches'
 import InternationalBooking from './pages/InternationalBooking'
@@ -57,6 +58,7 @@ function PatientApp() {
           <Route path="/track-sample" element={<TrackSample />} />
           <Route path="/news" element={<News />} />
           <Route path="/complaints" element={<Complaints />} />
+          <Route path="/rate-visit" element={<RateVisit />} />
         </Routes>
       </main>
       <BottomNav />

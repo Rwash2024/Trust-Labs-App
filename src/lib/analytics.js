@@ -41,4 +41,6 @@ export const AnalyticsEvents = {
   CHAT_MESSAGE_SENT: 'chat_assistant_message_sent',
   CHAT_ESCALATED: 'chat_assistant_escalated',
   CHAT_RATED: 'chat_assistant_rated',
+  RATE_VISIT_STARTED: 'rate_visit_started',
+  RATE_VISIT_COMPLETED: 'rate_visit_completed',
 }

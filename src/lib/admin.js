@@ -281,6 +281,16 @@ export async function adminDeleteComplaint(id) {
   if (error) throw error
 }
 
+// ---- Visit ratings ("قيّم زيارتك" survey) ----
+export async function adminListVisitRatings() {
+  const { data, error } = await requireClient()
+    .from('visit_ratings')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
 // ---- Bookings (created via the chat assistant) ----
 export async function adminListBookings() {
   const { data, error } = await requireClient()

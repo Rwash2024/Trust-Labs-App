@@ -11,6 +11,7 @@ import NewsTab from './NewsTab'
 import PartnersTab from './PartnersTab'
 import ComplaintsTab from './ComplaintsTab'
 import BookingsTab from './BookingsTab'
+import VisitRatingsTab from './VisitRatingsTab'
 import logoWhiteFull from '../../assets/logo-white-full.png'
 import './Admin.css'
 
@@ -26,6 +27,7 @@ const tabs = [
   { key: 'samples', label: 'تتبع العينات' },
   { key: 'bookings', label: 'الحجوزات' },
   { key: 'complaints', label: 'شكاوى واقتراحات' },
+  { key: 'ratings', label: 'قيّم زيارتك' },
 ]
 
 export default function AdminDashboard() {
@@ -69,6 +71,7 @@ export default function AdminDashboard() {
         {activeTab === 'samples' && <SampleTrackingTab canManage />}
         {activeTab === 'bookings' && <BookingsTab />}
         {activeTab === 'complaints' && <ComplaintsTab />}
+        {activeTab === 'ratings' && <VisitRatingsTab />}
       </main>
     </div>
   )
