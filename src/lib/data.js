@@ -252,7 +252,7 @@ export async function recordBooking({
 // optional (the patient may skip the final name/phone/comment screen entirely).
 // This is our own durable record — forwarding it on to Trust Lab Ops (once
 // they expose a submit-survey webhook) happens server-side, never from here.
-export async function submitVisitRating({ visitType, answers, name, phone, chemistName, comment }) {
+export async function submitVisitRating({ visitType, answers, name, phone, branchName, chemistName, comment }) {
   if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
   const { error } = await supabase.from('visit_ratings').insert({
     visit_type: visitType,
@@ -262,6 +262,7 @@ export async function submitVisitRating({ visitType, answers, name, phone, chemi
     staff: answers.staff,
     name: name?.trim() || null,
     phone: phone?.trim() || null,
+    branch_name: visitType === 'branch' ? branchName?.trim() || null : null,
     chemist_name: visitType === 'home' ? chemistName?.trim() || null : null,
     comment: comment?.trim() || null,
   })

@@ -45,6 +45,7 @@ export default function VisitRatingsTab() {
         <thead>
           <tr>
             <th>النوع</th>
+            <th>الفرع</th>
             <th>التقييم العام</th>
             <th>السرعة / الالتزام بالميعاد</th>
             <th>تعامل الموظفين / الكيميائي</th>
@@ -60,6 +61,7 @@ export default function VisitRatingsTab() {
           {filtered.map((i) => (
             <tr key={i.id}>
               <td>{TYPES[i.visit_type] || i.visit_type}</td>
+              <td>{i.branch_name || '—'}</td>
               <td>
                 <Stars value={i.overall} />
               </td>
