@@ -3,6 +3,7 @@ import { adminListBookings, adminUpdateBookingStatus } from '../../lib/admin'
 
 const STATUSES = ['جديد', 'تم التأكيد', 'تم السحب', 'ملغي']
 const MODES = { home: 'زيارة منزلية', branch: 'فرع' }
+const SOURCES = { booking_form: 'صفحة الحجز', chat_assistant: 'المساعد الذكي' }
 
 export default function BookingsTab() {
   const [items, setItems] = useState([])
@@ -54,6 +55,7 @@ export default function BookingsTab() {
         <thead>
           <tr>
             <th>رقم الحجز</th>
+            <th>المصدر</th>
             <th>النوع</th>
             <th>الاسم</th>
             <th>الموبايل</th>
@@ -61,6 +63,8 @@ export default function BookingsTab() {
             <th>العنوان / الفرع</th>
             <th>الميعاد</th>
             <th>التحاليل</th>
+            <th>الدفع</th>
+            <th>التأمين / النادي</th>
             <th>ملاحظات</th>
             <th>التاريخ</th>
             <th>الحالة</th>
@@ -70,6 +74,7 @@ export default function BookingsTab() {
           {filtered.map((i) => (
             <tr key={i.id}>
               <td dir="ltr">{i.booking_ref}</td>
+              <td>{SOURCES[i.source] || i.source || '—'}</td>
               <td>{MODES[i.mode] || i.mode}</td>
               <td>{i.name}</td>
               <td dir="ltr">{i.phone}</td>
@@ -79,6 +84,14 @@ export default function BookingsTab() {
               </td>
               <td>{i.preferred_date || '—'}</td>
               <td style={{ maxWidth: 220 }}>{(i.tests || []).join('، ') || '—'}</td>
+              <td>
+                {i.payment_method || '—'}
+                {i.launch_offer_applied && <div className="admin-badge">عرض الإطلاق</div>}
+              </td>
+              <td>
+                {i.patient_type && i.patient_type !== 'Normal' ? i.patient_type : '—'}
+                {i.card_issuer ? ` (${i.card_issuer})` : ''}
+              </td>
               <td style={{ maxWidth: 200, whiteSpace: 'pre-wrap' }}>{i.notes || '—'}</td>
               <td>{new Date(i.created_at).toLocaleString('ar-EG')}</td>
               <td>

@@ -198,6 +198,76 @@ export async function fetchPartners(staticFallback) {
   return data.map((row) => ({ name: row.name, src: row.image_url }))
 }
 
+// Persists a booking made through the regular booking form (Booking.jsx) in the
+// same `bookings` table the chat assistant writes to, so staff see every booking
+// — chat or form, home or branch — in one place, and so a phone number can later
+// be checked against a real completed booking (e.g. the visit-rating survey).
+// Formspree stays the source of truth for the confirmation email; this is
+// additive and best-effort — the booking must still succeed even if this fails,
+// so callers should not let a rejection here block the Formspree submission.
+export async function recordBooking({
+  bookingRef,
+  mode,
+  name,
+  phone,
+  dob,
+  address,
+  branchName,
+  preferredDate,
+  tests,
+  subtotal,
+  homeVisitFee,
+  total,
+  notes,
+  paymentMethod,
+  patientType,
+  cardIssuer,
+  launchOfferApplied,
+}) {
+  if (!supabase) return
+  const { error } = await supabase.from('bookings').insert({
+    booking_ref: bookingRef,
+    source: 'booking_form',
+    mode,
+    name,
+    phone,
+    dob: dob || null,
+    address: mode === 'home' ? address || null : null,
+    branch_name: mode === 'branch' ? branchName || null : null,
+    preferred_date: preferredDate || null,
+    tests: tests || [],
+    subtotal: subtotal || 0,
+    home_visit_fee: homeVisitFee || 0,
+    total: total || 0,
+    notes: notes?.trim() || null,
+    payment_method: paymentMethod || null,
+    patient_type: patientType || null,
+    card_issuer: cardIssuer?.trim() || null,
+    launch_offer_applied: !!launchOfferApplied,
+  })
+  if (error) throw error
+}
+
+// Submits a "قيّم زيارتك" survey response. All fields but visitType/answers are
+// optional (the patient may skip the final name/phone/comment screen entirely).
+// This is our own durable record — forwarding it on to Trust Lab Ops (once
+// they expose a submit-survey webhook) happens server-side, never from here.
+export async function submitVisitRating({ visitType, answers, name, phone, chemistName, comment }) {
+  if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
+  const { error } = await supabase.from('visit_ratings').insert({
+    visit_type: visitType,
+    overall: answers.overall,
+    speed: visitType === 'branch' ? answers.speed : null,
+    punctuality: visitType === 'home' ? answers.punctuality : null,
+    staff: answers.staff,
+    name: name?.trim() || null,
+    phone: phone?.trim() || null,
+    chemist_name: visitType === 'home' ? chemistName?.trim() || null : null,
+    comment: comment?.trim() || null,
+  })
+  if (error) throw error
+}
+
 export async function submitComplaint({ name, phone, type, branchName, rating, message }) {
   if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
   const { error } = await supabase.from('complaints').insert({

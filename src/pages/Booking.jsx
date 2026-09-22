@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useBooking } from '../context/BookingContext'
-import { fetchBranchGroups, fetchAllTests, redeemLaunchOfferSeat } from '../lib/data'
+import { fetchBranchGroups, fetchAllTests, redeemLaunchOfferSeat, recordBooking } from '../lib/data'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import { FlaskIcon, MapPinIcon, CheckIcon, SearchIcon, PlusIcon } from '../components/icons'
 import LaunchOfferCounter from '../components/LaunchOfferCounter'
@@ -121,6 +121,29 @@ export default function Booking() {
     data.append('hasInsuranceOrClubCard', patientType)
     data.append('launchOfferApplied', offerApplied ? 'نعم — رسوم الزيارة ملغاة' : 'لا')
     if (hasCard && cardIssuer.trim()) data.append('cardIssuer', cardIssuer.trim())
+
+    // Best-effort: persisted in our own DB so staff see it in the admin dashboard and
+    // it can later back the visit-rating survey. Formspree (below) remains the source
+    // of truth for the confirmation email, so a failure here must never block that.
+    recordBooking({
+      bookingRef,
+      mode,
+      name: form.name,
+      phone: form.phone,
+      dob: form.dob,
+      address: form.address,
+      branchName: form.branchName,
+      preferredDate: form.date,
+      tests: selectedPackages.map((p) => p.name),
+      subtotal,
+      homeVisitFee: effectiveHomeVisitFee,
+      total: effectiveTotal,
+      notes: form.notes,
+      paymentMethod: paymentLabel,
+      patientType,
+      cardIssuer: hasCard ? cardIssuer : '',
+      launchOfferApplied: offerApplied,
+    }).catch((err) => console.error('recordBooking failed (non-blocking)', err))
 
     try {
       const res = await fetch(FORMSPREE_ENDPOINT, {
