@@ -67,6 +67,7 @@ export default function BookingsTab() {
             <th>التأمين / النادي</th>
             <th>ملاحظات</th>
             <th>التاريخ</th>
+            <th>وصل لـ Trust Lab Ops؟</th>
             <th>الحالة</th>
           </tr>
         </thead>
@@ -94,6 +95,7 @@ export default function BookingsTab() {
               </td>
               <td style={{ maxWidth: 200, whiteSpace: 'pre-wrap' }}>{i.notes || '—'}</td>
               <td>{new Date(i.created_at).toLocaleString('ar-EG')}</td>
+              <td>{i.synced_to_erp ? '✅' : '⏳'}</td>
               <td>
                 <select
                   className="admin-select"
