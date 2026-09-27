@@ -381,12 +381,13 @@ export async function adminFetchReportData(fromDate, toDate) {
   const inRange = (table, columns = '*') =>
     client.from(table).select(columns).gte('created_at', from).lte('created_at', to).order('created_at')
 
-  const [cards, samples, bookings, complaints, ratings] = await Promise.all([
+  const [cards, samples, bookings, complaints, ratings, scans] = await Promise.all([
     inRange('trust_card_requests'),
     inRange('sample_tracking'),
     inRange('bookings'),
     inRange('complaints'),
     inRange('visit_ratings'),
+    inRange('qr_scans'),
   ])
   for (const r of [cards, samples, bookings, complaints, ratings]) if (r.error) throw r.error
 
@@ -396,5 +397,7 @@ export async function adminFetchReportData(fromDate, toDate) {
     bookings: bookings.data,
     complaints: complaints.data,
     ratings: ratings.data,
+    // Optional: an empty list (not an error) until qr_scans_migration.sql has run.
+    scans: scans.error ? [] : scans.data,
   }
 }

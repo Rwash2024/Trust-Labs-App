@@ -4,6 +4,7 @@ import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
 import { lowestScore, ratingLevel } from '../lib/ratings'
 import { HeartIcon } from '../components/icons'
+import { qrBranchName } from '../lib/qrTracking'
 import './RateVisit.css'
 
 // "قيّم زيارتك" — matches the real Trust Lab Ops tablet survey on purpose:
@@ -82,6 +83,8 @@ export default function RateVisit() {
   // Big tappable buttons instead of a <select>: the phone's native dropdown
   // list is small and can't be styled. Tapping a branch moves straight on.
   const query = branchQuery.trim()
+  // Set when the patient opened the app from this branch's QR code (e.g. the exit card).
+  const scannedBranch = branches.some((b) => b.name === qrBranchName()) ? qrBranchName() : null
   const branchGroups = Object.values(
     branches
       .filter((b) => !query || b.name.includes(query) || b.governorate.includes(query))
@@ -204,6 +207,19 @@ export default function RateVisit() {
               <label className="ratevisit__field">
                 <input value={branchQuery} onChange={(e) => setBranchQuery(e.target.value)} placeholder="🔍 دوّر على الفرع أو المحافظة" />
               </label>
+            )}
+            {scannedBranch && !query && (
+              <div className="ratevisit__branch-group">
+                <span className="ratevisit__branch-gov">📍 الفرع اللي إنت فيه</span>
+                <button
+                  type="button"
+                  className="ratevisit__choice ratevisit__branch active"
+                  onClick={() => pickBranch(scannedBranch)}
+                >
+                  <span className="e">🏥</span>
+                  {scannedBranch}
+                </button>
+              </div>
             )}
             {branchGroups.map((g) => (
               <div key={g.governorate} className="ratevisit__branch-group">

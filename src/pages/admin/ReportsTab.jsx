@@ -91,7 +91,7 @@ export default function ReportsTab() {
         {status === 'done' && counts && (
           <p className="admin-success">
             التقرير نزل ✅ — {counts.cards} طلب كارت، {counts.samples} عينة، {counts.bookings} حجز، {counts.complaints} شكوى،{' '}
-            {counts.ratings} تقييم
+            {counts.ratings} تقييم، {counts.scans} مسح كود
           </p>
         )}
 
