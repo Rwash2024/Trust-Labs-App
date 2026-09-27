@@ -53,6 +53,7 @@ export default function RateVisit() {
   const [visitType, setVisitType] = useState(null) // 'branch' | 'home'
   const [branches, setBranches] = useState([])
   const [branchName, setBranchName] = useState('')
+  const [branchQuery, setBranchQuery] = useState('')
   const [qIndex, setQIndex] = useState(0)
   const [answers, setAnswers] = useState({})
   const [name, setName] = useState('')
@@ -76,6 +77,24 @@ export default function RateVisit() {
     }
     trackEvent(AnalyticsEvents.RATE_VISIT_STARTED, { visit_type: type })
     setScreen('question')
+  }
+
+  // Big tappable buttons instead of a <select>: the phone's native dropdown
+  // list is small and can't be styled. Tapping a branch moves straight on.
+  const query = branchQuery.trim()
+  const branchGroups = Object.values(
+    branches
+      .filter((b) => !query || b.name.includes(query) || b.governorate.includes(query))
+      .reduce((acc, b) => {
+        acc[b.governorate] ??= { governorate: b.governorate, list: [] }
+        acc[b.governorate].list.push(b)
+        return acc
+      }, {}),
+  )
+
+  function pickBranch(name) {
+    setBranchName(name)
+    confirmBranch()
   }
 
   function confirmBranch() {
@@ -181,21 +200,28 @@ export default function RateVisit() {
         {screen === 'branch-pick' && (
           <>
             <p className="ratevisit__q">زيارتك كانت في أنهي فرع؟</p>
-            <label className="ratevisit__field">
-              <select value={branchName} onChange={(e) => setBranchName(e.target.value)}>
-                <option value="" disabled>
-                  اختار الفرع
-                </option>
-                {branches.map((b) => (
-                  <option key={b.name} value={b.name}>
-                    {b.governorate} — {b.name}
-                  </option>
+            {branches.length > 8 && (
+              <label className="ratevisit__field">
+                <input value={branchQuery} onChange={(e) => setBranchQuery(e.target.value)} placeholder="🔍 دوّر على الفرع أو المحافظة" />
+              </label>
+            )}
+            {branchGroups.map((g) => (
+              <div key={g.governorate} className="ratevisit__branch-group">
+                <span className="ratevisit__branch-gov">{g.governorate}</span>
+                {g.list.map((b) => (
+                  <button
+                    key={b.name}
+                    type="button"
+                    className={`ratevisit__choice ratevisit__branch${branchName === b.name ? ' active' : ''}`}
+                    onClick={() => pickBranch(b.name)}
+                  >
+                    <span className="e">🏥</span>
+                    {b.name}
+                  </button>
                 ))}
-              </select>
-            </label>
-            <button className="ratevisit__btn ratevisit__btn--primary" onClick={confirmBranch} disabled={!branchName}>
-              التالي
-            </button>
+              </div>
+            ))}
+            {branchGroups.length === 0 && <p className="ratevisit__q-sub">مفيش فرع بالاسم ده</p>}
           </>
         )}
 
