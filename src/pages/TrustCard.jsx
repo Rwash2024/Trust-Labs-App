@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { CardIcon, ShieldIcon, PercentIcon, GiftIcon, CheckIcon } from '../components/icons'
 import logoWhiteFull from '../assets/logo-white-full.png'
 import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
-import { fetchTrustCardPrice, DEFAULT_TRUST_CARD_PRICE } from '../lib/data'
+import { fetchTrustCardPrice, submitTrustCardRequest, DEFAULT_TRUST_CARD_PRICE } from '../lib/data'
 import './TrustCard.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
@@ -84,31 +84,44 @@ export default function TrustCard() {
     e.preventDefault()
     setTriedSubmit(true)
     if (Object.values(errors).some(Boolean)) return
-    if (!FORMSPREE_ENDPOINT) {
-      setStatus('error')
-      return
-    }
-
     setStatus('submitting')
-    try {
-      const res = await fetch(FORMSPREE_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          requestType: 'طلب كارت الثقة',
-          forWhom: isGift ? 'لشخص تاني (هدية)' : 'لنفسه',
-          buyerName: form.name.trim(),
-          cardHolderName: isGift ? form.holderName.trim() : form.name.trim(),
-          relationship: isGift ? form.relationship : '—',
-          phone: form.phone,
-          price: `${price} جنيه`,
-        }),
+    const cardHolderName = isGift ? form.holderName.trim() : form.name.trim()
+
+    // The database row is the order of record (admin tab "كارت الثقة"); the
+    // Formspree email is only a heads-up. Either one landing means the order
+    // isn't lost, so only fail when both do.
+    const saved = await submitTrustCardRequest({
+      forWhom: form.forWhom,
+      buyerName: form.name,
+      cardHolderName,
+      relationship: form.relationship,
+      phone: form.phone,
+    })
+      .then(() => true)
+      .catch((err) => {
+        console.error('saving trust card request failed', err)
+        return false
       })
-      if (!res.ok) throw new Error('submit failed')
-      setStatus('success')
-    } catch {
-      setStatus('error')
-    }
+
+    const emailed = FORMSPREE_ENDPOINT
+      ? await fetch(FORMSPREE_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            requestType: 'طلب كارت الثقة',
+            forWhom: isGift ? 'لشخص تاني (هدية)' : 'لنفسه',
+            buyerName: form.name.trim(),
+            cardHolderName,
+            relationship: isGift ? form.relationship : '—',
+            phone: form.phone,
+            price: `${price} جنيه`,
+          }),
+        })
+          .then((res) => res.ok)
+          .catch(() => false)
+      : false
+
+    setStatus(saved || emailed ? 'success' : 'error')
   }
 
   return (
@@ -253,9 +266,7 @@ export default function TrustCard() {
 
           {status === 'error' && (
             <p className="trust-card__error">
-              {FORMSPREE_ENDPOINT
-                ? 'حصل خطأ أثناء إرسال الطلب، حاول تاني أو اتصل بينا على 16183.'
-                : 'الطلب أونلاين لسه مش متفعّل بالكامل — كلّم فريقنا على الخط الساخن 16183.'}
+              حصل خطأ أثناء إرسال الطلب، حاول تاني أو اتصل بينا على 16183.
             </p>
           )}
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { adminGetTrustCardPrice, adminSaveTrustCardPrice } from '../../lib/admin'
 import { DEFAULT_TRUST_CARD_PRICE } from '../../lib/data'
+import TrustCardRequests from './TrustCardRequests'
 
 export default function TrustCardTab() {
   const [price, setPrice] = useState('')
@@ -61,6 +62,8 @@ export default function TrustCardTab() {
           </button>
         </div>
       </form>
+
+      <TrustCardRequests />
     </div>
   )
 }

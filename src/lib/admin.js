@@ -348,3 +348,26 @@ export async function adminSaveTrustCardPrice(price) {
     .upsert({ id: 1, trust_card_price: price, updated_at: new Date().toISOString() })
   if (error) throw error
 }
+
+// ---- Trust Card orders ----
+export async function adminListTrustCardRequests() {
+  const { data, error } = await requireClient()
+    .from('trust_card_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function adminUpdateTrustCardRequestStatus(id, status) {
+  const { error } = await requireClient()
+    .from('trust_card_requests')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function adminDeleteTrustCardRequest(id) {
+  const { error } = await requireClient().from('trust_card_requests').delete().eq('id', id)
+  if (error) throw error
+}
