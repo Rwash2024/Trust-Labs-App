@@ -310,3 +310,17 @@ export async function fetchTrustCardPrice() {
   if (error || !data?.trust_card_price) return DEFAULT_TRUST_CARD_PRICE
   return Number(data.trust_card_price)
 }
+
+// Saves a Trust Card order — the record staff work from in the admin tab.
+// The price is stamped by the database from app_settings, not sent from here.
+export async function submitTrustCardRequest({ forWhom, buyerName, cardHolderName, relationship, phone }) {
+  if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
+  const { error } = await supabase.from('trust_card_requests').insert({
+    for_whom: forWhom,
+    buyer_name: buyerName.trim(),
+    card_holder_name: cardHolderName.trim(),
+    relationship: forWhom === 'other' ? relationship : null,
+    phone,
+  })
+  if (error) throw error
+}
