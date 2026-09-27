@@ -298,3 +298,15 @@ export async function fetchAboutContent() {
     accreditations: data.accreditations?.length ? data.accreditations : defaultAboutContent.accreditations,
   }
 }
+
+// Trust Card price (EGP), set by the admin in the "كارت الثقة" tab. The
+// fallback keeps the page showing a real price if the app_settings table
+// isn't there yet (supabase/trust_card_settings_migration.sql) or is unreachable.
+export const DEFAULT_TRUST_CARD_PRICE = 250
+
+export async function fetchTrustCardPrice() {
+  if (!supabase) return DEFAULT_TRUST_CARD_PRICE
+  const { data, error } = await supabase.from('app_settings').select('trust_card_price').eq('id', 1).maybeSingle()
+  if (error || !data?.trust_card_price) return DEFAULT_TRUST_CARD_PRICE
+  return Number(data.trust_card_price)
+}
