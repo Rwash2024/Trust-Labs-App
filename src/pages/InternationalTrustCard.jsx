@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CardIcon, ShieldIcon, PercentIcon, GiftIcon, CheckIcon } from '../components/icons'
 import logoWhiteFull from '../assets/logo-white-full.png'
 import InternationalNav from '../components/InternationalNav'
+import { cleanInternationalPhoneInput, internationalPhoneError } from '../lib/phone'
 import './TrustCard.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
@@ -41,7 +42,10 @@ export default function InternationalTrustCard() {
   const [form, setForm] = useState({ name: '', phone: '', needsCard: null })
   const [needsCardError, setNeedsCardError] = useState(false)
 
+  const [showPhoneError, setShowPhoneError] = useState(false)
+
   const updateField = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
+  const phoneError = internationalPhoneError(form.phone)
 
   const selectNeedsCard = (value) => {
     setForm((prev) => ({ ...prev, needsCard: value }))
@@ -50,6 +54,10 @@ export default function InternationalTrustCard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (phoneError) {
+      setShowPhoneError(true)
+      return
+    }
     if (!form.needsCard) {
       setNeedsCardError(true)
       return
@@ -128,7 +136,17 @@ export default function InternationalTrustCard() {
 
           <label className="trust-card__field">
             <span>Phone number</span>
-            <input required type="tel" value={form.phone} onChange={updateField('phone')} placeholder="Phone number" />
+            <input
+              required
+              type="tel"
+              dir="ltr"
+              value={form.phone}
+              onChange={(e) => setForm((prev) => ({ ...prev, phone: cleanInternationalPhoneInput(e.target.value) }))}
+              onBlur={() => setShowPhoneError(form.phone.length > 0)}
+              placeholder="+1 555 000 1234"
+              aria-invalid={showPhoneError && !!phoneError}
+            />
+            {showPhoneError && phoneError && <span className="trust-card__error">{phoneError}</span>}
           </label>
 
           <div className="trust-card__field">

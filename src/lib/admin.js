@@ -334,3 +334,17 @@ export async function adminSaveAboutContent(content) {
     })
   if (error) throw error
 }
+
+// ---- Trust Card price ----
+export async function adminGetTrustCardPrice() {
+  const { data, error } = await requireClient().from('app_settings').select('trust_card_price').eq('id', 1).maybeSingle()
+  if (error) throw error
+  return data?.trust_card_price ?? null
+}
+
+export async function adminSaveTrustCardPrice(price) {
+  const { error } = await requireClient()
+    .from('app_settings')
+    .upsert({ id: 1, trust_card_price: price, updated_at: new Date().toISOString() })
+  if (error) throw error
+}

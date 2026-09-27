@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { ChatIcon, StarIcon, CheckIcon } from '../components/icons'
 import { fetchBranchGroups, submitComplaint } from '../lib/data'
+import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
 import './Complaints.css'
 
 const TYPES = ['شكوى', 'اقتراح', 'استفسار']
-const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
 
 const emptyForm = { name: '', phone: '', type: 'شكوى', branchName: '', rating: 0, message: '' }
 
@@ -20,7 +20,8 @@ export default function Complaints() {
     })
   }, [])
 
-  const isPhoneValid = EGYPT_PHONE_REGEX.test(form.phone)
+  const phoneError = egyptPhoneError(form.phone)
+  const isPhoneValid = !phoneError
   const canSubmit = form.name.trim() && isPhoneValid && form.message.trim() && status !== 'sending'
 
   const handleSubmit = async (e) => {
@@ -108,12 +109,12 @@ export default function Complaints() {
               type="tel"
               inputMode="numeric"
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+              onChange={(e) => setForm({ ...form, phone: cleanEgyptPhoneInput(e.target.value) })}
               placeholder="01xxxxxxxxx"
               aria-invalid={form.phone.length > 0 && !isPhoneValid}
             />
             {form.phone.length > 0 && !isPhoneValid && (
-              <span className="complaints__hint">لازم يكون رقم موبايل مصري صحيح (11 رقم)</span>
+              <span className="complaints__hint">{phoneError}</span>
             )}
           </label>
 
