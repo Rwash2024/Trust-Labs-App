@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { QUICK_ACTIONS, FLOWS, HOTLINE, EGYPT_PHONE_REGEX, normalizeDigits, trackSampleByPhone, priceLookup, branchesByGovernorate } from '../lib/chatFlows'
+import { QUICK_ACTIONS, FLOWS, HOTLINE, normalizeDigits, trackSampleByPhone, priceLookup, branchesByGovernorate } from '../lib/chatFlows'
+import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
 import { isGreeting } from '../lib/greeting'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import './ChatWidget.css'
@@ -227,9 +228,11 @@ export default function ChatWidget() {
     // Waiting for a phone number (sample tracking) — answered from the database, no AI.
     if (awaiting === 'track_phone') {
       const digits = normalizeDigits(trimmed).replace(/[\s-]/g, '')
-      if (EGYPT_PHONE_REGEX.test(digits)) {
+      const phone = cleanEgyptPhoneInput(digits)
+      const phoneError = egyptPhoneError(phone)
+      if (!phoneError) {
         try {
-          const flow = await trackSampleByPhone(digits)
+          const flow = await trackSampleByPhone(phone)
           addMessage('bot', flow.text, flow)
           setAwaiting(null)
           appendMenu()
@@ -241,7 +244,7 @@ export default function ChatWidget() {
         return
       }
       if (/^[\d+]+$/.test(digits)) {
-        addMessage('bot', 'الرقم مش صحيح، اكتب رقم موبايل من 11 رقم زي 01012345678 📱')
+        addMessage('bot', `${phoneError} 📱`)
         setSending(false)
         return
       }

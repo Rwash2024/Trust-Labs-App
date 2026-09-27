@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CardIcon, ShieldIcon, PercentIcon, GiftIcon, CheckIcon } from '../components/icons'
 import logoWhiteFull from '../assets/logo-white-full.png'
+import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
 import './TrustCard.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
@@ -40,7 +41,11 @@ export default function TrustCard() {
   const [form, setForm] = useState({ name: '', phone: '', needsCard: null })
   const [needsCardError, setNeedsCardError] = useState(false)
 
+  const [showPhoneError, setShowPhoneError] = useState(false)
+
   const updateField = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
+  const updatePhone = (e) => setForm((prev) => ({ ...prev, phone: cleanEgyptPhoneInput(e.target.value) }))
+  const phoneError = egyptPhoneError(form.phone)
 
   const selectNeedsCard = (value) => {
     setForm((prev) => ({ ...prev, needsCard: value }))
@@ -49,6 +54,10 @@ export default function TrustCard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (phoneError) {
+      setShowPhoneError(true)
+      return
+    }
     if (!form.needsCard) {
       setNeedsCardError(true)
       return
@@ -131,10 +140,14 @@ export default function TrustCard() {
               required
               type="tel"
               inputMode="numeric"
+              dir="ltr"
               value={form.phone}
-              onChange={updateField('phone')}
-              placeholder="رقم للتواصل"
+              onChange={updatePhone}
+              onBlur={() => setShowPhoneError(form.phone.length > 0)}
+              placeholder="01xxxxxxxxx"
+              aria-invalid={showPhoneError && !!phoneError}
             />
+            {showPhoneError && phoneError && <span className="trust-card__error">{phoneError}</span>}
           </label>
 
           <div className="trust-card__field">

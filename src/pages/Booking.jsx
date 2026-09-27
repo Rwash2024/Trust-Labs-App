@@ -6,6 +6,7 @@ import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import { FlaskIcon, MapPinIcon, CheckIcon, SearchIcon, PlusIcon } from '../components/icons'
 import LaunchOfferCounter from '../components/LaunchOfferCounter'
 import { filterTests } from '../lib/testSearch'
+import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
 import './Booking.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
@@ -13,7 +14,6 @@ const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID
 const PAYMOB_LINK = import.meta.env.VITE_PAYMOB_LINK
 const HOME_VISIT_FEE = 75
 const ONLINE_PAYMENT_ENABLED = false // hidden temporarily until a payment provider (Paymob/InstaPay) is finalized
-const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
 
 function testToCartItem(test) {
   return { id: `test-${test.code}`, name: test.name, price: test.price, testCount: 1, tests: [test.name] }
@@ -69,11 +69,12 @@ export default function Booking() {
   const updateField = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
 
   const updatePhone = (e) => {
-    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 11)
+    const digitsOnly = cleanEgyptPhoneInput(e.target.value)
     setForm((prev) => ({ ...prev, phone: digitsOnly }))
   }
 
-  const isPhoneValid = EGYPT_PHONE_REGEX.test(form.phone)
+  const phoneError = egyptPhoneError(form.phone)
+  const isPhoneValid = !phoneError
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -494,7 +495,7 @@ export default function Booking() {
               aria-invalid={form.phone.length > 0 && !isPhoneValid}
             />
             {form.phone.length > 0 && !isPhoneValid && (
-              <span className="booking__field-error">لازم يكون رقم موبايل مصري صحيح (11 رقم، يبدأ بـ 010 أو 011 أو 012 أو 015)</span>
+              <span className="booking__field-error">{phoneError}</span>
             )}
           </label>
 

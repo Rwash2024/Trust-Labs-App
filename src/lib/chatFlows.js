@@ -8,11 +8,7 @@ import { ARABIC_ALIASES, hasTerm } from './testSearch'
 
 export const RESULTS_PORTAL_URL = 'http://webresults.trustlabseg.com/Login/Index/?Type=Individual'
 export const HOTLINE = '16183'
-export const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
-
-export function normalizeDigits(text) {
-  return text.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
-}
+export { EGYPT_PHONE_REGEX, normalizeDigits } from './phone'
 
 // A flow result: { text, link?: { to | href, label }, awaiting?: 'track_phone' }
 export const QUICK_ACTIONS = [

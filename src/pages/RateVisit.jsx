@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { submitVisitRating, submitComplaint, fetchBranchGroups } from '../lib/data'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
+import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
 import './RateVisit.css'
 
 // "قيّم زيارتك" — matches the real Trust Lab Ops tablet survey on purpose:
@@ -89,10 +90,18 @@ export default function RateVisit() {
   }
 
   const isLowRating = answers.overall <= LOW_RATING_THRESHOLD
+  // Optional for a good rating, but if typed it must be a real number — a fake
+  // one is worse than none, since staff would chase it.
+  const phoneError = phone ? egyptPhoneError(phone) : ''
 
   async function submit() {
     if (isLowRating && !phone.trim()) {
       setError('اكتب رقم موبايلك عشان فريق خدمة العملاء يقدر يتواصل معاك.')
+      setStatus('error')
+      return
+    }
+    if (phoneError) {
+      setError(phoneError)
       setStatus('error')
       return
     }
@@ -211,9 +220,11 @@ export default function RateVisit() {
                 inputMode="numeric"
                 maxLength={11}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                onChange={(e) => setPhone(cleanEgyptPhoneInput(e.target.value))}
                 placeholder="01xxxxxxxxx"
+                aria-invalid={phone.length === 11 && !!phoneError}
               />
+              {phone.length === 11 && phoneError && <span className="ratevisit__error">{phoneError}</span>}
             </label>
             {visitType === 'home' && (
               <label className="ratevisit__field">

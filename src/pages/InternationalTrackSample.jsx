@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { fetchSampleStatusByPhone } from '../lib/data'
 import { SearchIcon, ShieldIcon, CheckIcon } from '../components/icons'
 import InternationalNav from '../components/InternationalNav'
+import { cleanEgyptPhoneInput, cleanInternationalPhoneInput, internationalPhoneError } from '../lib/phone'
 import './TrackSample.css'
 
 // Arabic status values are fixed in the database (sample_tracking check
@@ -63,8 +64,14 @@ export default function InternationalTrackSample() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!phone.trim()) return
+    if (internationalPhoneError(phone)) {
+      setStatus('invalid-phone')
+      return
+    }
     setStatus('loading')
-    const data = await fetchSampleStatusByPhone(phone.trim())
+    // Samples are stored as local Egyptian numbers (01xxxxxxxxx), so +20 / 0020 is stripped before the lookup.
+    const isEgyptian = /^(\+?20|0020|0)/.test(phone)
+    const data = await fetchSampleStatusByPhone(isEgyptian ? cleanEgyptPhoneInput(phone) : phone.replace(/\D/g, ''))
     if (data.length > 0) {
       setResults(data)
       setStatus('found')
@@ -93,7 +100,7 @@ export default function InternationalTrackSample() {
             type="tel"
             dir="ltr"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(cleanInternationalPhoneInput(e.target.value))}
             placeholder="Phone number"
           />
           <button className="track__search-btn" type="submit" disabled={status === 'loading'}>
@@ -103,6 +110,7 @@ export default function InternationalTrackSample() {
       </section>
 
       <div className="track__body">
+        {status === 'invalid-phone' && <p className="track__error">{internationalPhoneError(phone)}</p>}
         {status === 'not-found' && (
           <p className="track__error">No booking found for this number. Double-check it or call our hotline on 16183.</p>
         )}
