@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { submitVisitRating, submitComplaint, fetchBranchGroups } from '../lib/data'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
+import { lowestScore, ratingLevel } from '../lib/ratings'
+import { HeartIcon } from '../components/icons'
 import './RateVisit.css'
 
 // "قيّم زيارتك" — matches the real Trust Lab Ops tablet survey on purpose:
@@ -9,11 +11,11 @@ import './RateVisit.css'
 // `visit_ratings` table; forwarding it on to Trust Lab Ops happens server-side
 // once they expose a submit-survey webhook (see supabase/visit_ratings_migration.sql).
 //
-// One deliberate exception to "everything optional": a bad overall rating
-// (😡/😞) requires a phone number and skips straight to a complaint filed in
-// the existing شكاوى tab — otherwise a dissatisfied patient's rating arrives
-// with no way for staff to follow up.
-const LOW_RATING_THRESHOLD = 2
+// One deliberate exception to "everything optional": a 😡/😞 on ANY of the
+// three questions requires a phone number and files a complaint in the
+// existing شكاوى tab — otherwise a dissatisfied patient's rating arrives with
+// no way for staff to follow up. A 😐 keeps the phone optional but asks what
+// would have made the visit better (see src/lib/ratings.js).
 
 const QUESTIONS = {
   branch: [
@@ -89,10 +91,21 @@ export default function RateVisit() {
     else setScreen('final')
   }
 
-  const isLowRating = answers.overall <= LOW_RATING_THRESHOLD
+  const level = ratingLevel(Object.values(answers))
+  const isLowRating = level === 'low'
+  const isMediumRating = level === 'medium'
   // Optional for a good rating, but if typed it must be a real number — a fake
   // one is worse than none, since staff would chase it.
   const phoneError = phone ? egyptPhoneError(phone) : ''
+
+  function lowAnswersSummary() {
+    const questions = QUESTIONS[visitType]
+    const keys = ['overall', visitType === 'home' ? 'punctuality' : 'speed', 'staff']
+    return keys
+      .map((k, i) => (answers[k] <= 2 ? `${questions[i]} ${FACES.find((f) => f.v === answers[k]).e}` : null))
+      .filter(Boolean)
+      .join(' / ')
+  }
 
   async function submit() {
     if (isLowRating && !phone.trim()) {
@@ -101,7 +114,8 @@ export default function RateVisit() {
       return
     }
     if (phoneError) {
-      setError(phoneError)
+      // At 11 digits the message is already shown under the field — don't repeat it by the button.
+      setError(phone.length === 11 ? '' : phoneError)
       setStatus('error')
       return
     }
@@ -119,12 +133,14 @@ export default function RateVisit() {
           phone: phone.trim(),
           type: 'شكوى',
           branchName: visitType === 'branch' ? branchName : 'زيارة منزلية',
-          rating: answers.overall,
-          message:
-            comment.trim() ||
+          rating: lowestScore(Object.values(answers)),
+          message: [
             `تقييم منخفض من استبيان "قيّم زيارتك" (${visitType === 'branch' ? 'زيارة فرع' : 'زيارة منزلية'})${
               chemistName ? ` — الكيميائي: ${chemistName}` : ''
-            }. من غير تفاصيل إضافية من المريض.`,
+            }`,
+            `الأسئلة اللي اتقيّمت سيء: ${lowAnswersSummary()}`,
+            comment.trim() ? `تعليق المريض: ${comment.trim()}` : 'من غير تفاصيل إضافية من المريض.',
+          ].join('\n'),
         }).catch((err) => console.error('auto-filing complaint failed (non-blocking)', err))
       }
 
@@ -206,6 +222,10 @@ export default function RateVisit() {
               <p className="ratevisit__q-sub" style={{ color: 'var(--color-error)', fontWeight: 'bold' }}>
                 معلش على التجربة 🙏 سيب رقمك عشان فريقنا يتواصل معاك ويحل المشكلة
               </p>
+            ) : isMediumRating ? (
+              <p className="ratevisit__q-sub" style={{ color: 'var(--color-primary-dark)', fontWeight: 'bold' }}>
+                إيه اللي كان ممكن يخلي زيارتك أحسن؟ ولو سبت رقمك فريقنا هيتابع معاك
+              </p>
             ) : (
               <p className="ratevisit__q-sub">البيانات دي كلها اختيارية</p>
             )}
@@ -233,10 +253,15 @@ export default function RateVisit() {
               </label>
             )}
             <label className="ratevisit__field">
-              <span>حابب تقول لنا حاجة؟</span>
-              <textarea rows={3} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="اكتب تعليقك هنا..." />
+              <span>{isMediumRating ? 'إيه اللي كان ممكن نعمله أحسن؟' : 'حابب تقول لنا حاجة؟'}</span>
+              <textarea
+                rows={3}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder={isMediumRating ? 'مثلاً: الانتظار، التعامل، النظافة...' : 'اكتب تعليقك هنا...'}
+              />
             </label>
-            {status === 'error' && <p className="ratevisit__error">{error}</p>}
+            {status === 'error' && error && <p className="ratevisit__error">{error}</p>}
             <button className="ratevisit__btn ratevisit__btn--primary" onClick={submit} disabled={status === 'sending'}>
               {status === 'sending' ? 'جاري الإرسال...' : 'إرسال'}
             </button>
@@ -250,9 +275,15 @@ export default function RateVisit() {
 
         {screen === 'thanks' && (
           <div className="ratevisit__thanks">
-            <div className="heart">💙</div>
+            <HeartIcon className="heart" width={56} height={56} aria-hidden="true" />
             <h2>شكراً ليك!</h2>
-            <p>{isLowRating ? 'فريق خدمة العملاء هيتواصل معاك قريب' : 'رأيك بيساعدنا نتحسن كل يوم'}</p>
+            <p>
+              {isLowRating
+                ? 'فريق خدمة العملاء هيتواصل معاك قريب'
+                : isMediumRating && phone
+                  ? 'شكراً على صراحتك، فريقنا هيتابع معاك'
+                  : 'رأيك بيساعدنا نتحسن كل يوم'}
+            </p>
           </div>
         )}
       </div>

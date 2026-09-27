@@ -191,7 +191,9 @@
   padding: var(--space-10) 0;
 }
 .ratevisit__thanks .heart {
-  font-size: 54px;
+  color: var(--color-primary);
+  display: block;
+  margin: 0 auto;
 }
 .ratevisit__thanks p {
   color: var(--color-gray);
