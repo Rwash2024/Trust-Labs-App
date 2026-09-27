@@ -371,3 +371,30 @@ export async function adminDeleteTrustCardRequest(id) {
   const { error } = await requireClient().from('trust_card_requests').delete().eq('id', id)
   if (error) throw error
 }
+
+// ---- Management report (Excel) ----
+// Everything created between two local dates (inclusive), for the reports tab.
+export async function adminFetchReportData(fromDate, toDate) {
+  const client = requireClient()
+  const from = new Date(`${fromDate}T00:00:00`).toISOString()
+  const to = new Date(`${toDate}T23:59:59.999`).toISOString()
+  const inRange = (table, columns = '*') =>
+    client.from(table).select(columns).gte('created_at', from).lte('created_at', to).order('created_at')
+
+  const [cards, samples, bookings, complaints, ratings] = await Promise.all([
+    inRange('trust_card_requests'),
+    inRange('sample_tracking'),
+    inRange('bookings'),
+    inRange('complaints'),
+    inRange('visit_ratings'),
+  ])
+  for (const r of [cards, samples, bookings, complaints, ratings]) if (r.error) throw r.error
+
+  return {
+    cards: cards.data,
+    samples: samples.data,
+    bookings: bookings.data,
+    complaints: complaints.data,
+    ratings: ratings.data,
+  }
+}
