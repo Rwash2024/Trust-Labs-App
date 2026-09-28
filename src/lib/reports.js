@@ -5,6 +5,7 @@
 import { adminFetchReportData } from './admin'
 import { fetchAllTests, fetchPackages } from './data'
 import { ratingLevel, lowestScore } from './ratings'
+import { BRANCH_SLUGS, QR_PLACEMENTS } from '../data/branchSlugs'
 
 const BRAND_GREEN = 'FF39B76E'
 const LIGHT_GREEN = 'FFE9F8EF'
@@ -81,7 +82,7 @@ function addSummarySheet(workbook, { fromDate, toDate, data }) {
     })
   }
 
-  const { cards, samples, bookings, complaints, ratings } = data
+  const { cards, samples, bookings, complaints, ratings, scans } = data
 
   block('نظرة عامة', {
     'طلبات كارت الثقة': cards.length,
@@ -89,6 +90,8 @@ function addSummarySheet(workbook, { fromDate, toDate, data }) {
     'حجوزات': bookings.length,
     'شكاوى واقتراحات واستفسارات': complaints.length,
     'تقييمات «قيّم زيارتك»': ratings.length,
+    'مسح أكواد QR في الفروع': scans.length,
+    'أجهزة مختلفة مسحت كود': new Set(scans.map((s) => s.device_id).filter(Boolean)).size,
   })
 
   const activeCards = cards.filter((c) => c.status !== 'ملغي')
@@ -104,6 +107,11 @@ function addSummarySheet(workbook, { fromDate, toDate, data }) {
         .reduce((s, c) => s + Number(c.price || 0), 0),
     },
   )
+
+  if (scans.length) {
+    block('مسح أكواد QR حسب الفرع', countBy(scans, (s) => BRANCH_SLUGS[s.branch] || s.branch))
+    block('مسح أكواد QR حسب المكان', countBy(scans, (s) => QR_PLACEMENTS[s.placement]?.label || s.placement))
+  }
 
   block('العينات حسب الحالة', countBy(samples, 'status'))
   block('العينات حسب الفرع', countBy(samples, 'branch_name'))
@@ -386,6 +394,23 @@ export async function buildManagementReport({ fromDate, toDate, fullPhones = fal
     }),
   )
 
+  addTableSheet(
+    workbook,
+    'مسح الأكواد',
+    [
+      { header: 'التاريخ', key: 'created_at', width: 18, date: true },
+      { header: 'الفرع', key: 'branch', width: 24 },
+      { header: 'المكان', key: 'placement', width: 26 },
+      { header: 'الصفحة', key: 'path', width: 16 },
+    ],
+    data.scans.map((s) => ({
+      created_at: dateTime(s.created_at),
+      branch: BRANCH_SLUGS[s.branch] || s.branch,
+      placement: QR_PLACEMENTS[s.placement]?.label || s.placement,
+      path: s.path || '',
+    })),
+  )
+
   const buffer = await workbook.xlsx.writeBuffer()
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
   const url = URL.createObjectURL(blob)
@@ -403,5 +428,6 @@ export async function buildManagementReport({ fromDate, toDate, fullPhones = fal
     bookings: data.bookings.length,
     complaints: data.complaints.length,
     ratings: data.ratings.length,
+    scans: data.scans.length,
   }
 }

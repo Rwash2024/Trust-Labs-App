@@ -4,6 +4,10 @@ import { BrowserRouter } from 'react-router-dom'
 import { BookingProvider } from './context/BookingContext.jsx'
 import './index.css'
 import App from './App.jsx'
+import { captureQrScanFromUrl } from './lib/qrTracking'
+
+// Before the router reads the URL, so the ?b=&p= params are already gone.
+captureQrScanFromUrl()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
