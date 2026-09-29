@@ -93,6 +93,31 @@ const TOOLS = [
   },
 ]
 
+// Same rules as src/lib/phone.js (Egyptian mobile, not a filler pattern like
+// 01000000000 / 01012345678) — the model can pass any string it extracted from
+// the chat, so the phone is checked here before anything is written.
+const INVALID_PHONE_MESSAGE = 'رقم الموبايل مش صحيح أو شكله مش حقيقي. اطلب من العميل رقم موبايل مصري صحيح (11 رقم يبدأ بـ 010 أو 011 أو 012 أو 015) قبل ما تكمّل.'
+
+function cleanEgyptPhone(value: unknown): string | null {
+  let digits = String(value ?? '')
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .replace(/\D/g, '')
+  if (digits.startsWith('0020')) digits = digits.slice(4)
+  else if (digits.startsWith('20') && digits.length > 11) digits = digits.slice(2)
+  if (digits.startsWith('1') && digits.length === 10) digits = `0${digits}`
+  if (!/^01[0125]\d{8}$/.test(digits)) return null
+  const sub = digits.slice(3)
+  const fake =
+    /^(\d)\1+$/.test(sub) ||
+    /(\d)\1{6,}/.test(sub) ||
+    /^(\d\d)\1{3,}$/.test(sub) ||
+    sub === sub.slice(0, 3).repeat(3).slice(0, 8) ||
+    '01234567890123456789'.includes(sub) ||
+    '98765432109876543210'.includes(sub)
+  return fake ? null : digits
+}
+
 async function runTool(supabase: ReturnType<typeof createClient>, name: string, input: any) {
   switch (name) {
     case 'get_prep_instructions': {
@@ -106,7 +131,9 @@ async function runTool(supabase: ReturnType<typeof createClient>, name: string, 
     }
 
     case 'track_sample': {
-      const { data, error } = await supabase.rpc('get_sample_status_by_phone', { p_phone: input.phone })
+      const phone = cleanEgyptPhone(input.phone)
+      if (!phone) return { found: false, message: INVALID_PHONE_MESSAGE }
+      const { data, error } = await supabase.rpc('get_sample_status_by_phone', { p_phone: phone })
       if (error || !data || data.length === 0) {
         return { found: false, message: 'مفيش حجز مسجّل بالرقم ده، تأكد إنه صح أو كلّم الخط الساخن.' }
       }
@@ -114,9 +141,11 @@ async function runTool(supabase: ReturnType<typeof createClient>, name: string, 
     }
 
     case 'submit_complaint': {
+      const phone = cleanEgyptPhone(input.phone)
+      if (!phone) return { success: false, message: INVALID_PHONE_MESSAGE }
       const { error } = await supabase.from('complaints').insert({
         name: input.name,
-        phone: input.phone,
+        phone,
         type: input.type,
         branch_name: input.branch_name || null,
         message: input.message,
@@ -126,6 +155,8 @@ async function runTool(supabase: ReturnType<typeof createClient>, name: string, 
     }
 
     case 'create_booking': {
+      const phone = cleanEgyptPhone(input.phone)
+      if (!phone) return { success: false, message: INVALID_PHONE_MESSAGE }
       const bookingRef = generateBookingRef()
       const homeVisitFee = input.mode === 'home' ? HOME_VISIT_FEE : 0
       const { error } = await supabase.from('bookings').insert({
@@ -133,7 +164,7 @@ async function runTool(supabase: ReturnType<typeof createClient>, name: string, 
         source: 'chat_assistant',
         mode: input.mode,
         name: input.name,
-        phone: input.phone,
+        phone,
         dob: input.dob,
         address: input.address || null,
         branch_name: input.branch_name || null,

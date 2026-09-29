@@ -5,18 +5,12 @@ import { fetchBranchGroups, fetchAllTestsForeign } from '../lib/data'
 import { testToCartItem } from '../lib/cart'
 import { FlaskIcon, MapPinIcon, CheckIcon, SearchIcon, PlusIcon } from '../components/icons'
 import InternationalNav from '../components/InternationalNav'
+import { cleanInternationalPhoneInput, internationalPhoneError } from '../lib/phone'
 import './InternationalBooking.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
 const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : null
 const HOME_VISIT_FEE = 113 // 75 EGP local fee x1.5 foreign-patient rate
-
-// International phone numbers vary in length/format — just check it has a
-// sensible number of digits, not the Egyptian-specific 01xxxxxxxxx pattern.
-function isValidInternationalPhone(value) {
-  const digits = value.replace(/\D/g, '')
-  return digits.length >= 8 && digits.length <= 15
-}
 
 function generateBookingRef() {
   const now = new Date()
@@ -60,7 +54,8 @@ export default function InternationalBooking() {
   }, [testQuery, allTests])
 
   const updateField = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
-  const isPhoneValid = isValidInternationalPhone(form.phone)
+  const phoneError = internationalPhoneError(form.phone)
+  const isPhoneValid = !phoneError
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -279,13 +274,14 @@ export default function InternationalBooking() {
             <input
               required
               type="tel"
+              dir="ltr"
               value={form.phone}
-              onChange={updateField('phone')}
+              onChange={(e) => setForm((prev) => ({ ...prev, phone: cleanInternationalPhoneInput(e.target.value) }))}
               placeholder="+1 555 000 1234"
               aria-invalid={form.phone.length > 0 && !isPhoneValid}
             />
             {form.phone.length > 0 && !isPhoneValid && (
-              <span className="ibooking__field-error">Please enter a valid phone number (8–15 digits).</span>
+              <span className="ibooking__field-error">{phoneError}</span>
             )}
           </label>
 

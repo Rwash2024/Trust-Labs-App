@@ -13,6 +13,8 @@ import ComplaintsTab from './ComplaintsTab'
 import BookingsTab from './BookingsTab'
 import VisitRatingsTab from './VisitRatingsTab'
 import MedicalFilesTab from './MedicalFilesTab'
+import TrustCardTab from './TrustCardTab'
+import ReportsTab from './ReportsTab'
 import logoWhiteFull from '../../assets/logo-white-full.png'
 import './Admin.css'
 
@@ -25,11 +27,13 @@ const tabs = [
   { key: 'news', label: 'أخبار المعمل' },
   { key: 'partners', label: 'شركاء النجاح' },
   { key: 'about', label: 'من نحن' },
+  { key: 'trust-card', label: 'كارت الثقة' },
   { key: 'samples', label: 'تتبع العينات' },
   { key: 'bookings', label: 'الحجوزات' },
   { key: 'complaints', label: 'شكاوى واقتراحات' },
   { key: 'ratings', label: 'قيّم زيارتك' },
-  { key: 'medical-files', label: 'كارت الثقة' },
+  { key: 'medical-files', label: 'الملفات الطبية' },
+  { key: 'reports', label: '📊 تقارير' },
 ]
 
 export default function AdminDashboard() {
@@ -70,11 +74,13 @@ export default function AdminDashboard() {
         {activeTab === 'news' && <NewsTab />}
         {activeTab === 'partners' && <PartnersTab />}
         {activeTab === 'about' && <AboutTab />}
+        {activeTab === 'trust-card' && <TrustCardTab />}
         {activeTab === 'samples' && <SampleTrackingTab canManage />}
         {activeTab === 'bookings' && <BookingsTab />}
         {activeTab === 'complaints' && <ComplaintsTab />}
         {activeTab === 'ratings' && <VisitRatingsTab />}
         {activeTab === 'medical-files' && <MedicalFilesTab />}
+        {activeTab === 'reports' && <ReportsTab />}
       </main>
     </div>
   )

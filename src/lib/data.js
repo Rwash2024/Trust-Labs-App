@@ -394,3 +394,37 @@ export async function fetchAboutContent() {
     accreditations: data.accreditations?.length ? data.accreditations : defaultAboutContent.accreditations,
   }
 }
+
+// Trust Card prices (EGP) for both card types, set by the admin in the
+// "الملفات الطبية" tab (trust_card_pricing table — see
+// trust_card_pricing_migration.sql). The fallback keeps the page showing
+// real prices if that table or the RPC below isn't reachable.
+export const DEFAULT_TRUST_CARD_PRICES = { personal: 250, family: 650 }
+
+export async function fetchTrustCardPrices() {
+  if (!supabase) return DEFAULT_TRUST_CARD_PRICES
+  const { data, error } = await supabase.rpc('get_trust_card_prices')
+  const row = data?.[0]
+  if (error || !row) return DEFAULT_TRUST_CARD_PRICES
+  return {
+    personal: Number(row.personal_price) || DEFAULT_TRUST_CARD_PRICES.personal,
+    family: Number(row.family_price) || DEFAULT_TRUST_CARD_PRICES.family,
+  }
+}
+
+// Saves a Trust Card order — the record staff work from in the admin tab.
+// The price is stamped by the database from trust_card_pricing, not sent
+// from here (see set_trust_card_request_price in
+// trust_card_requests_family_pricing_migration.sql).
+export async function submitTrustCardRequest({ forWhom, buyerName, cardHolderName, relationship, phone, cardType }) {
+  if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
+  const { error } = await supabase.from('trust_card_requests').insert({
+    for_whom: forWhom,
+    buyer_name: buyerName.trim(),
+    card_holder_name: cardHolderName.trim(),
+    relationship: forWhom === 'other' ? relationship : null,
+    phone,
+    card_type: cardType,
+  })
+  if (error) throw error
+}

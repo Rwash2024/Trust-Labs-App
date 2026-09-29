@@ -3,7 +3,7 @@ import { adminListComplaints, adminUpdateComplaintStatus, adminDeleteComplaint }
 
 const STATUSES = ['جديد', 'تحت المراجعة', 'تم الحل']
 
-export default function ComplaintsTab() {
+export default function ComplaintsTab({ canDelete = true }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -71,7 +71,7 @@ export default function ComplaintsTab() {
             <th>الرسالة</th>
             <th>التاريخ</th>
             <th>الحالة</th>
-            <th></th>
+            {canDelete && <th></th>}
           </tr>
         </thead>
         <tbody>
@@ -97,11 +97,13 @@ export default function ComplaintsTab() {
                   ))}
                 </select>
               </td>
-              <td className="admin-table__actions">
-                <button className="admin-btn admin-btn--sm admin-btn--danger" onClick={() => handleDelete(i.id)}>
-                  حذف
-                </button>
-              </td>
+              {canDelete && (
+                <td className="admin-table__actions">
+                  <button className="admin-btn admin-btn--sm admin-btn--danger" onClick={() => handleDelete(i.id)}>
+                    حذف
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

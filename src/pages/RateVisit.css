@@ -191,10 +191,36 @@
   padding: var(--space-10) 0;
 }
 .ratevisit__thanks .heart {
-  font-size: 54px;
+  color: var(--color-primary);
+  display: block;
+  margin: 0 auto;
 }
 .ratevisit__thanks p {
   color: var(--color-gray);
   font-size: var(--text-body-size);
   margin-top: var(--space-2);
+}
+
+.ratevisit__branch-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.ratevisit__branch-gov {
+  font-size: var(--text-small-size);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-dark);
+  margin-top: var(--space-2);
+}
+.ratevisit__branch {
+  width: 100%;
+  min-height: 60px;
+  font-family: var(--font-family);
+  font-size: 17px;
+  color: var(--color-dark);
+  text-align: start;
+}
+.ratevisit__branch.active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
 }

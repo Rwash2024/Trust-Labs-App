@@ -258,6 +258,14 @@ export function ChatIcon(props) {
   )
 }
 
+export function HeartIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} {...base} fill="currentColor" stroke="none" {...props}>
+      <path d="M12 20.5s-7.5-4.6-9.3-9.2C1.5 8.2 3.4 4.5 7 4.5c2.1 0 3.8 1.2 5 3 1.2-1.8 2.9-3 5-3 3.6 0 5.5 3.7 4.3 6.8-1.8 4.6-9.3 9.2-9.3 9.2Z" />
+    </svg>
+  )
+}
+
 export function StarIcon(props) {
   return (
     <svg viewBox="0 0 24 24" width={22} height={22} {...base} {...props}>

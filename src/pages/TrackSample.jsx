@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { fetchSampleStatusByPhone } from '../lib/data'
+import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
 import { SearchIcon, ShieldIcon, CheckIcon } from '../components/icons'
 import './TrackSample.css'
 
@@ -51,6 +52,10 @@ export default function TrackSample() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!phone.trim()) return
+    if (egyptPhoneError(phone)) {
+      setStatus('invalid-phone')
+      return
+    }
     setStatus('loading')
     const data = await fetchSampleStatusByPhone(phone.trim())
     if (data.length > 0) {
@@ -82,7 +87,7 @@ export default function TrackSample() {
             dir="ltr"
             inputMode="numeric"
             value={phone}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+            onChange={(e) => setPhone(cleanEgyptPhoneInput(e.target.value))}
             placeholder="01xxxxxxxxx"
           />
           <button className="track__search-btn" type="submit" disabled={status === 'loading'}>
@@ -92,6 +97,7 @@ export default function TrackSample() {
       </section>
 
       <div className="track__body">
+        {status === 'invalid-phone' && <p className="track__error">{egyptPhoneError(phone)}</p>}
         {status === 'not-found' && (
           <p className="track__error">
             مفيش حجز مسجّل على الرقم ده، تأكد إنك كتبته صح أو كلّم الخط الساخن 16183.

@@ -409,6 +409,9 @@ export async function adminUploadPatientReport(file, kind, target) {
 }
 
 // كارت الثقة pricing — one settings row (id = 1), see trust_card_pricing_migration.sql.
+// This is the single source of truth for both prices; the customer-facing
+// request form reads it through the public get_trust_card_prices RPC, not
+// this table directly, so commission stays staff-only.
 export async function adminGetTrustCardPricing() {
   const { data, error } = await requireClient().from('trust_card_pricing').select('*').eq('id', 1).maybeSingle()
   if (error) throw error
@@ -427,4 +430,57 @@ export async function adminSaveTrustCardPricing({ personal_price, personal_commi
     })
     .eq('id', 1)
   if (error) throw error
+}
+
+// ---- Trust Card orders ----
+export async function adminListTrustCardRequests() {
+  const { data, error } = await requireClient()
+    .from('trust_card_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function adminUpdateTrustCardRequestStatus(id, status) {
+  const { error } = await requireClient()
+    .from('trust_card_requests')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function adminDeleteTrustCardRequest(id) {
+  const { error } = await requireClient().from('trust_card_requests').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ---- Management report (Excel) ----
+// Everything created between two local dates (inclusive), for the reports tab.
+export async function adminFetchReportData(fromDate, toDate) {
+  const client = requireClient()
+  const from = new Date(`${fromDate}T00:00:00`).toISOString()
+  const to = new Date(`${toDate}T23:59:59.999`).toISOString()
+  const inRange = (table, columns = '*') =>
+    client.from(table).select(columns).gte('created_at', from).lte('created_at', to).order('created_at')
+
+  const [cards, samples, bookings, complaints, ratings, scans] = await Promise.all([
+    inRange('trust_card_requests'),
+    inRange('sample_tracking'),
+    inRange('bookings'),
+    inRange('complaints'),
+    inRange('visit_ratings'),
+    inRange('qr_scans'),
+  ])
+  for (const r of [cards, samples, bookings, complaints, ratings]) if (r.error) throw r.error
+
+  return {
+    cards: cards.data,
+    samples: samples.data,
+    bookings: bookings.data,
+    complaints: complaints.data,
+    ratings: ratings.data,
+    // Optional: an empty list (not an error) until qr_scans_migration.sql has run.
+    scans: scans.error ? [] : scans.data,
+  }
 }

@@ -1,7 +1,19 @@
 import { useEffect, useState } from 'react'
 import { adminListVisitRatings } from '../../lib/admin'
+import { ratingLevel } from '../../lib/ratings'
 
 const TYPES = { branch: 'فرع', home: 'زيارة منزلية' }
+
+const levelOf = (i) => ratingLevel([i.overall, i.speed, i.punctuality, i.staff])
+
+// low → already filed in شكاوى; medium with a phone → staff should call back.
+function FollowUp({ item }) {
+  const level = levelOf(item)
+  if (level === 'low') return <span className="admin-badge">🔴 اتسجلت شكوى</span>
+  if (level === 'medium' && item.phone) return <span className="admin-badge">🟡 محتاج متابعة</span>
+  if (level === 'medium') return '😐 مقبول (من غير رقم)'
+  return '—'
+}
 
 function Stars({ value }) {
   if (!value) return '—'
@@ -23,7 +35,12 @@ export default function VisitRatingsTab() {
 
   if (loading) return <p className="admin-loading">جاري التحميل...</p>
 
-  const filtered = filter === 'all' ? items : items.filter((i) => i.visit_type === filter)
+  const filtered =
+    filter === 'all'
+      ? items
+      : filter === 'follow-up'
+        ? items.filter((i) => levelOf(i) !== 'good')
+        : items.filter((i) => i.visit_type === filter)
   const avg = filtered.length ? (filtered.reduce((s, i) => s + i.overall, 0) / filtered.length).toFixed(1) : '—'
 
   return (
@@ -36,6 +53,7 @@ export default function VisitRatingsTab() {
           <option value="all">الكل</option>
           <option value="branch">زيارة فرع</option>
           <option value="home">زيارة منزلية</option>
+          <option value="follow-up">محتاج متابعة / شكوى</option>
         </select>
       </div>
 
@@ -53,6 +71,7 @@ export default function VisitRatingsTab() {
             <th>الموبايل</th>
             <th>اسم الكيميائي</th>
             <th>التعليق</th>
+            <th>المتابعة</th>
             <th>التاريخ</th>
             <th>وصلت لـ Trust Lab Ops؟</th>
           </tr>
@@ -75,6 +94,9 @@ export default function VisitRatingsTab() {
               <td dir="ltr">{i.phone || '—'}</td>
               <td>{i.chemist_name || '—'}</td>
               <td style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>{i.comment || '—'}</td>
+              <td>
+                <FollowUp item={i} />
+              </td>
               <td>{new Date(i.created_at).toLocaleString('ar-EG')}</td>
               <td>{i.synced_to_erp ? '✅' : '⏳ لسه'}</td>
             </tr>
