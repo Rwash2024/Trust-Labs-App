@@ -14,6 +14,7 @@ import Branches from './pages/Branches'
 import Booking from './pages/Booking'
 import Contact from './pages/Contact'
 import TrustCard from './pages/TrustCard'
+import MedicalFile from './pages/MedicalFile'
 import Results from './pages/Results'
 import PrepInstructions from './pages/PrepInstructions'
 import Terms from './pages/Terms'
@@ -51,6 +52,7 @@ function PatientApp() {
           <Route path="/branches" element={<Branches />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/trust-card" element={<TrustCard />} />
+          <Route path="/medical-file" element={<MedicalFile />} />
           <Route path="/results" element={<Results />} />
           <Route path="/prep-instructions" element={<PrepInstructions />} />
           <Route path="/terms" element={<Terms />} />

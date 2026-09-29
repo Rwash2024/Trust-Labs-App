@@ -265,3 +265,152 @@ export function StarIcon(props) {
     </svg>
   )
 }
+
+// Two-tone "badge" icons — a filled tint plus a bolder glyph on top, meant to
+// sit inside a colored circle (see .medfile__nav-icon) rather than stand alone
+// like the thin line icons above. Used for the كارت الثقة menu.
+
+export function MedicalFileIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} fill="none" {...props}>
+      <path
+        d="M6 3.5h9l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19V5A1.5 1.5 0 0 1 6 3.5Z"
+        fill="currentColor"
+        fillOpacity="0.15"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M15 3.5V8h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M7.5 14h2l1.3-3 1.6 5 1.2-2H16.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+export function EmergencyIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} fill="none" {...props}>
+      <path
+        d="M12 3.5 19 6v5.5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-2.5Z"
+        fill="currentColor"
+        fillOpacity="0.15"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M12 8.7v6M9 11.7h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+export function TestTubeIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} fill="none" {...props}>
+      <path d="M9 3.5h6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path
+        d="M10 4v11.2a2 2 0 0 0 4 0V4"
+        fill="currentColor"
+        fillOpacity="0.12"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M10.15 12.3a1.85 1.85 0 0 0 3.7 0" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="17.5" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
+export function XRayIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} fill="none" {...props}>
+      <path
+        d="M12 3.8c-1.1 0-1.8.8-1.8 1.8v1.2c0 .8-.6 1.2-1.4 1.2H7.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 3.8c1.1 0 1.8.8 1.8 1.8v1.2c0 .8.6 1.2 1.4 1.2h1.3"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M12 8v12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeDasharray="0.5 2.6" />
+      <path
+        d="M6.5 10.5c1.7.9 3.6 1.4 5.5 1.4s3.8-.5 5.5-1.4M6.5 14.2c1.7.9 3.6 1.4 5.5 1.4s3.8-.5 5.5-1.4M7.3 17.7c1.4.7 3 1.1 4.7 1.1s3.3-.4 4.7-1.1"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  )
+}
+
+export function MicroscopeIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} fill="none" {...props}>
+      <path d="M8 20h9" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path d="M12.5 20v-3.8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      <path
+        d="M8 16.2h7.5a3.1 3.1 0 0 0 0-6.2h-1.3"
+        fill="currentColor"
+        fillOpacity="0.12"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10.7 3.6 15 7.9l-2.8 2.8-4.3-4.3 2.8-2.8Z"
+        fill="currentColor"
+        fillOpacity="0.15"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <circle cx="9" cy="6.2" r="0.9" fill="currentColor" />
+    </svg>
+  )
+}
+
+export function PersonIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} fill="none" {...props}>
+      <circle cx="12" cy="8" r="3.6" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2"
+        fill="currentColor"
+        fillOpacity="0.1"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+export function FamilyIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" width={22} height={22} fill="none" {...props}>
+      <circle cx="7.3" cy="7" r="2.3" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.4" />
+      <circle cx="16.7" cy="7" r="2.3" fill="currentColor" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.4" />
+      <circle cx="12" cy="9" r="2.1" fill="currentColor" fillOpacity="0.25" stroke="currentColor" strokeWidth="1.4" />
+      <path
+        d="M2.8 19.5c.4-2.7 2.2-4.4 4.5-4.4M21.2 19.5c-.4-2.7-2.2-4.4-4.5-4.4"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path d="M7.8 19.5c.3-2.9 2-4.8 4.2-4.8s3.9 1.9 4.2 4.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  )
+}

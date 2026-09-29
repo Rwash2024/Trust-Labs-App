@@ -334,3 +334,76 @@ export async function adminSaveAboutContent(content) {
     })
   if (error) throw error
 }
+
+// ---- كارت الثقة — staff filling in a patient's (or a family member's)
+// medical file after a test/scan is done. Staff reads/writes patient_cards
+// and family_members directly (RLS already grants "authenticated" full
+// access to both) — no need for the phone-gated RPCs the patient app uses.
+const REPORTS_BUCKET = 'patient-reports'
+
+export async function adminFindPatientCard(query) {
+  const q = query.trim()
+  if (!q) return null
+  const { data, error } = await requireClient()
+    .from('patient_cards')
+    .select('*')
+    .or(`card_code.eq.${q},phone.eq.${q}`)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function adminListFamilyMembers(cardCode) {
+  const { data, error } = await requireClient()
+    .from('family_members')
+    .select('*')
+    .eq('card_code', cardCode)
+    .order('created_at')
+  if (error) throw error
+  return data
+}
+
+export async function adminUpdatePatientMedicalFile(cardCode, { diagnoses, current_medications, investigation, imaging }) {
+  const { error } = await requireClient()
+    .from('patient_cards')
+    .update({
+      diagnoses: diagnoses?.trim() || null,
+      current_medications: current_medications?.trim() || null,
+      investigation: investigation?.trim() || null,
+      imaging: imaging?.trim() || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('card_code', cardCode)
+  if (error) throw error
+}
+
+export async function adminUpdateFamilyMemberMedicalFile(id, { diagnoses, current_medications, investigation, imaging }) {
+  const { error } = await requireClient()
+    .from('family_members')
+    .update({
+      diagnoses: diagnoses?.trim() || null,
+      current_medications: current_medications?.trim() || null,
+      investigation: investigation?.trim() || null,
+      imaging: imaging?.trim() || null,
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
+// kind: 'investigation' | 'imaging'. target: { cardCode } for the holder, or
+// { cardCode, memberId } for a family member.
+export async function adminUploadPatientReport(file, kind, target) {
+  const client = requireClient()
+  const ext = file.name.split('.').pop() || 'pdf'
+  const path = `${target.cardCode}/${target.memberId || 'self'}-${kind}-${Date.now()}.${ext}`
+  const { error: uploadError } = await client.storage.from(REPORTS_BUCKET).upload(path, file)
+  if (uploadError) throw uploadError
+
+  const column = kind === 'investigation' ? 'investigation_file_path' : 'imaging_file_path'
+  const table = target.memberId ? 'family_members' : 'patient_cards'
+  const match = target.memberId ? { id: target.memberId } : { card_code: target.cardCode }
+  const { error: updateError } = await client.from(table).update({ [column]: path }).match(match)
+  if (updateError) throw updateError
+
+  return path
+}

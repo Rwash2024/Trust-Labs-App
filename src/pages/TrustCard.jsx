@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { CardIcon, ShieldIcon, PercentIcon, GiftIcon, CheckIcon } from '../components/icons'
 import logoWhiteFull from '../assets/logo-white-full.png'
 import './TrustCard.css'
@@ -93,6 +94,11 @@ export default function TrustCard() {
         <span className="trust-card__discount-badge">خصم 25%</span>
       </section>
 
+      <Link to="/medical-file" className="trust-card__cta trust-card__cta--file">
+        <ShieldIcon width={20} height={20} />
+        عندك كارت بالفعل؟ ادخل على ملفك الطبي
+      </Link>
+
       <div className="trust-card__benefits">
         {benefits.map(({ Icon, title, desc }) => (
           <div className="trust-card__benefit" key={title}>
@@ -113,12 +119,17 @@ export default function TrustCard() {
             <CheckIcon />
           </span>
           <h2>تم إرسال طلبك</h2>
-          <p>هيتواصل معاك فريق خدمة العملاء لتفعيل كارت الثقة الخاص بيك.</p>
+          <p>
+            هيتواصل معاك فريق خدمة العملاء لتسليمك كارت الثقة. وبعد ما تستلمه، ادخل تاني هنا واضغط "ادخل على ملفك
+            الطبي" عشان تفعّله بموبايلك.
+          </p>
         </div>
       ) : showForm ? (
         <form className="trust-card__form" onSubmit={handleSubmit}>
-          <h2 className="trust-card__form-title">تواصل معنا</h2>
-          <p className="trust-card__form-subtitle">لطلب كارت الثقة من معامل Trust Labs</p>
+          <h2 className="trust-card__form-title">اطلب كارت الثقة</h2>
+          <p className="trust-card__form-subtitle">
+            دي بياناتك عشان فريقنا يوصّلك الكارت — تفعيله وعرض ملفك الطبي بيتم بعد كده من نفس الصفحة دي.
+          </p>
 
           <label className="trust-card__field">
             <span>الاسم</span>
@@ -171,8 +182,8 @@ export default function TrustCard() {
           </button>
         </form>
       ) : (
-        <button className="trust-card__cta" onClick={() => setShowForm(true)}>
-          أطلب كارت الثقة
+        <button className="trust-card__cta trust-card__cta--outline" onClick={() => setShowForm(true)}>
+          لسه معندكش كارت؟ اطلبه دلوقتي
         </button>
       )}
     </div>
