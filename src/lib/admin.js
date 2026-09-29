@@ -407,3 +407,24 @@ export async function adminUploadPatientReport(file, kind, target) {
 
   return path
 }
+
+// كارت الثقة pricing — one settings row (id = 1), see trust_card_pricing_migration.sql.
+export async function adminGetTrustCardPricing() {
+  const { data, error } = await requireClient().from('trust_card_pricing').select('*').eq('id', 1).maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function adminSaveTrustCardPricing({ personal_price, personal_commission, family_price, family_commission }) {
+  const { error } = await requireClient()
+    .from('trust_card_pricing')
+    .update({
+      personal_price,
+      personal_commission,
+      family_price,
+      family_commission,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', 1)
+  if (error) throw error
+}

@@ -1,13 +1,92 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   adminFindPatientCard,
   adminListFamilyMembers,
   adminUpdatePatientMedicalFile,
   adminUpdateFamilyMemberMedicalFile,
   adminUploadPatientReport,
+  adminGetTrustCardPricing,
+  adminSaveTrustCardPricing,
 } from '../../lib/admin'
 
 const CARD_TYPE_LABEL = { personal: 'شخصي', family: 'عائلي' }
+
+// أسعار الكروت — بيانها الأول مرة في الشات مع الفريق (شخصي 250 = 200 نصيب
+// المعمل + 50 عمولة الموظف؛ عائلي 650 = 600 + 50)، متسجّلة هنا بدل ما تفضل
+// في رأس حد بس.
+function PricingPanel() {
+  const [pricing, setPricing] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    adminGetTrustCardPricing()
+      .then(setPricing)
+      .catch((e) => setError(e.message))
+  }, [])
+
+  const updateField = (field) => (e) => {
+    setPricing((prev) => ({ ...prev, [field]: e.target.value }))
+    setSaved(false)
+  }
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setError('')
+    try {
+      await adminSaveTrustCardPricing({
+        personal_price: Number(pricing.personal_price),
+        personal_commission: Number(pricing.personal_commission),
+        family_price: Number(pricing.family_price),
+        family_commission: Number(pricing.family_commission),
+      })
+      setSaved(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!pricing) return null
+
+  return (
+    <form className="admin-form" onSubmit={handleSave} style={{ maxWidth: 480 }}>
+      <h3>أسعار كارت الثقة</h3>
+      <div className="admin-form__row">
+        <label>
+          <span>سعر الكارت الشخصي (جنيه)</span>
+          <input type="number" min="0" value={pricing.personal_price} onChange={updateField('personal_price')} />
+        </label>
+        <label>
+          <span>عمولة الموظف (شخصي)</span>
+          <input type="number" min="0" value={pricing.personal_commission} onChange={updateField('personal_commission')} />
+        </label>
+      </div>
+      <div className="admin-form__row">
+        <label>
+          <span>سعر الكارت العائلي (جنيه)</span>
+          <input type="number" min="0" value={pricing.family_price} onChange={updateField('family_price')} />
+        </label>
+        <label>
+          <span>عمولة الموظف (عائلي)</span>
+          <input type="number" min="0" value={pricing.family_commission} onChange={updateField('family_commission')} />
+        </label>
+      </div>
+
+      {error && <p className="admin-error">{error}</p>}
+      {saved && <p className="admin-form__hint">تم الحفظ ✓</p>}
+
+      <div className="admin-form__actions">
+        <button type="submit" className="admin-btn admin-btn--primary" disabled={saving}>
+          {saving ? 'جاري الحفظ...' : 'حفظ الأسعار'}
+        </button>
+      </div>
+    </form>
+  )
+}
 
 // One person's editable medical fields — used for the holder and reused for
 // every family member, so the two stay visually identical.
@@ -155,6 +234,12 @@ export default function MedicalFilesTab() {
     <div>
       <div className="admin-toolbar">
         <h2>الملفات الطبية — كارت الثقة</h2>
+      </div>
+
+      <PricingPanel />
+
+      <div className="admin-toolbar">
+        <h2>البحث عن مريض</h2>
       </div>
 
       <form className="admin-form" onSubmit={handleSearch} style={{ maxWidth: 420 }}>
