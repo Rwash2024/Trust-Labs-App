@@ -68,6 +68,7 @@ export default function TrustCardRequests() {
         <thead>
           <tr>
             <th>صاحب الكارت</th>
+            <th>النوع</th>
             <th>لمين</th>
             <th>الطالب</th>
             <th>الموبايل</th>
@@ -81,6 +82,7 @@ export default function TrustCardRequests() {
           {filtered.map((i) => (
             <tr key={i.id}>
               <td>{i.card_holder_name}</td>
+              <td>{i.card_type === 'family' ? 'عائلي' : 'شخصي'}</td>
               <td>{i.for_whom === 'other' ? `🎁 هدية (${i.relationship})` : 'لنفسه'}</td>
               <td>{i.for_whom === 'other' ? i.buyer_name : '—'}</td>
               <td dir="ltr">{i.phone}</td>
@@ -104,7 +106,7 @@ export default function TrustCardRequests() {
           ))}
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={8} style={{ textAlign: 'center' }}>
+              <td colSpan={9} style={{ textAlign: 'center' }}>
                 مفيش طلبات
               </td>
             </tr>

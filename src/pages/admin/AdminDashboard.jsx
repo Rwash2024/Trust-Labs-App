@@ -12,6 +12,7 @@ import PartnersTab from './PartnersTab'
 import ComplaintsTab from './ComplaintsTab'
 import BookingsTab from './BookingsTab'
 import VisitRatingsTab from './VisitRatingsTab'
+import MedicalFilesTab from './MedicalFilesTab'
 import TrustCardTab from './TrustCardTab'
 import ReportsTab from './ReportsTab'
 import logoWhiteFull from '../../assets/logo-white-full.png'
@@ -31,6 +32,7 @@ const tabs = [
   { key: 'bookings', label: 'الحجوزات' },
   { key: 'complaints', label: 'شكاوى واقتراحات' },
   { key: 'ratings', label: 'قيّم زيارتك' },
+  { key: 'medical-files', label: 'الملفات الطبية' },
   { key: 'reports', label: '📊 تقارير' },
 ]
 
@@ -77,6 +79,7 @@ export default function AdminDashboard() {
         {activeTab === 'bookings' && <BookingsTab />}
         {activeTab === 'complaints' && <ComplaintsTab />}
         {activeTab === 'ratings' && <VisitRatingsTab />}
+        {activeTab === 'medical-files' && <MedicalFilesTab />}
         {activeTab === 'reports' && <ReportsTab />}
       </main>
     </div>

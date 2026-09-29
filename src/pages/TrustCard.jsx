@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { CardIcon, ShieldIcon, PercentIcon, GiftIcon, CheckIcon } from '../components/icons'
 import logoWhiteFull from '../assets/logo-white-full.png'
 import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
-import { fetchTrustCardPrice, submitTrustCardRequest, DEFAULT_TRUST_CARD_PRICE } from '../lib/data'
+import { fetchTrustCardPrices, submitTrustCardRequest, DEFAULT_TRUST_CARD_PRICES } from '../lib/data'
 import './TrustCard.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
@@ -38,38 +39,42 @@ const benefits = [
 
 const RELATIONSHIPS = ['أب', 'أم', 'زوج', 'زوجة', 'ابن', 'ابنة', 'أخ', 'أخت', 'قريب / صديق']
 
-// The card is printed with the holder's name and tied to their medical file,
-// so the holder's name must be the full four-part name (الاسم رباعي).
+// The card itself is blank (just a printed code + QR, no name) — the full
+// four-part name (الاسم رباعي) here is just for staff to confirm identity
+// when they call to arrange delivery.
 // Note: "عبد الله" counts as two words — we can't tell compound names apart.
 function fullNameError(value) {
   const words = value.trim().split(/\s+/).filter(Boolean)
   if (words.length === 0) return 'اكتب الاسم رباعي'
-  if (words.some((w) => !/^[\u0621-\u064Aa-zA-Z]{2,}$/.test(w))) return 'الاسم لازم يكون حروف بس، وكل اسم حرفين على الأقل'
+  if (words.some((w) => !/^[ء-يa-zA-Z]{2,}$/.test(w))) return 'الاسم لازم يكون حروف بس، وكل اسم حرفين على الأقل'
   if (words.length < 4) return `لازم الاسم يكون رباعي (كتبت ${words.length} ${words.length === 1 ? 'اسم' : 'أسماء'} بس)`
   return ''
 }
 
-const emptyForm = { forWhom: null, name: '', holderName: '', relationship: '', phone: '' }
+const emptyForm = { cardType: null, forWhom: null, name: '', holderName: '', relationship: '', phone: '' }
 
 export default function TrustCard() {
   const [showForm, setShowForm] = useState(false)
   const [status, setStatus] = useState('idle') // idle | submitting | success | error
   const [form, setForm] = useState(emptyForm)
-  const [price, setPrice] = useState(DEFAULT_TRUST_CARD_PRICE)
+  const [prices, setPrices] = useState(DEFAULT_TRUST_CARD_PRICES)
   const [touched, setTouched] = useState({})
   const [triedSubmit, setTriedSubmit] = useState(false)
 
   useEffect(() => {
-    fetchTrustCardPrice().then(setPrice)
+    fetchTrustCardPrices().then(setPrices)
   }, [])
 
   const updateField = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
   const updatePhone = (e) => setForm((prev) => ({ ...prev, phone: cleanEgyptPhoneInput(e.target.value) }))
   const touch = (field) => () => setTouched((prev) => ({ ...prev, [field]: true }))
   const selectForWhom = (value) => setForm((prev) => ({ ...prev, forWhom: value }))
+  const selectCardType = (value) => setForm((prev) => ({ ...prev, cardType: value }))
 
   const isGift = form.forWhom === 'other'
+  const isFamily = form.cardType === 'family'
   const errors = {
+    cardType: form.cardType ? '' : 'اختار نوع الكارت',
     forWhom: form.forWhom ? '' : 'اختار الكارت ليك ولا لشخص تاني',
     // Buying for yourself: your name is the one on the card, so it must be four-part.
     name: isGift ? (form.name.trim() ? '' : 'اكتب اسمك') : fullNameError(form.name),
@@ -78,7 +83,8 @@ export default function TrustCard() {
     phone: egyptPhoneError(form.phone),
   }
   const showError = (field) => (triedSubmit || touched[field]) && errors[field]
-  const priceLabel = `${price.toLocaleString('ar-EG')} جنيه`
+  const currentPrice = isFamily ? prices.family : prices.personal
+  const priceLabel = `${currentPrice.toLocaleString('ar-EG')} جنيه`
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -96,6 +102,7 @@ export default function TrustCard() {
       cardHolderName,
       relationship: form.relationship,
       phone: form.phone,
+      cardType: form.cardType,
     })
       .then(() => true)
       .catch((err) => {
@@ -109,12 +116,13 @@ export default function TrustCard() {
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify({
             requestType: 'طلب كارت الثقة',
+            cardType: isFamily ? 'عائلي' : 'شخصي',
             forWhom: isGift ? 'لشخص تاني (هدية)' : 'لنفسه',
             buyerName: form.name.trim(),
             cardHolderName,
             relationship: isGift ? form.relationship : '—',
             phone: form.phone,
-            price: `${price} جنيه`,
+            price: `${currentPrice} جنيه`,
           }),
         })
           .then((res) => res.ok)
@@ -140,9 +148,16 @@ export default function TrustCard() {
 
         <div className="trust-card__badges">
           <span className="trust-card__discount-badge">خصم 25%</span>
-          <span className="trust-card__discount-badge">السعر {priceLabel}</span>
+          <span className="trust-card__discount-badge">
+            من {prices.personal.toLocaleString('ar-EG')} جنيه
+          </span>
         </div>
       </section>
+
+      <Link to="/medical-file" className="trust-card__cta trust-card__cta--file">
+        <ShieldIcon width={20} height={20} />
+        عندك كارت بالفعل؟ ادخل على ملفك الطبي
+      </Link>
 
       <div className="trust-card__benefits">
         {benefits.map(({ Icon, title, desc }) => (
@@ -167,17 +182,46 @@ export default function TrustCard() {
           <p>
             {isGift
               ? `هيتواصل معاك فريق خدمة العملاء لتفعيل كارت الثقة لـ ${form.holderName.trim()}.`
-              : 'هيتواصل معاك فريق خدمة العملاء لتفعيل كارت الثقة الخاص بيك.'}
+              : 'هيتواصل معاك فريق خدمة العملاء لتفعيل كارت الثقة الخاص بيك.'}{' '}
+            وبعد ما تستلمه، ادخل تاني هنا واضغط "ادخل على ملفك الطبي" عشان تفعّله بموبايلك.
           </p>
         </div>
       ) : showForm ? (
         <form className="trust-card__form" onSubmit={handleSubmit} noValidate>
           <h2 className="trust-card__form-title">اطلب كارت الثقة</h2>
-          <div className="trust-card__price-box">
-            <span>سعر الكارت</span>
-            <strong>{priceLabel}</strong>
-            <small>وخصم 25% على كل التحاليل لمدة سنة</small>
+
+          <div className="trust-card__field">
+            <span>نوع الكارت *</span>
+            <div className="trust-card__choice">
+              <button
+                type="button"
+                className={`trust-card__choice-btn${form.cardType === 'personal' ? ' active' : ''}`}
+                onClick={() => selectCardType('personal')}
+              >
+                شخصي — {prices.personal.toLocaleString('ar-EG')} جنيه
+              </button>
+              <button
+                type="button"
+                className={`trust-card__choice-btn${form.cardType === 'family' ? ' active' : ''}`}
+                onClick={() => selectCardType('family')}
+              >
+                عائلي (حتى 5 أفراد) — {prices.family.toLocaleString('ar-EG')} جنيه
+              </button>
+            </div>
+            {triedSubmit && errors.cardType && <p className="trust-card__error">{errors.cardType}</p>}
           </div>
+
+          {form.cardType && (
+            <div className="trust-card__price-box">
+              <span>سعر الكارت {isFamily ? 'العائلي' : 'الشخصي'}</span>
+              <strong>{priceLabel}</strong>
+              <small>
+                {isFamily
+                  ? 'يغطي صاحب الكارت + حتى 5 أفراد من العائلة، وخصم 25% على كل التحاليل لمدة سنة'
+                  : 'وخصم 25% على كل التحاليل لمدة سنة'}
+              </small>
+            </div>
+          )}
 
           <div className="trust-card__field">
             <span>الكارت ده لمين؟ *</span>
@@ -203,7 +247,7 @@ export default function TrustCard() {
           {form.forWhom && (
             <>
               <label className="trust-card__field">
-                <span>{isGift ? 'اسمك *' : 'اسمك رباعي * (هيتكتب على الكارت)'}</span>
+                <span>{isGift ? 'اسمك *' : 'اسمك رباعي *'}</span>
                 <input
                   type="text"
                   value={form.name}
@@ -218,7 +262,7 @@ export default function TrustCard() {
               {isGift && (
                 <>
                   <label className="trust-card__field">
-                    <span>اسم صاحب الكارت رباعي * (هيتكتب على الكارت)</span>
+                    <span>اسم صاحب الكارت رباعي *</span>
                     <input
                       type="text"
                       value={form.holderName}
@@ -275,8 +319,8 @@ export default function TrustCard() {
           </button>
         </form>
       ) : (
-        <button className="trust-card__cta" onClick={() => setShowForm(true)}>
-          أطلب كارت الثقة — {priceLabel}
+        <button className="trust-card__cta trust-card__cta--outline" onClick={() => setShowForm(true)}>
+          لسه معندكش كارت؟ اطلبه دلوقتي
         </button>
       )}
     </div>

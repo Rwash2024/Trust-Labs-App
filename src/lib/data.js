@@ -282,6 +282,102 @@ export async function submitComplaint({ name, phone, type, branchName, rating, m
   if (error) throw error
 }
 
+// "كارت الثقة" medical-file card — replaces the old MedCloud QR flow.
+// A card_code alone never returns anything; activation ties it to a phone
+// number first, and every later read needs both to match. See
+// supabase/patient_cards_migration.sql for why.
+// Uploads an optional profile photo to the public `patient-photos` bucket
+// before activation, so activate_patient_card can store the URL directly.
+// Filename is a random id, not the card_code — the code shouldn't be
+// guessable from the photo URL or vice versa. Best-effort: a failed upload
+// should never block registration, so callers just get null back.
+export async function uploadPatientPhoto(file) {
+  if (!supabase || !file) return null
+  const ext = file.name.split('.').pop() || 'jpg'
+  const path = `${crypto.randomUUID()}.${ext}`
+  const { error } = await supabase.storage.from('patient-photos').upload(path, file)
+  if (error) return null
+  return supabase.storage.from('patient-photos').getPublicUrl(path).data.publicUrl
+}
+
+export async function activatePatientCard({
+  cardCode,
+  phone,
+  name,
+  gender,
+  dob,
+  maritalStatus,
+  bloodGroup,
+  address,
+  emergencyPhone,
+  photoUrl,
+}) {
+  if (!supabase) return 'unavailable'
+  const { data, error } = await supabase.rpc('activate_patient_card', {
+    p_card_code: cardCode.trim(),
+    p_phone: phone.trim(),
+    p_name: name.trim(),
+    p_gender: gender || null,
+    p_dob: dob || null,
+    p_marital_status: maritalStatus || null,
+    p_blood_group: bloodGroup || null,
+    p_address: address?.trim() || null,
+    p_emergency_phone: emergencyPhone?.trim() || null,
+    p_photo_url: photoUrl || null,
+  })
+  if (error) return 'error'
+  return data // 'activated' | 'already_activated' | 'invalid_code'
+}
+
+export async function fetchPatientFile(cardCode, phone) {
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc('get_patient_file', {
+    p_card_code: cardCode.trim(),
+    p_phone: phone.trim(),
+  })
+  if (error || !data || data.length === 0) return null
+  return data[0]
+}
+
+// "أفراد العائلة" — family members riding on the holder's already-verified
+// card_code + phone (see patient_cards_family_and_photo_migration.sql).
+export async function fetchFamilyMembers(cardCode, phone) {
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('get_family_members', {
+    p_card_code: cardCode.trim(),
+    p_phone: phone.trim(),
+  })
+  if (error || !data) return []
+  return data
+}
+
+export async function addFamilyMember({ cardCode, phone, relation, name, gender, dob, bloodGroup }) {
+  if (!supabase) return 'unavailable'
+  const { data, error } = await supabase.rpc('add_family_member', {
+    p_card_code: cardCode.trim(),
+    p_phone: phone.trim(),
+    p_relation: relation,
+    p_name: name.trim(),
+    p_gender: gender || null,
+    p_dob: dob || null,
+    p_blood_group: bloodGroup || null,
+  })
+  if (error) return 'error'
+  return data // 'added' | 'unauthorized'
+}
+
+// Signed download link for an uploaded lab/imaging report — expires in a few
+// minutes, so it's fetched fresh each time the patient taps "تحميل التقرير"
+// rather than stored. See supabase/functions/get-patient-report-url.
+export async function fetchReportUrl({ cardCode, phone, kind, memberId }) {
+  if (!supabase) return null
+  const { data, error } = await supabase.functions.invoke('get-patient-report-url', {
+    body: { cardCode, phone, kind, memberId: memberId || null },
+  })
+  if (error || !data?.url) return null
+  return data.url
+}
+
 export async function fetchAboutContent() {
   if (!supabase) return defaultAboutContent
   const { data, error } = await supabase.from('about_content').select('*').eq('id', 1).maybeSingle()
@@ -299,21 +395,28 @@ export async function fetchAboutContent() {
   }
 }
 
-// Trust Card price (EGP), set by the admin in the "كارت الثقة" tab. The
-// fallback keeps the page showing a real price if the app_settings table
-// isn't there yet (supabase/trust_card_settings_migration.sql) or is unreachable.
-export const DEFAULT_TRUST_CARD_PRICE = 250
+// Trust Card prices (EGP) for both card types, set by the admin in the
+// "الملفات الطبية" tab (trust_card_pricing table — see
+// trust_card_pricing_migration.sql). The fallback keeps the page showing
+// real prices if that table or the RPC below isn't reachable.
+export const DEFAULT_TRUST_CARD_PRICES = { personal: 250, family: 650 }
 
-export async function fetchTrustCardPrice() {
-  if (!supabase) return DEFAULT_TRUST_CARD_PRICE
-  const { data, error } = await supabase.from('app_settings').select('trust_card_price').eq('id', 1).maybeSingle()
-  if (error || !data?.trust_card_price) return DEFAULT_TRUST_CARD_PRICE
-  return Number(data.trust_card_price)
+export async function fetchTrustCardPrices() {
+  if (!supabase) return DEFAULT_TRUST_CARD_PRICES
+  const { data, error } = await supabase.rpc('get_trust_card_prices')
+  const row = data?.[0]
+  if (error || !row) return DEFAULT_TRUST_CARD_PRICES
+  return {
+    personal: Number(row.personal_price) || DEFAULT_TRUST_CARD_PRICES.personal,
+    family: Number(row.family_price) || DEFAULT_TRUST_CARD_PRICES.family,
+  }
 }
 
 // Saves a Trust Card order — the record staff work from in the admin tab.
-// The price is stamped by the database from app_settings, not sent from here.
-export async function submitTrustCardRequest({ forWhom, buyerName, cardHolderName, relationship, phone }) {
+// The price is stamped by the database from trust_card_pricing, not sent
+// from here (see set_trust_card_request_price in
+// trust_card_requests_family_pricing_migration.sql).
+export async function submitTrustCardRequest({ forWhom, buyerName, cardHolderName, relationship, phone, cardType }) {
   if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
   const { error } = await supabase.from('trust_card_requests').insert({
     for_whom: forWhom,
@@ -321,6 +424,7 @@ export async function submitTrustCardRequest({ forWhom, buyerName, cardHolderNam
     card_holder_name: cardHolderName.trim(),
     relationship: forWhom === 'other' ? relationship : null,
     phone,
+    card_type: cardType,
   })
   if (error) throw error
 }
