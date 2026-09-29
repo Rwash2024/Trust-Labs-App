@@ -103,6 +103,12 @@ export default function About() {
           ))}
         </div>
       </section>
+
+      <footer className="about__credit">
+        <span className="about__credit-line">Designed &amp; Developed by Mohamed Rwash</span>
+        <span className="about__credit-version">© 2026 Trust Labs. All rights reserved.</span>
+        <span className="about__credit-version">v1.0</span>
+      </footer>
     </div>
   )
 }
