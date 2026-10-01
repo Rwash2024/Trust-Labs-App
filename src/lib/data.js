@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { compressImage } from './imageCompress'
 import { packages as staticPackages, prepInstructions as staticPrepInstructions } from '../data/packages'
 import { packageImages } from '../data/packageImages'
 import { allTests as staticAllTests } from '../data/tests'
@@ -293,9 +294,10 @@ export async function submitComplaint({ name, phone, type, branchName, rating, m
 // should never block registration, so callers just get null back.
 export async function uploadPatientPhoto(file) {
   if (!supabase || !file) return null
-  const ext = file.name.split('.').pop() || 'jpg'
+  const upload = await compressImage(file, { maxDimension: 800 })
+  const ext = upload.name.split('.').pop() || 'jpg'
   const path = `${crypto.randomUUID()}.${ext}`
-  const { error } = await supabase.storage.from('patient-photos').upload(path, file)
+  const { error } = await supabase.storage.from('patient-photos').upload(path, upload)
   if (error) return null
   return supabase.storage.from('patient-photos').getPublicUrl(path).data.publicUrl
 }

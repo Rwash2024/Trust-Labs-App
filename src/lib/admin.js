@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { compressImage } from './imageCompress'
 
 function requireClient() {
   if (!supabase) throw new Error('Supabase غير متصل')
@@ -10,9 +11,10 @@ const IMAGES_BUCKET = 'trust-labs-images'
 // ---- Image uploads (packages photos + featured test photos) ----
 export async function adminUploadImage(file, folder) {
   const client = requireClient()
-  const ext = file.name.split('.').pop() || 'jpg'
+  const upload = await compressImage(file, { maxDimension: 1600 })
+  const ext = upload.name.split('.').pop() || 'jpg'
   const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-  const { error } = await client.storage.from(IMAGES_BUCKET).upload(path, file, { cacheControl: '3600' })
+  const { error } = await client.storage.from(IMAGES_BUCKET).upload(path, upload, { cacheControl: '3600' })
   if (error) throw error
   const { data } = client.storage.from(IMAGES_BUCKET).getPublicUrl(path)
   return data.publicUrl
@@ -394,9 +396,12 @@ export async function adminUpdateFamilyMemberMedicalFile(id, { diagnoses, curren
 // { cardCode, memberId } for a family member.
 export async function adminUploadPatientReport(file, kind, target) {
   const client = requireClient()
-  const ext = file.name.split('.').pop() || 'pdf'
+  // Reports arrive as a PDF or a scanned/photographed image (accept=".pdf,image/*");
+  // compressImage passes PDFs through untouched and only re-encodes images.
+  const upload = await compressImage(file, { maxDimension: 2000 })
+  const ext = upload.name.split('.').pop() || 'pdf'
   const path = `${target.cardCode}/${target.memberId || 'self'}-${kind}-${Date.now()}.${ext}`
-  const { error: uploadError } = await client.storage.from(REPORTS_BUCKET).upload(path, file)
+  const { error: uploadError } = await client.storage.from(REPORTS_BUCKET).upload(path, upload)
   if (uploadError) throw uploadError
 
   const column = kind === 'investigation' ? 'investigation_file_path' : 'imaging_file_path'
