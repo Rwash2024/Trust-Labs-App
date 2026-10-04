@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import {
   adminFindPatientCard,
   adminListActivatedCards,
+  adminListBranches,
+  adminDistributeCards,
+  adminCardsByBranch,
   adminListFamilyMembers,
   adminUpdatePatientMedicalFile,
   adminUpdateFamilyMemberMedicalFile,
@@ -14,8 +17,174 @@ const CARD_TYPE_LABEL = { personal: 'شخصي', family: 'عائلي' }
 
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }) : '—')
 
+// توزيع الكروت على الفروع: اختار الفرع، الصق أكواد الكروت اللي سلّمتها له، وسجّل التاريخ.
+function DistributionPanel({ onChanged }) {
+  const [branches, setBranches] = useState([])
+  const [branch, setBranch] = useState('')
+  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [result, setResult] = useState(null)
+
+  useEffect(() => {
+    adminListBranches()
+      .then((rows) => setBranches(rows.map((b) => b.name)))
+      .catch((e) => setError(e.message))
+  }, [])
+
+  const codes = [...new Set(text.toLowerCase().split(/[\s,;،]+/).filter(Boolean))]
+
+  const submit = async (force = false) => {
+    setBusy(true)
+    setError('')
+    try {
+      const res = await adminDistributeCards({ codes, branch, date, force })
+      setResult({ ...res, branch })
+      if (res.invalid.length === 0 && res.conflicts.length === 0) setText('')
+      onChanged()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form
+      className="admin-form"
+      onSubmit={(e) => {
+        e.preventDefault()
+        setResult(null)
+        submit(false)
+      }}
+      style={{ maxWidth: 520, marginBottom: 'var(--space-6)' }}
+    >
+      <h3>تسجيل كروت وُزّعت على فرع</h3>
+      <div className="admin-form__row">
+        <label>
+          <span>الفرع</span>
+          <select required value={branch} onChange={(e) => setBranch(e.target.value)}>
+            <option value="">اختر الفرع</option>
+            {branches.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>تاريخ التسليم</span>
+          <input required type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+      </div>
+      <label>
+        <span>أكواد الكروت (كل كود في سطر، أو بينهم مسافة/فاصلة)</span>
+        <textarea
+          rows={5}
+          dir="ltr"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={'038o9p\n03xo0f\n06y8jj'}
+        />
+      </label>
+      <p className="admin-form__hint">عدد الأكواد المكتوبة: {codes.length}</p>
+      <div className="admin-form__actions">
+        <button type="submit" className="admin-btn admin-btn--primary" disabled={busy || !branch || codes.length === 0}>
+          {busy ? 'جاري التسجيل...' : 'سجّل التوزيع'}
+        </button>
+      </div>
+
+      {error && <p className="admin-error">{error}</p>}
+      {result && (
+        <div className="admin-form__hint" style={{ lineHeight: 1.9 }}>
+          <p>
+            ✅ اتسجّل <b>{result.assigned}</b> كارت لفرع {result.branch} (شخصي {result.personal} — عائلي {result.family}).
+          </p>
+          {result.already.length > 0 && <p>ℹ️ {result.already.length} كارت كانوا متسجّلين للفرع ده قبل كده.</p>}
+          {result.invalid.length > 0 && (
+            <p className="admin-error">
+              ❌ أكواد مش موجودة ({result.invalid.length}، متسجّلتش): <span dir="ltr">{result.invalid.join(' ')}</span>
+            </p>
+          )}
+          {result.conflicts.length > 0 && (
+            <div className="admin-error">
+              <p>⚠️ {result.conflicts.length} كارت متسلّمين لفرع تاني ولسه ما اتنقلوش:</p>
+              <p dir="ltr">{result.conflicts.map((c) => `${c.code} (${c.branch})`).join('  ')}</p>
+              <button type="button" className="admin-btn" disabled={busy} onClick={() => submit(true)}>
+                انقلهم لفرع {result.branch}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </form>
+  )
+}
+
+// تقرير الفروع: كل فرع استلم كام كارت واتفعّل منهم كام.
+function BranchReportPanel({ refreshKey }) {
+  const [data, setData] = useState(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    adminCardsByBranch()
+      .then(setData)
+      .catch((e) => setError(e.message))
+  }, [refreshKey])
+
+  if (error) return <p className="admin-error">{error}</p>
+  if (!data) return null
+  const sum = (k) => data.rows.reduce((t, r) => t + r[k], 0)
+
+  return (
+    <div style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="admin-toolbar">
+        <h2>تقرير الفروع — كروت الثقة</h2>
+      </div>
+      {data.rows.length === 0 ? (
+        <p className="admin-form__hint">لسه ما اتسجّلش توزيع على أي فرع. الكروت اللي ما اتوزعتش: {data.unassigned}.</p>
+      ) : (
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>الفرع</th>
+              <th>استلم</th>
+              <th>شخصي</th>
+              <th>عائلي</th>
+              <th>اتفعّل</th>
+              <th>لسه معاه</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.rows.map((r) => (
+              <tr key={r.branch}>
+                <td>{r.branch}</td>
+                <td>{r.received}</td>
+                <td>{r.personal}</td>
+                <td>{r.family}</td>
+                <td>{r.activated}</td>
+                <td>{r.received - r.activated}</td>
+              </tr>
+            ))}
+            <tr style={{ fontWeight: 700 }}>
+              <td>الإجمالي</td>
+              <td>{sum('received')}</td>
+              <td>{sum('personal')}</td>
+              <td>{sum('family')}</td>
+              <td>{sum('activated')}</td>
+              <td>{sum('received') - sum('activated')}</td>
+            </tr>
+          </tbody>
+        </table>
+      )}
+      <p className="admin-form__hint">كروت لسه ما اتوزعتش على أي فرع: {data.unassigned}</p>
+    </div>
+  )
+}
+
 // كل كارت اتفعّل: كوده، تاريخ التفعيل، تاريخ الانتهاء (سنة كاملة)، وبيانات صاحبه.
-function ActivatedCardsPanel({ onOpen }) {
+function ActivatedCardsPanel({ onOpen, refreshKey }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('all') // all | personal | family
@@ -25,7 +194,7 @@ function ActivatedCardsPanel({ onOpen }) {
     adminListActivatedCards()
       .then(setData)
       .catch((e) => setError(e.message))
-  }, [])
+  }, [refreshKey])
 
   if (error) return <p className="admin-error">{error}</p>
   if (!data) return null
@@ -53,6 +222,7 @@ function ActivatedCardsPanel({ onOpen }) {
             <tr>
               <th>الكود</th>
               <th>النوع</th>
+              <th>الفرع</th>
               <th>الاسم</th>
               <th>الموبايل</th>
               <th>فصيلة الدم</th>
@@ -68,6 +238,7 @@ function ActivatedCardsPanel({ onOpen }) {
                 <tr key={c.card_code} style={{ cursor: 'pointer' }} onClick={() => onOpen(c.card_code)}>
                   <td dir="ltr">{c.card_code}</td>
                   <td>{CARD_TYPE_LABEL[c.card_type] || c.card_type}</td>
+                  <td>{c.branch_name || '—'}</td>
                   <td>{c.name}</td>
                   <td dir="ltr">{c.phone}</td>
                   <td>{c.blood_group || '—'}</td>
@@ -273,6 +444,7 @@ function MedicalFileEditor({ title, subtitle, target, initial, onSaved }) {
 
 export default function MedicalFilesTab() {
   const [query, setQuery] = useState('')
+  const [refreshKey, setRefreshKey] = useState(0)
   const [status, setStatus] = useState('idle') // idle | loading | found | not-found
   const [card, setCard] = useState(null)
   const [members, setMembers] = useState([])
@@ -319,7 +491,11 @@ export default function MedicalFilesTab() {
         <h2>الملفات الطبية — كارت الثقة</h2>
       </div>
 
-      <ActivatedCardsPanel onOpen={openByCode} />
+      <DistributionPanel onChanged={() => setRefreshKey((k) => k + 1)} />
+
+      <BranchReportPanel refreshKey={refreshKey} />
+
+      <ActivatedCardsPanel onOpen={openByCode} refreshKey={refreshKey} />
 
       <PricingPanel />
 

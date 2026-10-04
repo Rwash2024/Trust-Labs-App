@@ -359,7 +359,7 @@ export async function adminListActivatedCards() {
   const [list, total] = await Promise.all([
     client
       .from('patient_cards')
-      .select('card_code, card_type, name, phone, gender, dob, blood_group, activated_at, expires_at')
+      .select('card_code, card_type, name, phone, gender, dob, blood_group, activated_at, expires_at, branch_name, distributed_at')
       .not('activated_at', 'is', null)
       .order('activated_at', { ascending: false }),
     client.from('patient_cards').select('card_code', { count: 'exact', head: true }),
@@ -367,6 +367,69 @@ export async function adminListActivatedCards() {
   if (list.error) throw list.error
   if (total.error) throw total.error
   return { cards: list.data, total: total.count }
+}
+
+// Hand printed cards to a branch. codes: lowercase card codes. A card already
+// given to a different branch is NOT moved unless force is set — it comes back
+// in `conflicts` so the admin can decide.
+export async function adminDistributeCards({ codes, branch, date, force = false }) {
+  const client = requireClient()
+  const distributedAt = new Date(`${date}T12:00:00`).toISOString()
+  const found = []
+  for (let i = 0; i < codes.length; i += 150) {
+    const { data, error } = await client
+      .from('patient_cards')
+      .select('card_code, card_type, branch_name')
+      .in('card_code', codes.slice(i, i + 150))
+    if (error) throw error
+    found.push(...data)
+  }
+  const foundCodes = new Set(found.map((c) => c.card_code))
+  const invalid = codes.filter((c) => !foundCodes.has(c))
+  const already = found.filter((c) => c.branch_name === branch).map((c) => c.card_code)
+  const conflicts = found.filter((c) => c.branch_name && c.branch_name !== branch)
+  const toAssign = found.filter((c) => !c.branch_name || (force && c.branch_name !== branch))
+
+  for (let i = 0; i < toAssign.length; i += 150) {
+    const { error } = await client
+      .from('patient_cards')
+      .update({ branch_name: branch, distributed_at: distributedAt, updated_at: new Date().toISOString() })
+      .in('card_code', toAssign.slice(i, i + 150).map((c) => c.card_code))
+    if (error) throw error
+  }
+
+  const count = (type) => toAssign.filter((c) => c.card_type === type).length
+  return {
+    assigned: toAssign.length,
+    personal: count('personal'),
+    family: count('family'),
+    already,
+    invalid,
+    conflicts: force ? [] : conflicts.map((c) => ({ code: c.card_code, branch: c.branch_name })),
+  }
+}
+
+// Per-branch totals: handed out / activated / still unsold, plus cards not yet given to any branch.
+export async function adminCardsByBranch() {
+  const client = requireClient()
+  const { data, error } = await client
+    .from('patient_cards')
+    .select('card_type, branch_name, activated_at')
+    .not('branch_name', 'is', null)
+  if (error) throw error
+  const { count: unassigned, error: e2 } = await client
+    .from('patient_cards')
+    .select('card_code', { count: 'exact', head: true })
+    .is('branch_name', null)
+  if (e2) throw e2
+  const byBranch = {}
+  for (const c of data) {
+    const b = (byBranch[c.branch_name] ||= { branch: c.branch_name, received: 0, personal: 0, family: 0, activated: 0 })
+    b.received++
+    b[c.card_type] = (b[c.card_type] || 0) + 1
+    if (c.activated_at) b.activated++
+  }
+  return { rows: Object.values(byBranch).sort((a, b) => b.received - a.received), unassigned }
 }
 
 export async function adminListFamilyMembers(cardCode) {
