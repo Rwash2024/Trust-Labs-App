@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { adminListPackages, adminSavePackage, adminDeletePackage } from '../../lib/admin'
 import ImageUploadField from '../../components/admin/ImageUploadField'
 
-const emptyPackage = { id: '', name: '', price: 0, tests: [], sort_order: 0 }
+const emptyPackage = { id: '', name: '', name_en: '', price: 0, price_foreign: '', tests: [], sort_order: 0 }
 
 export default function PackagesTab() {
   const [packages, setPackages] = useState([])
@@ -104,6 +104,14 @@ export default function PackagesTab() {
               <input required value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
             </label>
           </div>
+          <label>
+            <span>الاسم بالإنجليزي (لنسخة الأجانب)</span>
+            <input
+              value={editing.name_en || ''}
+              onChange={(e) => setEditing({ ...editing, name_en: e.target.value })}
+              placeholder="e.g. Gold Package (Men)"
+            />
+          </label>
           <div className="admin-form__row">
             <label>
               <span>السعر (جنيه)</span>
@@ -112,6 +120,15 @@ export default function PackagesTab() {
                 type="number"
                 value={editing.price}
                 onChange={(e) => setEditing({ ...editing, price: e.target.value })}
+              />
+            </label>
+            <label>
+              <span>سعر الأجانب (اختياري)</span>
+              <input
+                type="number"
+                value={editing.price_foreign ?? ''}
+                onChange={(e) => setEditing({ ...editing, price_foreign: e.target.value })}
+                placeholder="سايبها فاضية لو مفيش سعر أجانب لسه"
               />
             </label>
             <label>
@@ -143,6 +160,7 @@ export default function PackagesTab() {
           <tr>
             <th>الاسم</th>
             <th>السعر</th>
+            <th>سعر الأجانب</th>
             <th>عدد التحاليل</th>
             <th></th>
           </tr>
@@ -152,6 +170,7 @@ export default function PackagesTab() {
             <tr key={p.id}>
               <td>{p.name}</td>
               <td>{p.price.toLocaleString('en-US')} جنيه</td>
+              <td>{p.price_foreign ? `${Number(p.price_foreign).toLocaleString('en-US')}` : '—'}</td>
               <td>{p.tests?.length ?? 0}</td>
               <td className="admin-table__actions">
                 <button className="admin-btn admin-btn--sm" onClick={() => startEdit(p)}>

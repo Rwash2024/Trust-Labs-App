@@ -1,0 +1,29 @@
+.intl {
+  direction: ltr;
+  text-align: left;
+  padding-bottom: var(--space-8);
+}
+
+.intl__hero-note {
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--text-small-size);
+  margin-top: 2px;
+}
+
+.intl__quicklinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+.intl__chip {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: var(--text-small-size);
+  font-weight: var(--font-weight-bold);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+}

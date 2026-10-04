@@ -72,6 +72,10 @@
   transition: transform 200ms var(--ease-bounce), box-shadow 200ms var(--ease-out);
 }
 
+[dir='ltr'] .results__cta svg {
+  transform: scaleX(-1);
+}
+
 .results__cta:active {
   transform: scale(0.97);
 }

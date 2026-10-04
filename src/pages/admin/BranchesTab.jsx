@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { adminListBranches, adminSaveBranch, adminDeleteBranch } from '../../lib/admin'
+import { cleanEgyptPhoneInput, egyptPhoneError } from '../../lib/phone'
 
 const emptyBranch = { governorate: '', name: '', address: '', phone: '', hours: '8ص - 11م', maps_url: '', sort_order: 0 }
 
@@ -22,6 +23,12 @@ export default function BranchesTab() {
 
   const handleSave = async (e) => {
     e.preventDefault()
+    // The branch phone becomes the patient-facing call and WhatsApp button, so it must be a real mobile.
+    const phoneError = egyptPhoneError(editing.phone)
+    if (phoneError) {
+      setError(phoneError)
+      return
+    }
     setSaving(true)
     setError('')
     try {
@@ -78,7 +85,15 @@ export default function BranchesTab() {
           <div className="admin-form__row">
             <label>
               <span>التليفون</span>
-              <input required value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} />
+              <input
+                required
+                dir="ltr"
+                type="tel"
+                inputMode="numeric"
+                placeholder="01xxxxxxxxx"
+                value={editing.phone}
+                onChange={(e) => setEditing({ ...editing, phone: cleanEgyptPhoneInput(e.target.value) })}
+              />
             </label>
             <label>
               <span>المواعيد</span>

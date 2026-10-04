@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { adminListTests, adminSaveTest, adminDeleteTest } from '../../lib/admin'
 
 const PAGE_SIZE = 50
-const emptyTest = { code: '', name: '', price: 0, popular: false }
+const emptyTest = { code: '', name: '', price: 0, price_foreign: '', popular: false }
 
 export default function TestsTab() {
   const [rows, setRows] = useState([])
@@ -113,15 +113,24 @@ export default function TestsTab() {
                 onChange={(e) => setEditing({ ...editing, price: e.target.value })}
               />
             </label>
-            <label className="admin-form__checkbox">
+            <label>
+              <span>سعر الأجانب (اختياري)</span>
               <input
-                type="checkbox"
-                checked={editing.popular}
-                onChange={(e) => setEditing({ ...editing, popular: e.target.checked })}
+                type="number"
+                value={editing.price_foreign ?? ''}
+                onChange={(e) => setEditing({ ...editing, price_foreign: e.target.value })}
+                placeholder="سايبها فاضية لو مفيش سعر أجانب لسه"
               />
-              <span>أكثر طلبًا (تظهر في شاشة الباقات)</span>
             </label>
           </div>
+          <label className="admin-form__checkbox">
+            <input
+              type="checkbox"
+              checked={editing.popular}
+              onChange={(e) => setEditing({ ...editing, popular: e.target.checked })}
+            />
+            <span>أكثر طلبًا (تظهر في شاشة الباقات)</span>
+          </label>
           <div className="admin-form__actions">
             <button type="button" className="admin-btn" onClick={() => setEditing(null)}>
               إلغاء
@@ -142,6 +151,7 @@ export default function TestsTab() {
               <tr>
                 <th>الاسم</th>
                 <th>السعر</th>
+                <th>سعر الأجانب</th>
                 <th>أكثر طلبًا</th>
                 <th></th>
               </tr>
@@ -151,6 +161,7 @@ export default function TestsTab() {
                 <tr key={t.code}>
                   <td>{t.name}</td>
                   <td>{t.price.toLocaleString('en-US')} جنيه</td>
+                  <td>{t.price_foreign ? `${Number(t.price_foreign).toLocaleString('en-US')}` : '—'}</td>
                   <td>
                     <input type="checkbox" checked={t.popular} onChange={() => togglePopular(t)} />
                   </td>

@@ -9,18 +9,32 @@ import { mapsUrl, whatsappUrl } from './links'
 
 import { defaultAboutContent } from '@client/data/aboutContent'
 
-export async function fetchPackages() {
-  if (!supabase) return staticPackages
-  const { data, error } = await supabase.from('packages').select('*').order('sort_order')
-  if (error || !data || data.length === 0) return staticPackages
-  return data.map((row) => ({
+function mapPackageRow(row) {
+  return {
     id: row.id,
     name: row.name,
     price: row.price,
     testCount: row.test_count,
     tests: row.tests,
     image: row.image_url || packageImages[row.image_key] || packageImages[row.id],
-  }))
+  }
+}
+
+export async function fetchPackages() {
+  if (!supabase) return staticPackages
+  const { data, error } = await supabase.from('packages_local').select('*').order('sort_order')
+  if (error || !data || data.length === 0) return staticPackages
+  return data.map(mapPackageRow)
+}
+
+// Foreign-patient pricing — reads packages_foreign, which only ever exposes
+// price_foreign (aliased as price), never the local price. Not wired to any
+// page yet; for the upcoming staff-installed foreign experience.
+export async function fetchPackagesForeign() {
+  if (!supabase) return []
+  const { data, error } = await supabase.from('packages_foreign').select('*').order('sort_order')
+  if (error || !data) return []
+  return data.map(mapPackageRow)
 }
 
 export async function fetchSampleStatusByPhone(phone) {
@@ -28,6 +42,27 @@ export async function fetchSampleStatusByPhone(phone) {
   const { data, error } = await supabase.rpc('get_sample_status_by_phone', { p_phone: phone })
   if (error || !data) return []
   return data
+}
+
+export const LAUNCH_OFFER_TOTAL_SEATS = 100
+
+// null = feature unavailable (Supabase not configured, or the migration hasn't
+// been run yet) — callers should hide the offer entirely in that case, not show "0".
+export async function fetchLaunchOfferRemaining() {
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc('get_launch_offer_remaining')
+  if (error || data === null || data === undefined) return null
+  return data
+}
+
+// Attempts to claim one launch-offer seat for this phone number. Resolves to
+// true only if the fee should actually be waived for this booking (a seat was
+// available and this phone hadn't already redeemed one).
+export async function redeemLaunchOfferSeat(phone, bookingRef) {
+  if (!supabase) return false
+  const { data, error } = await supabase.rpc('redeem_launch_offer', { p_phone: phone, p_booking_ref: bookingRef })
+  if (error) return false
+  return data === true
 }
 
 export async function fetchFeaturedTests() {
@@ -50,9 +85,43 @@ export async function fetchPrepInstructions() {
   return Object.fromEntries(data.map((row) => [row.test_name, row.instruction]))
 }
 
+// PostgREST returns at most 1000 rows per request, so read big tables page by page.
+async function selectAll(build) {
+  const rows = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await build().range(from, from + 999)
+    if (error) return { data: null, error }
+    rows.push(...data)
+    if (data.length < 1000) break
+  }
+  return { data: rows, error: null }
+}
+
+// Searches the local-price test catalog by name. mode 'all': every term must appear;
+// mode 'any': at least one term. (Server-side, since the catalog is bigger than one
+// PostgREST page; falls back to the bundled static list.)
+export async function searchTests(terms, mode = 'all') {
+  const clean = terms.map((t) => t.replace(/[%,()*]/g, '').trim()).filter(Boolean)
+  if (clean.length === 0) return []
+  if (supabase) {
+    let q = supabase.from('tests_local').select('code, name, price, popular').limit(80)
+    if (mode === 'all') {
+      for (const t of clean) q = q.ilike('name', `%${t}%`)
+    } else {
+      q = q.or(clean.map((t) => `name.ilike.*${t}*`).join(','))
+    }
+    const { data, error } = await q.order('name')
+    if (!error && data) return data
+  }
+  const has = (name, t) => name.toLowerCase().includes(t.toLowerCase())
+  return staticAllTests
+    .filter((t) => (mode === 'all' ? clean.every((c) => has(t.name, c)) : clean.some((c) => has(t.name, c))))
+    .slice(0, 80)
+}
+
 export async function fetchAllTests() {
   if (!supabase) return staticAllTests
-  const { data, error } = await supabase.from('tests').select('code, name, price').order('name')
+  const { data, error } = await selectAll(() => supabase.from('tests_local').select('code, name, price').order('name').order('code'))
   if (error || !data || data.length === 0) return staticAllTests
   return data
 }
@@ -60,12 +129,34 @@ export async function fetchAllTests() {
 export async function fetchPopularTests() {
   if (!supabase) return staticPopularTests
   const { data, error } = await supabase
-    .from('tests')
+    .from('tests_local')
     .select('code, name, price')
     .eq('popular', true)
     .order('price')
     .limit(20)
   if (error || !data || data.length === 0) return staticPopularTests
+  return data
+}
+
+// Foreign-patient pricing — reads tests_foreign, which only ever exposes
+// price_foreign (aliased as price), never the local price. Used by the
+// staff-installed /international experience.
+export async function fetchAllTestsForeign() {
+  if (!supabase) return []
+  const { data, error } = await selectAll(() => supabase.from('tests_foreign').select('code, name, price').order('name').order('code'))
+  if (error || !data) return []
+  return data
+}
+
+export async function fetchPopularTestsForeign() {
+  if (!supabase) return []
+  const { data, error } = await supabase
+    .from('tests_foreign')
+    .select('code, name, price')
+    .eq('popular', true)
+    .order('price')
+    .limit(20)
+  if (error || !data) return []
   return data
 }
 
@@ -109,6 +200,186 @@ export async function fetchPartners(staticFallback) {
   return data.map((row) => ({ name: row.name, src: row.image_url }))
 }
 
+// Persists a booking made through the regular booking form (Booking.jsx) in the
+// same `bookings` table the chat assistant writes to, so staff see every booking
+// — chat or form, home or branch — in one place, and so a phone number can later
+// be checked against a real completed booking (e.g. the visit-rating survey).
+// Formspree stays the source of truth for the confirmation email; this is
+// additive and best-effort — the booking must still succeed even if this fails,
+// so callers should not let a rejection here block the Formspree submission.
+export async function recordBooking({
+  bookingRef,
+  mode,
+  name,
+  phone,
+  dob,
+  address,
+  branchName,
+  preferredDate,
+  tests,
+  subtotal,
+  homeVisitFee,
+  total,
+  notes,
+  paymentMethod,
+  patientType,
+  cardIssuer,
+  launchOfferApplied,
+}) {
+  if (!supabase) return
+  const { error } = await supabase.from('bookings').insert({
+    booking_ref: bookingRef,
+    source: 'booking_form',
+    mode,
+    name,
+    phone,
+    dob: dob || null,
+    address: mode === 'home' ? address || null : null,
+    branch_name: mode === 'branch' ? branchName || null : null,
+    preferred_date: preferredDate || null,
+    tests: tests || [],
+    subtotal: subtotal || 0,
+    home_visit_fee: homeVisitFee || 0,
+    total: total || 0,
+    notes: notes?.trim() || null,
+    payment_method: paymentMethod || null,
+    patient_type: patientType || null,
+    card_issuer: cardIssuer?.trim() || null,
+    launch_offer_applied: !!launchOfferApplied,
+  })
+  if (error) throw error
+}
+
+// Submits a "قيّم زيارتك" survey response. All fields but visitType/answers are
+// optional (the patient may skip the final name/phone/comment screen entirely).
+// This is our own durable record — forwarding it on to Trust Lab Ops (once
+// they expose a submit-survey webhook) happens server-side, never from here.
+export async function submitVisitRating({ visitType, answers, name, phone, branchName, chemistName, comment }) {
+  if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
+  const { error } = await supabase.from('visit_ratings').insert({
+    visit_type: visitType,
+    overall: answers.overall,
+    speed: visitType === 'branch' ? answers.speed : null,
+    punctuality: visitType === 'home' ? answers.punctuality : null,
+    staff: answers.staff,
+    name: name?.trim() || null,
+    phone: phone?.trim() || null,
+    branch_name: visitType === 'branch' ? branchName?.trim() || null : null,
+    chemist_name: visitType === 'home' ? chemistName?.trim() || null : null,
+    comment: comment?.trim() || null,
+  })
+  if (error) throw error
+}
+
+export async function submitComplaint({ name, phone, type, branchName, rating, message }) {
+  if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
+  const { error } = await supabase.from('complaints').insert({
+    name: name.trim(),
+    phone: phone.trim(),
+    type,
+    branch_name: branchName?.trim() || null,
+    rating: rating || null,
+    message: message.trim(),
+  })
+  if (error) throw error
+}
+
+// "كارت الثقة" medical-file card — replaces the old MedCloud QR flow.
+// A card_code alone never returns anything; activation ties it to a phone
+// number first, and every later read needs both to match. See
+// supabase/patient_cards_migration.sql for why.
+// Uploads an optional profile photo to the public `patient-photos` bucket
+// before activation, so activate_patient_card can store the URL directly.
+// Filename is a random id, not the card_code — the code shouldn't be
+// guessable from the photo URL or vice versa. Best-effort: a failed upload
+// should never block registration, so callers just get null back.
+export async function uploadPatientPhoto(file) {
+  if (!supabase || !file) return null
+  const ext = file.name.split('.').pop() || 'jpg'
+  const path = `${crypto.randomUUID()}.${ext}`
+  const { error } = await supabase.storage.from('patient-photos').upload(path, file)
+  if (error) return null
+  return supabase.storage.from('patient-photos').getPublicUrl(path).data.publicUrl
+}
+
+export async function activatePatientCard({
+  cardCode,
+  phone,
+  name,
+  gender,
+  dob,
+  maritalStatus,
+  bloodGroup,
+  address,
+  emergencyPhone,
+  photoUrl,
+}) {
+  if (!supabase) return 'unavailable'
+  const { data, error } = await supabase.rpc('activate_patient_card', {
+    p_card_code: cardCode.trim(),
+    p_phone: phone.trim(),
+    p_name: name.trim(),
+    p_gender: gender || null,
+    p_dob: dob || null,
+    p_marital_status: maritalStatus || null,
+    p_blood_group: bloodGroup || null,
+    p_address: address?.trim() || null,
+    p_emergency_phone: emergencyPhone?.trim() || null,
+    p_photo_url: photoUrl || null,
+  })
+  if (error) return 'error'
+  return data // 'activated' | 'already_activated' | 'invalid_code'
+}
+
+export async function fetchPatientFile(cardCode, phone) {
+  if (!supabase) return null
+  const { data, error } = await supabase.rpc('get_patient_file', {
+    p_card_code: cardCode.trim(),
+    p_phone: phone.trim(),
+  })
+  if (error || !data || data.length === 0) return null
+  return data[0]
+}
+
+// "أفراد العائلة" — family members riding on the holder's already-verified
+// card_code + phone (see patient_cards_family_and_photo_migration.sql).
+export async function fetchFamilyMembers(cardCode, phone) {
+  if (!supabase) return []
+  const { data, error } = await supabase.rpc('get_family_members', {
+    p_card_code: cardCode.trim(),
+    p_phone: phone.trim(),
+  })
+  if (error || !data) return []
+  return data
+}
+
+export async function addFamilyMember({ cardCode, phone, relation, name, gender, dob, bloodGroup }) {
+  if (!supabase) return 'unavailable'
+  const { data, error } = await supabase.rpc('add_family_member', {
+    p_card_code: cardCode.trim(),
+    p_phone: phone.trim(),
+    p_relation: relation,
+    p_name: name.trim(),
+    p_gender: gender || null,
+    p_dob: dob || null,
+    p_blood_group: bloodGroup || null,
+  })
+  if (error) return 'error'
+  return data // 'added' | 'unauthorized'
+}
+
+// Signed download link for an uploaded lab/imaging report — expires in a few
+// minutes, so it's fetched fresh each time the patient taps "تحميل التقرير"
+// rather than stored. See supabase/functions/get-patient-report-url.
+export async function fetchReportUrl({ cardCode, phone, kind, memberId }) {
+  if (!supabase) return null
+  const { data, error } = await supabase.functions.invoke('get-patient-report-url', {
+    body: { cardCode, phone, kind, memberId: memberId || null },
+  })
+  if (error || !data?.url) return null
+  return data.url
+}
+
 export async function fetchAboutContent() {
   if (!supabase) return defaultAboutContent
   const { data, error } = await supabase.from('about_content').select('*').eq('id', 1).maybeSingle()
@@ -124,4 +395,38 @@ export async function fetchAboutContent() {
     team: data.team?.length ? data.team : defaultAboutContent.team,
     accreditations: data.accreditations?.length ? data.accreditations : defaultAboutContent.accreditations,
   }
+}
+
+// Trust Card prices (EGP) for both card types, set by the admin in the
+// "الملفات الطبية" tab (trust_card_pricing table — see
+// trust_card_pricing_migration.sql). The fallback keeps the page showing
+// real prices if that table or the RPC below isn't reachable.
+export const DEFAULT_TRUST_CARD_PRICES = { personal: 250, family: 650 }
+
+export async function fetchTrustCardPrices() {
+  if (!supabase) return DEFAULT_TRUST_CARD_PRICES
+  const { data, error } = await supabase.rpc('get_trust_card_prices')
+  const row = data?.[0]
+  if (error || !row) return DEFAULT_TRUST_CARD_PRICES
+  return {
+    personal: Number(row.personal_price) || DEFAULT_TRUST_CARD_PRICES.personal,
+    family: Number(row.family_price) || DEFAULT_TRUST_CARD_PRICES.family,
+  }
+}
+
+// Saves a Trust Card order — the record staff work from in the admin tab.
+// The price is stamped by the database from trust_card_pricing, not sent
+// from here (see set_trust_card_request_price in
+// trust_card_requests_family_pricing_migration.sql).
+export async function submitTrustCardRequest({ forWhom, buyerName, cardHolderName, relationship, phone, cardType }) {
+  if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
+  const { error } = await supabase.from('trust_card_requests').insert({
+    for_whom: forWhom,
+    buyer_name: buyerName.trim(),
+    card_holder_name: cardHolderName.trim(),
+    relationship: forWhom === 'other' ? relationship : null,
+    phone,
+    card_type: cardType,
+  })
+  if (error) throw error
 }

@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { FlaskIcon, MapPinIcon, WhatsAppIcon, CalendarIcon, CartIcon, SearchIcon, ArrowIcon, InfoIcon, ResultsIcon, CheckIcon, PlusIcon, ShieldIcon, NewsIcon } from '../components/icons'
 import BannerCarousel from '../components/BannerCarousel'
 import BannerCard from '../components/BannerCard'
+import LaunchOfferCounter from '../components/LaunchOfferCounter'
 import { fetchFeaturedTests, fetchPartners } from '../lib/data'
 import { testToCartItem } from '../lib/cart'
 import { useBooking } from '../context/BookingContext'
@@ -119,6 +120,8 @@ export default function Home() {
             )}
           />
         )}
+
+        <LaunchOfferCounter variant="hero" />
 
         <h2 className="home__section-title">إيه اللي محتاجه؟</h2>
 

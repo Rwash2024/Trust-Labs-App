@@ -37,4 +37,10 @@ export const AnalyticsEvents = {
   RESULTS_VIEWED: 'test_results_viewed',
   BRANCH_VIEWED: 'branch_location_viewed',
   TRUST_CARD_VIEWED: 'trust_card_viewed',
+  CHAT_OPENED: 'chat_assistant_opened',
+  CHAT_MESSAGE_SENT: 'chat_assistant_message_sent',
+  CHAT_ESCALATED: 'chat_assistant_escalated',
+  CHAT_RATED: 'chat_assistant_rated',
+  RATE_VISIT_STARTED: 'rate_visit_started',
+  RATE_VISIT_COMPLETED: 'rate_visit_completed',
 }

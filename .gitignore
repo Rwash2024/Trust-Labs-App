@@ -27,3 +27,4 @@ dist-ssr
 # local env imports
 vercel-env-import.env
 .claude/settings.local.json
+supabase/.temp

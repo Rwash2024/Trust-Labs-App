@@ -59,7 +59,9 @@ export async function adminSavePackage(pkg) {
   const { error } = await requireClient().from('packages').upsert({
     id: pkg.id,
     name: pkg.name,
+    name_en: pkg.name_en || null,
     price: pkg.price,
+    price_foreign: pkg.price_foreign === '' || pkg.price_foreign == null ? null : Number(pkg.price_foreign),
     test_count: pkg.tests.length,
     tests: pkg.tests,
     image_key: pkg.image_key || pkg.id,
@@ -89,6 +91,7 @@ export async function adminSaveTest(test) {
     code: test.code,
     name: test.name,
     price: test.price,
+    price_foreign: test.price_foreign === '' || test.price_foreign == null ? null : Number(test.price_foreign),
     popular: !!test.popular,
     updated_at: new Date().toISOString(),
   })
@@ -255,6 +258,57 @@ export async function adminDeletePartner(id) {
   if (error) throw error
 }
 
+// ---- Complaints & feedback ----
+export async function adminListComplaints() {
+  const { data, error } = await requireClient()
+    .from('complaints')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function adminUpdateComplaintStatus(id, status) {
+  const { error } = await requireClient()
+    .from('complaints')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function adminDeleteComplaint(id) {
+  const { error } = await requireClient().from('complaints').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ---- Visit ratings ("قيّم زيارتك" survey) ----
+export async function adminListVisitRatings() {
+  const { data, error } = await requireClient()
+    .from('visit_ratings')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+// ---- Bookings (created via the chat assistant) ----
+export async function adminListBookings() {
+  const { data, error } = await requireClient()
+    .from('bookings')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function adminUpdateBookingStatus(id, status) {
+  const { error } = await requireClient()
+    .from('bookings')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
 // ---- About page content ----
 export async function adminGetAboutContent() {
   const { data, error } = await requireClient().from('about_content').select('*').eq('id', 1).maybeSingle()
@@ -279,4 +333,154 @@ export async function adminSaveAboutContent(content) {
       updated_at: new Date().toISOString(),
     })
   if (error) throw error
+}
+
+// ---- كارت الثقة — staff filling in a patient's (or a family member's)
+// medical file after a test/scan is done. Staff reads/writes patient_cards
+// and family_members directly (RLS already grants "authenticated" full
+// access to both) — no need for the phone-gated RPCs the patient app uses.
+const REPORTS_BUCKET = 'patient-reports'
+
+export async function adminFindPatientCard(query) {
+  const q = query.trim()
+  if (!q) return null
+  const { data, error } = await requireClient()
+    .from('patient_cards')
+    .select('*')
+    .or(`card_code.eq.${q},phone.eq.${q}`)
+    .maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function adminListFamilyMembers(cardCode) {
+  const { data, error } = await requireClient()
+    .from('family_members')
+    .select('*')
+    .eq('card_code', cardCode)
+    .order('created_at')
+  if (error) throw error
+  return data
+}
+
+export async function adminUpdatePatientMedicalFile(cardCode, { diagnoses, current_medications, investigation, imaging }) {
+  const { error } = await requireClient()
+    .from('patient_cards')
+    .update({
+      diagnoses: diagnoses?.trim() || null,
+      current_medications: current_medications?.trim() || null,
+      investigation: investigation?.trim() || null,
+      imaging: imaging?.trim() || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('card_code', cardCode)
+  if (error) throw error
+}
+
+export async function adminUpdateFamilyMemberMedicalFile(id, { diagnoses, current_medications, investigation, imaging }) {
+  const { error } = await requireClient()
+    .from('family_members')
+    .update({
+      diagnoses: diagnoses?.trim() || null,
+      current_medications: current_medications?.trim() || null,
+      investigation: investigation?.trim() || null,
+      imaging: imaging?.trim() || null,
+    })
+    .eq('id', id)
+  if (error) throw error
+}
+
+// kind: 'investigation' | 'imaging'. target: { cardCode } for the holder, or
+// { cardCode, memberId } for a family member.
+export async function adminUploadPatientReport(file, kind, target) {
+  const client = requireClient()
+  const ext = file.name.split('.').pop() || 'pdf'
+  const path = `${target.cardCode}/${target.memberId || 'self'}-${kind}-${Date.now()}.${ext}`
+  const { error: uploadError } = await client.storage.from(REPORTS_BUCKET).upload(path, file)
+  if (uploadError) throw uploadError
+
+  const column = kind === 'investigation' ? 'investigation_file_path' : 'imaging_file_path'
+  const table = target.memberId ? 'family_members' : 'patient_cards'
+  const match = target.memberId ? { id: target.memberId } : { card_code: target.cardCode }
+  const { error: updateError } = await client.from(table).update({ [column]: path }).match(match)
+  if (updateError) throw updateError
+
+  return path
+}
+
+// كارت الثقة pricing — one settings row (id = 1), see trust_card_pricing_migration.sql.
+// This is the single source of truth for both prices; the customer-facing
+// request form reads it through the public get_trust_card_prices RPC, not
+// this table directly, so commission stays staff-only.
+export async function adminGetTrustCardPricing() {
+  const { data, error } = await requireClient().from('trust_card_pricing').select('*').eq('id', 1).maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export async function adminSaveTrustCardPricing({ personal_price, personal_commission, family_price, family_commission }) {
+  const { error } = await requireClient()
+    .from('trust_card_pricing')
+    .update({
+      personal_price,
+      personal_commission,
+      family_price,
+      family_commission,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', 1)
+  if (error) throw error
+}
+
+// ---- Trust Card orders ----
+export async function adminListTrustCardRequests() {
+  const { data, error } = await requireClient()
+    .from('trust_card_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function adminUpdateTrustCardRequestStatus(id, status) {
+  const { error } = await requireClient()
+    .from('trust_card_requests')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function adminDeleteTrustCardRequest(id) {
+  const { error } = await requireClient().from('trust_card_requests').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ---- Management report (Excel) ----
+// Everything created between two local dates (inclusive), for the reports tab.
+export async function adminFetchReportData(fromDate, toDate) {
+  const client = requireClient()
+  const from = new Date(`${fromDate}T00:00:00`).toISOString()
+  const to = new Date(`${toDate}T23:59:59.999`).toISOString()
+  const inRange = (table, columns = '*') =>
+    client.from(table).select(columns).gte('created_at', from).lte('created_at', to).order('created_at')
+
+  const [cards, samples, bookings, complaints, ratings, scans] = await Promise.all([
+    inRange('trust_card_requests'),
+    inRange('sample_tracking'),
+    inRange('bookings'),
+    inRange('complaints'),
+    inRange('visit_ratings'),
+    inRange('qr_scans'),
+  ])
+  for (const r of [cards, samples, bookings, complaints, ratings]) if (r.error) throw r.error
+
+  return {
+    cards: cards.data,
+    samples: samples.data,
+    bookings: bookings.data,
+    complaints: complaints.data,
+    ratings: ratings.data,
+    // Optional: an empty list (not an error) until qr_scans_migration.sql has run.
+    scans: scans.error ? [] : scans.data,
+  }
 }

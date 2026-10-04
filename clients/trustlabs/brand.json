@@ -17,7 +17,9 @@
   },
   "features": {
     "trustCard": true,
-    "trackSample": true
+    "trackSample": true,
+    "feedback": true,
+    "international": true
   },
   "social": {
     "facebook": "https://www.facebook.com/TrustLabsEgypt",

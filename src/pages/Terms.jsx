@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ShieldIcon } from '../components/icons'
 import brand from '../brand'
 import './Terms.css'
@@ -74,6 +75,10 @@ export default function Terms() {
             <p className="terms__section-text">{section.body}</p>
           </section>
         ))}
+
+        <p className="terms__section-text">
+          للاطلاع على تفاصيل أكتر عن إزاي بنجمع ونحمي بياناتك، شوف <Link to="/privacy">سياسة الخصوصية</Link>.
+        </p>
       </div>
     </div>
   )

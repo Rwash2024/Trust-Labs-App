@@ -9,6 +9,8 @@ import {
   InstagramIcon,
   LinkedInIcon,
   ShieldIcon,
+  ChatIcon,
+  StarIcon,
 } from '../components/icons'
 import logoWhiteFull from '@client/logo-white-full.png'
 import { parseHours } from '../lib/hours'
@@ -73,6 +75,32 @@ export default function Contact() {
             </span>
             <ArrowIcon className="contact__card-arrow" />
           </Link>
+        )}
+
+        {brand.features?.feedback && (
+          <>
+            <Link className="contact__card" to="/rate-visit">
+              <span className="contact__card-icon">
+                <StarIcon color="#fff" />
+              </span>
+              <span className="contact__card-info">
+                <span className="contact__card-title">قيّم زيارتك</span>
+                <span className="contact__card-value">30 ثانية بس تساعدنا نتحسن</span>
+              </span>
+              <ArrowIcon className="contact__card-arrow" />
+            </Link>
+    
+            <Link className="contact__card" to="/complaints">
+              <span className="contact__card-icon">
+                <ChatIcon color="#fff" />
+              </span>
+              <span className="contact__card-info">
+                <span className="contact__card-title">شكاوى واقتراحات</span>
+                <span className="contact__card-value">رأيك بيهمنا، احكيلنا عن تجربتك</span>
+              </span>
+              <ArrowIcon className="contact__card-arrow" />
+            </Link>
+          </>
         )}
       </div>
 

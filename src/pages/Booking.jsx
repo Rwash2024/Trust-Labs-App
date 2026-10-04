@@ -3,9 +3,12 @@ import brand from '../brand'
 import { priceText, showPrices } from '../lib/price'
 import { Link } from 'react-router-dom'
 import { useBooking } from '../context/BookingContext'
-import { fetchBranchGroups, fetchAllTests } from '../lib/data'
+import { fetchBranchGroups, fetchAllTests, redeemLaunchOfferSeat, recordBooking } from '../lib/data'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import { FlaskIcon, MapPinIcon, CheckIcon, SearchIcon, PlusIcon } from '../components/icons'
+import LaunchOfferCounter from '../components/LaunchOfferCounter'
+import { filterTests } from '../lib/testSearch'
+import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
 import './Booking.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
@@ -13,7 +16,6 @@ const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID
 const PAYMOB_LINK = import.meta.env.VITE_PAYMOB_LINK
 const HOME_VISIT_FEE = brand.homeVisitFee ?? 75
 const ONLINE_PAYMENT_ENABLED = false // hidden temporarily until a payment provider (Paymob/InstaPay) is finalized
-const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
 
 function testToCartItem(test) {
   return { id: `test-${test.code}`, name: test.name, price: test.price, testCount: 1, tests: [test.name] }
@@ -63,19 +65,18 @@ export default function Booking() {
   const total = subtotal + homeVisitFee
 
   const testSearchResults = useMemo(() => {
-    const q = testQuery.trim().toLowerCase()
-    if (!q) return []
-    return allTests.filter((t) => t.name.toLowerCase().includes(q)).slice(0, 30)
+    return filterTests(allTests, testQuery, 30)
   }, [testQuery, allTests])
 
   const updateField = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))
 
   const updatePhone = (e) => {
-    const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 11)
+    const digitsOnly = cleanEgyptPhoneInput(e.target.value)
     setForm((prev) => ({ ...prev, phone: digitsOnly }))
   }
 
-  const isPhoneValid = EGYPT_PHONE_REGEX.test(form.phone)
+  const phoneError = egyptPhoneError(form.phone)
+  const isPhoneValid = !phoneError
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -99,6 +100,12 @@ export default function Booking() {
     const patientType = hasCard ? (cardType === 'insurance' ? 'لديه كارنيه تأمين طبي' : 'لديه كارنيه نادي') : 'Normal'
     const bookingRef = generateBookingRef()
 
+    // Claimed atomically server-side — only ever true for a home visit that
+    // actually got one of the first 100 seats (checked/reserved just now).
+    const offerApplied = mode === 'home' && (await redeemLaunchOfferSeat(form.phone, bookingRef))
+    const effectiveHomeVisitFee = offerApplied ? 0 : homeVisitFee
+    const effectiveTotal = subtotal + effectiveHomeVisitFee
+
     const data = new FormData()
     data.append('bookingRef', bookingRef)
     data.append('name', form.name)
@@ -111,11 +118,35 @@ export default function Booking() {
     data.append('notes', form.notes)
     data.append('packages', selectedPackages.map((p) => p.name).join(', '))
     data.append('subtotal', subtotal)
-    data.append('homeVisitFee', homeVisitFee)
-    data.append('total', total)
+    data.append('homeVisitFee', effectiveHomeVisitFee)
+    data.append('total', effectiveTotal)
     data.append('paymentMethod', paymentLabel)
     data.append('hasInsuranceOrClubCard', patientType)
+    data.append('launchOfferApplied', offerApplied ? 'نعم — رسوم الزيارة ملغاة' : 'لا')
     if (hasCard && cardIssuer.trim()) data.append('cardIssuer', cardIssuer.trim())
+
+    // Best-effort: persisted in our own DB so staff see it in the admin dashboard and
+    // it can later back the visit-rating survey. Formspree (below) remains the source
+    // of truth for the confirmation email, so a failure here must never block that.
+    recordBooking({
+      bookingRef,
+      mode,
+      name: form.name,
+      phone: form.phone,
+      dob: form.dob,
+      address: form.address,
+      branchName: form.branchName,
+      preferredDate: form.date,
+      tests: selectedPackages.map((p) => p.name),
+      subtotal,
+      homeVisitFee: effectiveHomeVisitFee,
+      total: effectiveTotal,
+      notes: form.notes,
+      paymentMethod: paymentLabel,
+      patientType,
+      cardIssuer: hasCard ? cardIssuer : '',
+      launchOfferApplied: offerApplied,
+    }).catch((err) => console.error('recordBooking failed (non-blocking)', err))
 
     try {
       const res = await fetch(FORMSPREE_ENDPOINT, {
@@ -147,8 +178,9 @@ export default function Booking() {
         packages: selectedPackages.map((p) => p.name),
         patientType,
         subtotal,
-        homeVisitFee,
-        total,
+        homeVisitFee: effectiveHomeVisitFee,
+        total: effectiveTotal,
+        offerApplied,
         mode,
       })
       clearCart()
@@ -227,7 +259,7 @@ export default function Booking() {
           {receipt.mode === 'home' && (
             <div className="booking__receipt-row">
               <span>تكلفة الزيارة</span>
-              <span>{receipt.homeVisitFee.toLocaleString('en-US')} جنيه</span>
+              <span>{receipt.offerApplied ? 'مجانًا (عرض الإطلاق)' : `${receipt.homeVisitFee.toLocaleString('en-US')} جنيه`}</span>
             </div>
           )}
           <div className="booking__receipt-row booking__receipt-row--total">
@@ -276,6 +308,8 @@ export default function Booking() {
             حجز/ دفع فى الفرع
           </button>
         </div>
+
+        {mode === 'home' && <LaunchOfferCounter variant="inline" />}
 
         <div className="booking__tests-picker">
           <h2 className="booking__section-title">التحاليل المطلوبة</h2>
@@ -350,6 +384,9 @@ export default function Booking() {
                   <span>رسوم الزيارة المنزلية</span>
                   <span>{HOME_VISIT_FEE.toLocaleString('en-US')} جنيه</span>
                 </div>
+              )}
+              {mode === 'home' && (
+                <p className="booking__offer-note">* لو لسه فيه مقاعد فاضلة من عرض الإطلاق، الرسوم دي هتتلغي تلقائيًا عند تأكيد الحجز</p>
               )}
               <div className="booking__total-row booking__total-row--final">
                 <span>الإجمالي</span>
@@ -462,7 +499,7 @@ export default function Booking() {
               aria-invalid={form.phone.length > 0 && !isPhoneValid}
             />
             {form.phone.length > 0 && !isPhoneValid && (
-              <span className="booking__field-error">لازم يكون رقم موبايل مصري صحيح (11 رقم، يبدأ بـ 010 أو 011 أو 012 أو 015)</span>
+              <span className="booking__field-error">{phoneError}</span>
             )}
           </label>
 
@@ -525,6 +562,10 @@ export default function Booking() {
               موافق على{' '}
               <Link to="/terms" target="_blank" rel="noopener noreferrer">
                 الشروط والأحكام
+              </Link>{' '}
+              و{' '}
+              <Link to="/privacy" target="_blank" rel="noopener noreferrer">
+                سياسة الخصوصية
               </Link>
             </span>
           </label>

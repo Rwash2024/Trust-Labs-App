@@ -1,0 +1,463 @@
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+import { QUICK_ACTIONS, FLOWS, HOTLINE, normalizeDigits, trackSampleByPhone, priceLookup, branchesByGovernorate } from '../lib/chatFlows'
+import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
+import { isGreeting } from '../lib/greeting'
+import { trackEvent, AnalyticsEvents } from '../lib/analytics'
+import './ChatWidget.css'
+
+const WELCOME = 'أهلاً بيك 👋\nأنا المساعد الذكي لـ Trust Labs، تقدر تسألني أي سؤال هنا، أو تختار من الاختيارات دي:'
+const FALLBACK_ERROR = `معلش، مش قادر أرد على الأسئلة الحرة دلوقتي 🙏 اختار من القائمة تحت، أو كلّم الخط الساخن ${HOTLINE}.`
+const GREETING_REPLY = 'أهلاً بيك في Trust Labs 👋\nأقدر أساعدك في إيه؟ اختار من القائمة:'
+const FLOW_ERROR = 'معلش، حصلت مشكلة وأنا بجيب المعلومة دي 🙏 جرب تاني كمان شوية.'
+
+function timeNow() {
+  const d = new Date()
+  let h = d.getHours()
+  const m = d.getMinutes()
+  const ampm = h >= 12 ? 'م' : 'ص'
+  h = h % 12 || 12
+  return `${h}:${String(m).padStart(2, '0')} ${ampm}`
+}
+
+let nextId = 1
+
+const FAB_KEY = 'chatw-fab-pos'
+const FAB_SIZE = 56
+const FAB_MARGIN = 16
+
+function loadFabPos() {
+  try {
+    const p = JSON.parse(localStorage.getItem(FAB_KEY))
+    if (p && (p.side === 'left' || p.side === 'right') && Number.isFinite(p.bottom)) return p
+  } catch {
+    // ignore — fall back to the default spot
+  }
+  return { side: 'left', bottom: null }
+}
+
+export default function ChatWidget() {
+  const [open, setOpen] = useState(false)
+  const [messages, setMessages] = useState([
+    { id: nextId++, role: 'bot', type: 'text', text: WELCOME, time: timeNow() },
+    { id: nextId++, role: 'bot', type: 'menu' },
+  ])
+  const [input, setInput] = useState('')
+  const [sending, setSending] = useState(false)
+  const [awaiting, setAwaiting] = useState(null)
+  const [privacyNoteShown, setPrivacyNoteShown] = useState(false)
+  const [hasChatted, setHasChatted] = useState(false)
+  const [showRating, setShowRating] = useState(false)
+  const [rated, setRated] = useState(null)
+  const bodyRef = useRef(null)
+  const navigate = useNavigate()
+  const [navH, setNavH] = useState(0)
+  const [fabPos, setFabPos] = useState(loadFabPos)
+  const [live, setLive] = useState(null)
+  const drag = useRef(null)
+  const justDragged = useRef(false)
+
+  useEffect(() => {
+    if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight
+  }, [messages, sending])
+
+  function openChat() {
+    setOpen(true)
+    trackEvent(AnalyticsEvents.CHAT_OPENED)
+  }
+
+  // Keep the button above the bottom nav (its height varies with font size / wrapped labels).
+  useEffect(() => {
+    const nav = document.querySelector('.bottom-nav')
+    if (!nav) return
+    const update = () => setNavH(nav.getBoundingClientRect().height)
+    update()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(update)
+    ro.observe(nav)
+    return () => ro.disconnect()
+  }, [])
+
+  const minBottom = navH + 8
+  const defaultBottom = navH + 14
+  const restBottom = Math.max(fabPos.bottom ?? defaultBottom, minBottom)
+  const fabStyle = live
+    ? { left: live.left, right: 'auto', bottom: live.bottom, transition: 'none' }
+    : fabPos.side === 'right'
+      ? { left: 'auto', right: FAB_MARGIN, bottom: restBottom }
+      : { left: FAB_MARGIN, right: 'auto', bottom: restBottom }
+
+  // Drag the button anywhere along the screen; on release it snaps to the nearest side.
+  function onFabDown(e) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    drag.current = {
+      x: e.clientX,
+      y: e.clientY,
+      left: rect.left,
+      bottom: window.innerHeight - rect.bottom,
+      moved: false,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  function onFabMove(e) {
+    const d = drag.current
+    if (!d) return
+    const dx = e.clientX - d.x
+    const dy = e.clientY - d.y
+    if (!d.moved && Math.hypot(dx, dy) > 6) d.moved = true
+    if (!d.moved) return
+    const maxLeft = window.innerWidth - FAB_SIZE - FAB_MARGIN
+    const maxBottom = window.innerHeight - FAB_SIZE - FAB_MARGIN
+    setLive({
+      left: Math.min(Math.max(d.left + dx, FAB_MARGIN), maxLeft),
+      bottom: Math.min(Math.max(d.bottom - dy, minBottom), maxBottom),
+    })
+  }
+
+  function onFabUp() {
+    const d = drag.current
+    drag.current = null
+    if (!d || !d.moved || !live) return
+    justDragged.current = true
+    const next = { side: live.left + FAB_SIZE / 2 < window.innerWidth / 2 ? 'left' : 'right', bottom: live.bottom }
+    setFabPos(next)
+    setLive(null)
+    try {
+      localStorage.setItem(FAB_KEY, JSON.stringify(next))
+    } catch {
+      // storage unavailable — position just won't persist
+    }
+  }
+
+  function onFabClick() {
+    if (justDragged.current) {
+      justDragged.current = false
+      return
+    }
+    openChat()
+  }
+
+  // extra: { link?, links?, choices? } — a flow result can be passed straight in.
+  function addMessage(role, text, extra = {}) {
+    const links = extra.links || (extra.link ? [extra.link] : undefined)
+    const msg = { id: nextId++, role, type: 'text', text, links, choices: extra.choices, time: timeNow() }
+    // Only the latest set of choices stays clickable.
+    setMessages((prev) => [...(extra.choices ? prev.map((m) => (m.choices ? { ...m, choices: undefined } : m)) : prev), msg])
+  }
+
+  function appendMenu() {
+    setMessages((prev) => [...prev.filter((m) => m.type !== 'menu'), { id: nextId++, role: 'bot', type: 'menu' }])
+  }
+
+  function openMenu() {
+    setAwaiting(null)
+    addMessage('bot', 'تحت أمرك 🙌 اختار من الاختيارات دي:')
+    appendMenu()
+  }
+
+  function openLink(link) {
+    if (link.href) {
+      if (link.href.startsWith('tel:')) window.location.href = link.href
+      else window.open(link.href, '_blank', 'noopener')
+      return
+    }
+    setOpen(false)
+    navigate(link.to)
+  }
+
+  // Governorate picker (branches): shows that governorate's branch cards.
+  async function pickChoice(msgId, choice) {
+    if (sending) return
+    setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, choices: undefined } : m)))
+    if (choice.kind === 'menu') {
+      openMenu()
+      return
+    }
+    setAwaiting(null)
+    addMessage('user', choice.value)
+    setSending(true)
+    trackEvent(AnalyticsEvents.CHAT_MESSAGE_SENT)
+    try {
+      const res = await branchesByGovernorate(choice.value)
+      addMessage('bot', res.intro)
+      for (const card of res.cards) addMessage('bot', card.text, card)
+      addMessage('bot', 'تحب تشوف محافظة تانية؟', { choices: res.choices })
+    } catch {
+      addMessage('bot', FLOW_ERROR)
+      appendMenu()
+    } finally {
+      setSending(false)
+    }
+  }
+
+  // Quick-action buttons are answered straight from the app's data (no AI call).
+  async function pickQuickAction(menuId, action) {
+    if (sending) return
+    setMessages((prev) => prev.filter((m) => m.id !== menuId))
+    setHasChatted(true)
+    addMessage('user', action.label)
+    setSending(true)
+    trackEvent(AnalyticsEvents.CHAT_MESSAGE_SENT)
+    try {
+      const flow = await FLOWS[action.id]()
+      addMessage('bot', flow.text, flow)
+      setAwaiting(flow.awaiting || null)
+      if (flow.awaiting) setPrivacyNoteShown(true)
+      else if (!flow.choices) appendMenu()
+    } catch {
+      addMessage('bot', FLOW_ERROR)
+      appendMenu()
+    } finally {
+      setSending(false)
+    }
+  }
+
+  async function sendMessage(text) {
+    const trimmed = text.trim()
+    if (!trimmed || sending) return
+    setHasChatted(true)
+    addMessage('user', trimmed)
+    setInput('')
+    setSending(true)
+    trackEvent(AnalyticsEvents.CHAT_MESSAGE_SENT)
+
+    if (!privacyNoteShown) setPrivacyNoteShown(true)
+
+    // Waiting for a phone number (sample tracking) — answered from the database, no AI.
+    if (awaiting === 'track_phone') {
+      const digits = normalizeDigits(trimmed).replace(/[\s-]/g, '')
+      const phone = cleanEgyptPhoneInput(digits)
+      const phoneError = egyptPhoneError(phone)
+      if (!phoneError) {
+        try {
+          const flow = await trackSampleByPhone(phone)
+          addMessage('bot', flow.text, flow)
+          setAwaiting(null)
+          appendMenu()
+        } catch {
+          addMessage('bot', FLOW_ERROR)
+        } finally {
+          setSending(false)
+        }
+        return
+      }
+      if (/^[\d+]+$/.test(digits)) {
+        addMessage('bot', `${phoneError} 📱`)
+        setSending(false)
+        return
+      }
+      setAwaiting(null)
+    }
+
+    // Waiting for a test/package name — answered from the price list, no AI.
+    if (awaiting === 'price_query' && !isGreeting(trimmed)) {
+      try {
+        const flow = await priceLookup(trimmed)
+        if (flow) {
+          addMessage('bot', flow.text, flow)
+          appendMenu()
+          setSending(false)
+          return
+        }
+        setAwaiting(null)
+      } catch {
+        addMessage('bot', FLOW_ERROR)
+        setSending(false)
+        return
+      }
+    }
+
+    // Plain greetings get an instant canned reply — no AI call, no cost.
+    if (isGreeting(trimmed)) {
+      setAwaiting(null)
+      addMessage('bot', GREETING_REPLY)
+      appendMenu()
+      setSending(false)
+      return
+    }
+
+    if (!supabase) {
+      setTimeout(() => {
+        addMessage('bot', FALLBACK_ERROR)
+        appendMenu()
+        setSending(false)
+      }, 500)
+      return
+    }
+
+    try {
+      const history = messages
+        .filter((m) => m.type === 'text' && m.text)
+        .map((m) => ({ role: m.role === 'bot' ? 'assistant' : 'user', content: m.text }))
+      // The API expects the conversation to start with a user turn, so drop the welcome message
+      while (history.length && history[0].role !== 'user') history.shift()
+
+      const { data, error } = await supabase.functions.invoke('chat-assistant', {
+        body: { message: text, history },
+      })
+      if (error) throw error
+      addMessage('bot', data?.reply || FALLBACK_ERROR)
+    } catch {
+      addMessage('bot', FALLBACK_ERROR)
+      appendMenu()
+    } finally {
+      setSending(false)
+    }
+  }
+
+  function handleClose() {
+    if (hasChatted && rated === null) {
+      setShowRating(true)
+      return
+    }
+    setOpen(false)
+  }
+
+  function rate(value) {
+    setRated(value)
+    trackEvent(AnalyticsEvents.CHAT_RATED, { rating: value })
+    setTimeout(() => {
+      setShowRating(false)
+      setOpen(false)
+    }, 900)
+  }
+
+  function skipRating() {
+    setShowRating(false)
+    setOpen(false)
+  }
+
+  return (
+    <>
+      <button
+        className="chatw-fab"
+        style={fabStyle}
+        onClick={onFabClick}
+        onPointerDown={onFabDown}
+        onPointerMove={onFabMove}
+        onPointerUp={onFabUp}
+        onPointerCancel={onFabUp}
+        aria-label="افتح المساعد الذكي"
+      >
+        <span className="chatw-fab__badge" />
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2a7.5 7.5 0 0 0-7.5 7.5v3.75A1.75 1.75 0 0 0 6.25 15h.75a1.75 1.75 0 0 0 1.75-1.75v-2.5A1.75 1.75 0 0 0 7 9h-.94a5.94 5.94 0 0 1 11.88 0H17a1.75 1.75 0 0 0-1.75 1.75v2.5c0 .3.07.58.2.83a4.4 4.4 0 0 1-4.2 3.17h-.5a1.25 1.25 0 1 0 0 2.5h.5a6.9 6.9 0 0 0 6.62-4.9A1.75 1.75 0 0 0 19.5 13.5V9.5A7.5 7.5 0 0 0 12 2Z" />
+        </svg>
+      </button>
+
+      <div className={`chatw-panel${open ? ' chatw-panel--open' : ''}`}>
+        <div className="chatw-header">
+          <div className="chatw-avatar">
+            <svg viewBox="0 0 24 24" fill="#fff">
+              <path d="M12 2a7.5 7.5 0 0 0-7.5 7.5v3.75A1.75 1.75 0 0 0 6.25 15h.75a1.75 1.75 0 0 0 1.75-1.75v-2.5A1.75 1.75 0 0 0 7 9h-.94a5.94 5.94 0 0 1 11.88 0H17a1.75 1.75 0 0 0-1.75 1.75v2.5c0 .3.07.58.2.83a4.4 4.4 0 0 1-4.2 3.17h-.5a1.25 1.25 0 1 0 0 2.5h.5a6.9 6.9 0 0 0 6.62-4.9A1.75 1.75 0 0 0 19.5 13.5V9.5A7.5 7.5 0 0 0 12 2Z" />
+            </svg>
+          </div>
+          <div>
+            <div className="chatw-title">مساعدك الذكي لـ Trust Labs</div>
+            <div className="chatw-status"><i /> متصل الآن</div>
+          </div>
+          <button className="chatw-menu-btn" onClick={openMenu} aria-label="القائمة الرئيسية">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
+          </button>
+          <button className="chatw-close" onClick={handleClose} aria-label="إغلاق">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        <div className="chatw-body" ref={bodyRef}>
+          {messages.map((m) =>
+            m.type === 'menu' ? (
+              <div key={m.id} className="chatw-menu-msg">
+                {QUICK_ACTIONS.map((a) => (
+                  <button key={a.id} className="chatw-chip" onClick={() => pickQuickAction(m.id, a)}>{a.label}</button>
+                ))}
+              </div>
+            ) : (
+              <div key={m.id} className={`chatw-msg-wrap chatw-msg-wrap--${m.role}`}>
+                <div className={`chatw-msg chatw-msg--${m.role}`} style={{ whiteSpace: 'pre-line' }}>{m.text}</div>
+                {m.links && (
+                  <div className="chatw-links">
+                    {m.links.map((l) => (
+                      <button key={l.label} className="chatw-link-btn" onClick={() => openLink(l)}>{l.label}</button>
+                    ))}
+                  </div>
+                )}
+                <div className="chatw-msg-time">{m.time}</div>
+                {m.choices && (
+                  <div className="chatw-menu-msg">
+                    {m.choices.map((c) => (
+                      <button key={c.label} className="chatw-chip" onClick={() => pickChoice(m.id, c)}>{c.label}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          )}
+          {privacyNoteShown && (
+            <div className="chatw-sys-note">🔒 بياناتك هتُستخدم للتواصل معاك بخصوص طلبك بس</div>
+          )}
+          {sending && (
+            <div className="chatw-typing"><span /><span /><span /></div>
+          )}
+        </div>
+
+        <div className="chatw-escalate">
+          <span className="chatw-escalate__text">🎧 <span>للتواصل مع موظف من قسم خدمة العملاء أضغط هنا ...</span></span>
+          <a
+            className="chatw-escalate__link"
+            href="tel:16183"
+            onClick={() => trackEvent(AnalyticsEvents.CHAT_ESCALATED)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .6 3a2 2 0 0 1-.5 2L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2-.5c1 .3 2 .5 3 .6a2 2 0 0 1 1.7 2z" /></svg>
+            16183
+          </a>
+        </div>
+
+        <form
+          className="chatw-inputbar"
+          onSubmit={(e) => {
+            e.preventDefault()
+            sendMessage(input)
+          }}
+        >
+          <input
+            className="chatw-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="اكتب سؤالك هنا..."
+          />
+          <button className="chatw-send" type="submit" aria-label="إرسال" disabled={sending}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" /></svg>
+          </button>
+        </form>
+        <div className="chatw-ai-tag">مدعوم بالذكاء الاصطناعي</div>
+
+        {showRating && (
+          <div className="chatw-rate-overlay chatw-rate-overlay--show">
+            <div className="chatw-rate-card">
+              {rated === null ? (
+                <>
+                  <div className="chatw-rate-card__icon">💬</div>
+                  <div className="chatw-rate-card__title">قبل ما تسيبنا...</div>
+                  <div className="chatw-rate-card__sub">المحادثة دي ساعدتك؟</div>
+                  <div className="chatw-rate-card__row">
+                    <button className="chatw-rate-btn chatw-rate-btn--up" onClick={() => rate('up')} aria-label="مفيدة">👍</button>
+                    <button className="chatw-rate-btn chatw-rate-btn--down" onClick={() => rate('down')} aria-label="مش مفيدة">👎</button>
+                  </div>
+                  <button className="chatw-rate-card__skip" onClick={skipRating}>تخطي</button>
+                </>
+              ) : (
+                <>
+                  <div className="chatw-rate-card__icon">✅</div>
+                  <div className="chatw-rate-card__thanks">{rated === 'up' ? 'شكرًا لتقييمك! 🙌' : 'شكرًا، هنشتغل على تحسين المساعد 🙏'}</div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}

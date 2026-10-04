@@ -55,6 +55,9 @@ export default defineConfig(({ mode }) => {
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // exceljs is only used by the admin's report export — don't make every
+        // patient's phone download ~1MB of it on install.
+        globIgnores: ['**/exceljs*.js'],
       },
     }),
   ],

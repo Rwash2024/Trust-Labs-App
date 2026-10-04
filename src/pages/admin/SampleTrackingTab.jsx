@@ -7,6 +7,7 @@ import {
   adminDeleteSample,
 } from '../../lib/admin'
 import { fetchBranchGroups } from '../../lib/data'
+import { cleanEgyptPhoneInput, egyptPhoneError } from '../../lib/phone'
 
 const STATUSES = [
   'تم تسجيل الطلب',
@@ -18,13 +19,21 @@ const STATUSES = [
 ]
 
 const emptyItem = { booking_ref: '', patient_name: '', phone: '', branch_name: '' }
-const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
-
 function SampleForm({ title, value, branches, saving, onChange, onCancel, onSubmit }) {
-  const isPhoneValid = EGYPT_PHONE_REGEX.test(value.phone)
+  const phoneError = egyptPhoneError(value.phone)
+  const isPhoneValid = !phoneError
 
   return (
-    <form className="admin-form" onSubmit={onSubmit}>
+    <form
+      className="admin-form"
+      onSubmit={(e) => {
+        if (phoneError) {
+          e.preventDefault()
+          return
+        }
+        onSubmit(e)
+      }}
+    >
       <h3>{title}</h3>
       <label>
         <span>اسم المريض</span>
@@ -40,11 +49,11 @@ function SampleForm({ title, value, branches, saving, onChange, onCancel, onSubm
           pattern="01[0125][0-9]{8}"
           placeholder="01xxxxxxxxx"
           value={value.phone}
-          onChange={(e) => onChange({ ...value, phone: e.target.value.replace(/\D/g, '').slice(0, 11) })}
+          onChange={(e) => onChange({ ...value, phone: cleanEgyptPhoneInput(e.target.value) })}
           aria-invalid={value.phone.length > 0 && !isPhoneValid}
         />
         {value.phone.length > 0 && !isPhoneValid && (
-          <span className="admin-form__hint">لازم يكون رقم موبايل مصري صحيح (11 رقم، يبدأ بـ 010 أو 011 أو 012 أو 015)</span>
+          <span className="admin-form__hint">{phoneError}</span>
         )}
       </label>
       <label>

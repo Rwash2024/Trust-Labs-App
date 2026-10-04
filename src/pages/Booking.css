@@ -310,6 +310,12 @@
   color: var(--color-primary-dark);
 }
 
+.booking__offer-note {
+  font-size: var(--text-small-size);
+  color: var(--color-warning);
+  margin-top: var(--space-1);
+}
+
 .booking__form {
   background: var(--surface-card);
   border-radius: var(--radius-xl);

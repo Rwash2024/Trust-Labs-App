@@ -117,6 +117,10 @@
   text-align: right;
 }
 
+[dir='ltr'] .contact__card-arrow {
+  transform: scaleX(-1);
+}
+
 .contact__card-arrow {
   color: var(--text-muted);
   flex-shrink: 0;
