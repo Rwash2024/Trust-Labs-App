@@ -18,7 +18,7 @@ const CARD_TYPE_LABEL = { personal: 'شخصي', family: 'عائلي' }
 const fmtDate = (v) => (v ? new Date(v).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }) : '—')
 
 // توزيع الكروت على الفروع: اختار الفرع، الصق أكواد الكروت اللي سلّمتها له، وسجّل التاريخ.
-function DistributionPanel({ onChanged }) {
+export function DistributionPanel({ onChanged }) {
   const [branches, setBranches] = useState([])
   const [branch, setBranch] = useState('')
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10))
@@ -123,7 +123,7 @@ function DistributionPanel({ onChanged }) {
 }
 
 // تقرير الفروع: كل فرع استلم كام كارت واتفعّل منهم كام.
-function BranchReportPanel({ refreshKey }) {
+export function BranchReportPanel({ refreshKey }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
 
@@ -184,7 +184,7 @@ function BranchReportPanel({ refreshKey }) {
 }
 
 // كل كارت اتفعّل: كوده، تاريخ التفعيل، تاريخ الانتهاء (سنة كاملة)، وبيانات صاحبه.
-function ActivatedCardsPanel({ onOpen, refreshKey }) {
+export function ActivatedCardsPanel({ onOpen, refreshKey }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('all') // all | personal | family
@@ -258,7 +258,7 @@ function ActivatedCardsPanel({ onOpen, refreshKey }) {
 // أسعار الكروت — بيانها الأول مرة في الشات مع الفريق (شخصي 250 = 200 نصيب
 // المعمل + 50 عمولة الموظف؛ عائلي 650 = 600 + 50)، متسجّلة هنا بدل ما تفضل
 // في رأس حد بس.
-function PricingPanel() {
+export function PricingPanel() {
   const [pricing, setPricing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -442,9 +442,8 @@ function MedicalFileEditor({ title, subtitle, target, initial, onSaved }) {
   )
 }
 
-export default function MedicalFilesTab() {
-  const [query, setQuery] = useState('')
-  const [refreshKey, setRefreshKey] = useState(0)
+export default function PatientFilesPanel({ initialCode = '' }) {
+  const [query, setQuery] = useState(initialCode)
   const [status, setStatus] = useState('idle') // idle | loading | found | not-found
   const [card, setCard] = useState(null)
   const [members, setMembers] = useState([])
@@ -479,26 +478,14 @@ export default function MedicalFilesTab() {
     runSearch(query)
   }
 
-  const openByCode = (code) => {
-    setQuery(code)
-    runSearch(code)
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
-  }
+  // Arriving from the activated-cards list: open that card straight away.
+  useEffect(() => {
+    if (initialCode) runSearch(initialCode)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div>
-      <div className="admin-toolbar">
-        <h2>الملفات الطبية — كارت الثقة</h2>
-      </div>
-
-      <DistributionPanel onChanged={() => setRefreshKey((k) => k + 1)} />
-
-      <BranchReportPanel refreshKey={refreshKey} />
-
-      <ActivatedCardsPanel onOpen={openByCode} refreshKey={refreshKey} />
-
-      <PricingPanel />
-
       <div className="admin-toolbar">
         <h2>البحث عن مريض</h2>
       </div>

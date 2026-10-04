@@ -13,13 +13,12 @@ import PartnersTab from './PartnersTab'
 import ComplaintsTab from './ComplaintsTab'
 import BookingsTab from './BookingsTab'
 import VisitRatingsTab from './VisitRatingsTab'
-import MedicalFilesTab from './MedicalFilesTab'
 import TrustCardTab from './TrustCardTab'
 import ReportsTab from './ReportsTab'
 import logoWhiteFull from '@client/logo-white-full.png'
 import './Admin.css'
 
-const trustOnly = ['trust-card', 'medical-files', 'complaints', 'ratings']
+const trustOnly = ['trust-card', 'complaints', 'ratings']
 const allTabs = [
   { key: 'packages', label: 'الباقات' },
   { key: 'tests', label: 'التحاليل' },
@@ -34,7 +33,6 @@ const allTabs = [
   { key: 'bookings', label: 'الحجوزات' },
   { key: 'complaints', label: 'شكاوى واقتراحات' },
   { key: 'ratings', label: 'قيّم زيارتك' },
-  { key: 'medical-files', label: 'الملفات الطبية' },
   { key: 'reports', label: '📊 تقارير' },
 ]
 const tabs = allTabs.filter((t) => brand.features?.trustCard || !trustOnly.includes(t.key))
@@ -82,7 +80,6 @@ export default function AdminDashboard() {
         {activeTab === 'bookings' && <BookingsTab />}
         {activeTab === 'complaints' && <ComplaintsTab />}
         {activeTab === 'ratings' && <VisitRatingsTab />}
-        {activeTab === 'medical-files' && <MedicalFilesTab />}
         {activeTab === 'reports' && <ReportsTab />}
       </main>
     </div>
