@@ -149,9 +149,8 @@ export default function TrustCard() {
 
         <div className="trust-card__badges">
           <span className="trust-card__discount-badge">خصم 25%</span>
-          <span className="trust-card__discount-badge">
-            من {prices.personal.toLocaleString('ar-EG')} جنيه
-          </span>
+          <span className="trust-card__discount-badge">شخصي {prices.personal.toLocaleString('ar-EG')} جنيه</span>
+          <span className="trust-card__discount-badge">عائلي {prices.family.toLocaleString('ar-EG')} جنيه</span>
         </div>
       </section>
 
