@@ -1,12 +1,4 @@
-export function mapsUrl(query) {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
-}
-
-export function whatsappUrl(phone, branchName) {
-  const international = `2${phone}`
-  const message = encodeURIComponent(`السلام عليكم، عايز أعرف عنوان ${branchName} فين بالظبط؟`)
-  return `https://wa.me/${international}?text=${message}`
-}
+import { mapsUrl, whatsappUrl } from '../../../src/lib/links'
 
 export const branches = [
   {

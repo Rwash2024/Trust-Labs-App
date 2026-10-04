@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import splashVideo from '../assets/splash.mp4'
 import './Splash.css'
+
+// Splash is optional per client: drop clients/<name>/splash.mp4 to enable it.
+const splashVideo = Object.values(
+  import.meta.glob('@client/splash.mp4', { eager: true, query: '?url', import: 'default' }),
+)[0]
+export const hasSplash = Boolean(splashVideo)
 
 // The source clip fades in from black for its first ~0.5s — with object-fit:contain
 // that shows up as a hard-edged black box on the splash background, so we skip past it.

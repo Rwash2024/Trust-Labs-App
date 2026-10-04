@@ -1,0 +1,32 @@
+{
+  "name": "لاب ميد إيجيبت",
+  "legalName": "لاب ميد إيجيبت",
+  "appDescription": "لاب ميد إيجيبت — حجز التحاليل والباقات والزيارات المنزلية",
+  "seoDescription": "لاب ميد إيجيبت — أول معمل مصري ألماني. أكثر من 8000 تحليل، زيارات منزلية، و12 فرعًا. احجز الآن.",
+  "hotline": "19314",
+  "whatsapp": "201101193140",
+  "resultsUrl": "#",
+  "colors": {
+    "primary": "#143B65",
+    "primaryDark": "#102f51",
+    "primaryDarker": "#0c233d",
+    "primaryLight": "#e8ebf0",
+    "primaryBright": "#436284",
+    "themeColor": "#143B65",
+    "shadowRgb": "12, 35, 61"
+  },
+  "social": {
+    "facebook": "https://www.facebook.com/LabmedEgypt",
+    "instagram": "https://www.instagram.com/labmed_egypt"
+  },
+  "features": {
+    "trustCard": false,
+    "trackSample": true,
+    "showPrices": false,
+    "vercelAnalytics": false
+  },
+  "email": "info@labmedegypt.com",
+  "address": "ميدان لبنان، رقم 1 امتداد 26 يوليو، المهندسين",
+  "homeVisitFee": 0,
+  "noindex": true
+}

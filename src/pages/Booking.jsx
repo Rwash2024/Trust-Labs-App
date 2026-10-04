@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import brand from '../brand'
+import { priceText, showPrices } from '../lib/price'
 import { Link } from 'react-router-dom'
 import { useBooking } from '../context/BookingContext'
 import { fetchBranchGroups, fetchAllTests } from '../lib/data'
@@ -9,7 +11,7 @@ import './Booking.css'
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
 const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : null
 const PAYMOB_LINK = import.meta.env.VITE_PAYMOB_LINK
-const HOME_VISIT_FEE = 75
+const HOME_VISIT_FEE = brand.homeVisitFee ?? 75
 const ONLINE_PAYMENT_ENABLED = false // hidden temporarily until a payment provider (Paymob/InstaPay) is finalized
 const EGYPT_PHONE_REGEX = /^01[0125]\d{8}$/
 
@@ -56,7 +58,7 @@ export default function Booking() {
   }, [])
 
   const addedIds = selectedPackages.map((p) => p.id)
-  const subtotal = selectedPackages.reduce((sum, p) => sum + p.price, 0)
+  const subtotal = selectedPackages.reduce((sum, p) => sum + (p.price ?? 0), 0)
   const homeVisitFee = mode === 'home' ? HOME_VISIT_FEE : 0
   const total = subtotal + homeVisitFee
 
@@ -177,7 +179,7 @@ export default function Booking() {
 
         <div className="booking__receipt">
           <div className="booking__receipt-header">
-            <span className="booking__receipt-brand">Trust Labs</span>
+            <span className="booking__receipt-brand">{brand.name}</span>
             <span className="booking__receipt-branch">{receipt.branchLabel}</span>
           </div>
 
@@ -217,6 +219,7 @@ export default function Booking() {
 
           <div className="booking__receipt-divider" />
 
+          {showPrices && (<>
           <div className="booking__receipt-row">
             <span>التكلفة</span>
             <span>{receipt.subtotal.toLocaleString('en-US')} جنيه</span>
@@ -231,6 +234,7 @@ export default function Booking() {
             <span>الإجمالي</span>
             <span>{receipt.total.toLocaleString('en-US')} جنيه</span>
           </div>
+          </>)}
 
           <div className="booking__receipt-ref">رقم الحجز: {receipt.bookingRef}</div>
         </div>
@@ -308,7 +312,7 @@ export default function Booking() {
                       onClick={() => togglePackage(testToCartItem(test))}
                     >
                       <span className="booking__test-row-name">{test.name}</span>
-                      <span className="booking__test-row-price">{test.price.toLocaleString('en-US')} جنيه</span>
+                      <span className="booking__test-row-price">{priceText(test.price)}</span>
                       <span className="booking__test-row-icon">{isAdded ? <CheckIcon /> : <PlusIcon />}</span>
                     </button>
                   )
@@ -328,7 +332,7 @@ export default function Booking() {
                 </span>
                 <span className="booking__cart-info">
                   <span className="booking__cart-name">{pkg.name}</span>
-                  <span className="booking__cart-price">{pkg.price.toLocaleString('en-US')} جنيه</span>
+                  <span className="booking__cart-price">{priceText(pkg.price)}</span>
                 </span>
                 <button type="button" className="booking__cart-remove" onClick={() => removePackage(pkg.id)}>
                   إزالة
@@ -336,7 +340,7 @@ export default function Booking() {
               </div>
             ))}
 
-            <div className="booking__total">
+            {showPrices && (<div className="booking__total">
               <div className="booking__total-row">
                 <span>إجمالي التحاليل والباقات</span>
                 <span>{subtotal.toLocaleString('en-US')} جنيه</span>
@@ -351,7 +355,7 @@ export default function Booking() {
                 <span>الإجمالي</span>
                 <span>{total.toLocaleString('en-US')} جنيه</span>
               </div>
-            </div>
+            </div>)}
           </div>
         )}
 
@@ -532,8 +536,8 @@ export default function Booking() {
           {status === 'error' && (
             <p className="booking__error">
               {FORMSPREE_ENDPOINT
-                ? 'حصل خطأ أثناء إرسال الطلب، حاول تاني أو تواصل معنا على الخط الساخن 16183.'
-                : 'الحجز أونلاين لسه مش متفعّل بالكامل — كلّم فريقنا على الخط الساخن 16183 أو واتساب الكول سنتر.'}
+                ? `حصل خطأ أثناء إرسال الطلب، حاول تاني أو تواصل معنا على الخط الساخن ${brand.hotline}.`
+                : `الحجز أونلاين لسه مش متفعّل بالكامل — كلّم فريقنا على الخط الساخن ${brand.hotline} أو واتساب الكول سنتر.`}
             </p>
           )}
 

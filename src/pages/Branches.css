@@ -238,7 +238,7 @@
 }
 
 .branch-card__action--whatsapp {
-  background: #E9F8EF;
+  background: var(--color-primary-light);
   color: #1D8A4E;
 }
 

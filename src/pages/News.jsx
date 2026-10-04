@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import brand from '../brand'
 import { fetchNews } from '../lib/data'
 import { NewsIcon } from '../components/icons'
 import './News.css'
@@ -40,7 +41,7 @@ export default function News() {
           <NewsIcon width={28} height={28} color="#fff" />
         </span>
         <h1 className="news__title">أخبار المعمل</h1>
-        <p className="news__subtitle">آخر أخبار وإعلانات Trust Labs أول بأول</p>
+        <p className="news__subtitle">آخر أخبار وإعلانات {brand.name} أول بأول</p>
       </section>
 
       <div className="news__list">

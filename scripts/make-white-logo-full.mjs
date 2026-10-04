@@ -3,8 +3,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const src = path.join(__dirname, '../src/assets/logo-en.png')
-const out = path.join(__dirname, '../src/assets/logo-white-full.png')
+const src = path.join(__dirname, '../clients/trustlabs/logo-en.png')
+const out = path.join(__dirname, '../clients/trustlabs/logo-white-full.png')
 
 const trimmed = await sharp(src).trim({ threshold: 10 }).png().toBuffer()
 const { data, info } = await sharp(trimmed).ensureAlpha().raw().toBuffer({ resolveWithObject: true })

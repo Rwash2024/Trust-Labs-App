@@ -1,0 +1,32 @@
+{
+  "name": "معامل المعمل",
+  "legalName": "مختبرات المعمل ش.م.",
+  "appDescription": "معامل المعمل — حجز التحاليل والزيارات المنزلية والفروع",
+  "seoDescription": "معامل المعمل — 54 عامًا من التميز في التشخيص الطبي. 19 فرعًا. احجز زيارة منزلية أو تحليل وتصفّح الخدمات.",
+  "hotline": "15810",
+  "whatsapp": "",
+  "resultsUrl": "#",
+  "colors": {
+    "primary": "#295B34",
+    "primaryDark": "#21492a",
+    "primaryDarker": "#19371f",
+    "primaryLight": "#eaefeb",
+    "primaryBright": "#547c5d",
+    "themeColor": "#295B34",
+    "shadowRgb": "25, 55, 31"
+  },
+  "social": {
+    "facebook": "https://www.facebook.com/omar.gaber.aldeep"
+  },
+  "features": {
+    "trustCard": false,
+    "trackSample": true,
+    "showPrices": false,
+    "vercelAnalytics": false
+  },
+  "email": "info@almaamal.com",
+  "address": "20 شارع لبنان، المهندسين",
+  "workingHours": "السبت - الخميس: 8ص - 6م | الجمعة: مغلق",
+  "homeVisitFee": 0,
+  "noindex": true
+}

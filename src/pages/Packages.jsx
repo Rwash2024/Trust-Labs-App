@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { priceText, showPrices } from '../lib/price'
 import { fetchPackages, fetchPopularTests, fetchAllTests } from '../lib/data'
 import { testToCartItem } from '../lib/cart'
 import { CheckIcon, PlusIcon, ArrowIcon, SearchIcon, CartIcon } from '../components/icons'
@@ -17,7 +18,7 @@ function PackageModal({ pkg, isAdded, onAdd, onClose }) {
         <div className="pkg-modal__body">
           <h3 className="pkg-modal__name">{pkg.name}</h3>
           <span className="pkg-modal__meta">{pkg.testCount} تحليل</span>
-          <span className="pkg-modal__price">{pkg.price.toLocaleString('en-US')} جنيه</span>
+          <span className="pkg-modal__price">{priceText(pkg.price)}</span>
           <div className="pkg-modal__tests">
             {pkg.tests.map((test) => (
               <span key={test} className="pkg-modal__tag">
@@ -47,8 +48,14 @@ function TestRow({ test, isAdded, onAdd }) {
       </button>
       <span className="test-row__name">{test.name}</span>
       <span className="test-row__price">
-        {test.price.toLocaleString('en-US')}
-        <small>جنيه</small>
+        {showPrices && test.price != null ? (
+          <>
+            {test.price.toLocaleString('en-US')}
+            <small>جنيه</small>
+          </>
+        ) : (
+          <small>{priceText(null)}</small>
+        )}
       </span>
     </div>
   )

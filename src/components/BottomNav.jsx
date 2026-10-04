@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { HomeIcon, FlaskIcon, PhoneIcon, ShieldIcon, ResultsIcon } from './icons'
+import brand from '../brand'
 import './BottomNav.css'
 
 // Order matches the RTL visual layout: index 0 renders furthest right.
@@ -10,7 +11,7 @@ const items = [
   { to: '/', label: 'الرئيسية', Icon: HomeIcon, end: true, big: true },
   { to: '/packages', label: 'الباقات والتحاليل', Icon: FlaskIcon },
   { to: '/contact', label: 'تواصل معنا', Icon: PhoneIcon },
-]
+].filter((item) => item.to !== '/track-sample' || brand.features?.trackSample)
 
 export default function BottomNav() {
   return (

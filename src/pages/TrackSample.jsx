@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import brand from '../brand'
 import { fetchSampleStatusByPhone } from '../lib/data'
 import { SearchIcon, ShieldIcon, CheckIcon } from '../components/icons'
 import './TrackSample.css'
@@ -94,7 +95,7 @@ export default function TrackSample() {
       <div className="track__body">
         {status === 'not-found' && (
           <p className="track__error">
-            مفيش حجز مسجّل على الرقم ده، تأكد إنك كتبته صح أو كلّم الخط الساخن 16183.
+            مفيش حجز مسجّل على الرقم ده، تأكد إنك كتبته صح أو كلّم الخط الساخن {brand.hotline}.
           </p>
         )}
 

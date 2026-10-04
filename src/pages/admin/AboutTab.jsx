@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { adminGetAboutContent, adminSaveAboutContent } from '../../lib/admin'
-import { defaultAboutContent } from '../../data/aboutContent'
+import { defaultAboutContent } from '@client/data/aboutContent'
 import ImageUploadField from '../../components/admin/ImageUploadField'
 
 const pillarLabels = ['التقنيات والمعايير', 'الرعاية الصحية', 'دقة التشخيص', 'الفريق المتخصص']

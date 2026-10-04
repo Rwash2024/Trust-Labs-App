@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import brand from '../brand'
+import { priceText, showPrices } from '../lib/price'
 import { Link } from 'react-router-dom'
 import { FlaskIcon, MapPinIcon, WhatsAppIcon, CalendarIcon, CartIcon, SearchIcon, ArrowIcon, InfoIcon, ResultsIcon, CheckIcon, PlusIcon, ShieldIcon, NewsIcon } from '../components/icons'
 import BannerCarousel from '../components/BannerCarousel'
@@ -6,30 +8,13 @@ import BannerCard from '../components/BannerCard'
 import { fetchFeaturedTests, fetchPartners } from '../lib/data'
 import { testToCartItem } from '../lib/cart'
 import { useBooking } from '../context/BookingContext'
-import logoWhiteFull from '../assets/logo-white-full.png'
-import cibLogo from '../assets/partners/cib.svg'
-import tmgLogo from '../assets/partners/tmg.png'
-import cocaColaLogo from '../assets/partners/cocacola.svg'
-import rixosLogo from '../assets/partners/rixos.svg'
-import kempinskiLogo from '../assets/partners/kempinski.svg'
-import alAhlyLogo from '../assets/partners/alahly.svg'
-import zamalekLogo from '../assets/partners/zamalek.svg'
-import axaLogo from '../assets/partners/axa.svg'
-import wadiDeglaLogo from '../assets/partners/wadidegla.png'
-import seoudiLogo from '../assets/partners/seoudi.jpg'
-import saydLogo from '../assets/partners/sayd.png'
-import shamsLogo from '../assets/partners/shams.png'
-import beniSuefLogo from '../assets/partners/beni-suef.png'
-import nextCareLogo from '../assets/partners/nextcare.png'
-import egyCareLogo from '../assets/partners/egycare.jpg'
-import medRightLogo from '../assets/partners/medright.png'
-import globeMedLogo from '../assets/partners/globemed.png'
-import misrInsuranceLogo from '../assets/partners/misr-insurance.png'
+import logoWhiteFull from '@client/logo-white-full.png'
+import { staticPartnerLogos } from '@client/data/partners'
 import '../styles/modal.css'
 import './Home.css'
 
 const insuranceMessage = encodeURIComponent('السلام عليكم، عندي استفسار بخصوص موافقات التأمين الطبي.')
-const whatsappUrl = `https://wa.me/201277610492?text=${insuranceMessage}`
+const whatsappUrl = `https://wa.me/${brand.whatsapp}?text=${insuranceMessage}`
 
 function FeaturedTestModal({ test, isAdded, onAdd, onClose }) {
   return (
@@ -45,7 +30,7 @@ function FeaturedTestModal({ test, isAdded, onAdd, onClose }) {
         <div className="pkg-modal__body">
           <h3 className="pkg-modal__name">{test.name}</h3>
           <p className="pkg-modal__highlight">{test.highlight}</p>
-          <span className="pkg-modal__price">{test.price.toLocaleString('en-US')} جنيه</span>
+          <span className="pkg-modal__price">{priceText(test.price)}</span>
           <button className={`pkg-modal__cta${isAdded ? ' added' : ''}`} onClick={onAdd}>
             {isAdded ? <CheckIcon /> : <PlusIcon />}
             {isAdded ? 'تمت الإضافة للحجز' : 'أضف للحجز'}
@@ -59,38 +44,6 @@ function FeaturedTestModal({ test, isAdded, onAdd, onClose }) {
   )
 }
 
-// Grouped by category, one row per group — clubs together, insurance companies together,
-// everything else together. Ezz Steel dropped (no reliable official logo found).
-const partnerLogosGeneral = [
-  { name: 'بنك CIB', src: cibLogo },
-  { name: 'مجموعة طلعت مصطفى', src: tmgLogo },
-  { name: 'كوكاكولا', src: cocaColaLogo },
-  { name: 'سعودي ماركت', src: seoudiLogo },
-  { name: 'فنادق ريكسوس', src: rixosLogo },
-  { name: 'فنادق كمبينسكي', src: kempinskiLogo },
-]
-
-const partnerLogosClubs = [
-  { name: 'النادي الأهلي', src: alAhlyLogo },
-  { name: 'نادي الزمالك', src: zamalekLogo },
-  { name: 'نادي الصيد', src: saydLogo },
-  { name: 'نادي الشمس', src: shamsLogo },
-  { name: 'نادي وادي دجلة', src: wadiDeglaLogo },
-  { name: 'نادي بني سويف العام', src: beniSuefLogo },
-]
-
-const partnerLogosInsurance = [
-  { name: 'شركة أكسا', src: axaLogo },
-  { name: 'شركة نيكست كير', src: nextCareLogo },
-  { name: 'شركة ايجي كير', src: egyCareLogo },
-  { name: 'شركة ميد رايت', src: medRightLogo },
-  { name: 'شركة جلوب ميد', src: globeMedLogo },
-  { name: 'مصر للتأمين', src: misrInsuranceLogo },
-]
-
-// Static grid fallback, grouped by category order — general partners, then clubs, then
-// insurance. Used until the admin adds partners in Admin > شركاء النجاح.
-const staticPartnerLogos = [...partnerLogosGeneral, ...partnerLogosClubs, ...partnerLogosInsurance]
 
 const quickLinks = [
   { to: '/booking', label: 'احجز موعدك', Icon: CalendarIcon },
@@ -99,7 +52,7 @@ const quickLinks = [
   { to: '/branches', label: 'فروعنا', Icon: MapPinIcon },
   { to: '/news', label: 'أخبار المعمل', Icon: NewsIcon },
   { to: '/about', label: 'من نحن', Icon: InfoIcon },
-]
+].filter((link) => link.to || brand.whatsapp)
 
 export default function Home() {
   const [featuredTests, setFeaturedTests] = useState([])
@@ -128,7 +81,7 @@ export default function Home() {
         <span className="home__blob home__blob--2" />
 
         <div className="home__topbar">
-          <img className="home__logo" src={logoWhiteFull} alt="Trust Labs" />
+          <img className="home__logo" src={logoWhiteFull} alt={brand.name} />
           <Link className="home__bell" to="/booking" aria-label="السلة">
             <CartIcon />
             {selectedPackages.length > 0 && <span className="home__cart-badge">{selectedPackages.length}</span>}
@@ -136,7 +89,7 @@ export default function Home() {
         </div>
 
         <h1 className="home__greeting">
-          أهلاً بيك في Trust Labs
+          أهلاً بيك في {brand.name}
           <span>عايز تعمل إيه النهاردة؟</span>
         </h1>
 
@@ -206,18 +159,20 @@ export default function Home() {
         </Link>
       </section>
 
-      <section className="home__section">
-        <Link className="home__banner home__banner--card" to="/trust-card">
-          <span className="home__banner-blob" />
-          <span className="home__banner-badge">خصم 25%</span>
-          <span className="home__banner-title">كارت الثقة</span>
-          <span className="home__banner-desc">احتفظ بكل بياناتك الطبية في مكان واحد ووفّر في كل تحاليلك</span>
-          <span className="home__banner-cta">
-            اعرض التفاصيل
-            <ArrowIcon />
-          </span>
-        </Link>
-      </section>
+      {brand.features?.trustCard && (
+        <section className="home__section">
+          <Link className="home__banner home__banner--card" to="/trust-card">
+            <span className="home__banner-blob" />
+            <span className="home__banner-badge">خصم 25%</span>
+            <span className="home__banner-title">كارت الثقة</span>
+            <span className="home__banner-desc">احتفظ بكل بياناتك الطبية في مكان واحد ووفّر في كل تحاليلك</span>
+            <span className="home__banner-cta">
+              اعرض التفاصيل
+              <ArrowIcon />
+            </span>
+          </Link>
+        </section>
+      )}
 
       <section className="home__section">
         <h2 className="home__section-title home__section-title--center">شركاء النجاح</h2>

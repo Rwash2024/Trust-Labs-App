@@ -3,8 +3,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const src = path.join(__dirname, '../src/assets/logo-en.png')
-const out = path.join(__dirname, '../src/assets/mark-white.png')
+const src = path.join(__dirname, '../clients/trustlabs/logo-en.png')
+const out = path.join(__dirname, '../clients/trustlabs/mark-white.png')
 
 const img = sharp(src)
 const meta = await img.metadata()

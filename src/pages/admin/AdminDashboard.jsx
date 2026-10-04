@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import brand from '../../brand'
 import { useAdminAuth } from '../../context/AdminAuthContext'
 import PackagesTab from './PackagesTab'
 import TestsTab from './TestsTab'
@@ -9,7 +10,7 @@ import AboutTab from './AboutTab'
 import SampleTrackingTab from './SampleTrackingTab'
 import NewsTab from './NewsTab'
 import PartnersTab from './PartnersTab'
-import logoWhiteFull from '../../assets/logo-white-full.png'
+import logoWhiteFull from '@client/logo-white-full.png'
 import './Admin.css'
 
 const tabs = [
@@ -32,7 +33,7 @@ export default function AdminDashboard() {
     <div className="admin-dashboard">
       <header className="admin-header">
         <div className="admin-header__brand">
-          <img src={logoWhiteFull} alt="Trust Labs" />
+          <img src={logoWhiteFull} alt={brand.name} />
           <span>لوحة التحكم</span>
         </div>
         <div className="admin-header__user">

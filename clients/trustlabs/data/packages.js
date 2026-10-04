@@ -1,0 +1,120 @@
+import { packageImages } from './packageImages'
+
+export const packages = [
+  {
+    id: 'golden-men',
+    name: 'الذهبية (رجال)',
+    price: 4860,
+    testCount: 20,
+    tests: [
+      'CBC', 'ALT', 'AST', 'Bilirubin (Total)', 'Creatinine', 'Urea', 'Uric Acid',
+      'Calcium (Total)', 'ESR', 'HCV Ab', 'HBs Ag', 'HbA1c', 'Lipid Profile',
+      'Blood Glucose (Fasting)', 'TSH', 'Free T4', 'Urine Analysis', 'PSA (Total)',
+      'Vitamin D', 'AFP',
+    ],
+  },
+  {
+    id: 'golden-women',
+    name: 'الذهبية (سيدات)',
+    price: 5400,
+    testCount: 20,
+    tests: [
+      'CBC', 'ALT', 'AST', 'Bilirubin (Total)', 'Creatinine', 'Urea', 'Uric Acid',
+      'Calcium (Total)', 'ESR', 'HCV Ab', 'HBs Ag', 'HbA1c', 'Lipid Profile',
+      'TSH', 'Free T4', 'Urine Analysis', 'Vitamin D', 'AFP', 'CA-125', 'CA 15-3',
+    ],
+  },
+  {
+    id: 'ramadan',
+    name: 'الرمضانية',
+    price: 1500,
+    testCount: 8,
+    tests: ['CBC', 'Creatinine', 'Urea', 'Uric Acid', 'HbA1c', 'Lipid Profile', 'Urine Analysis', 'Vitamin D'],
+  },
+  {
+    id: 'silver',
+    name: 'سيلفر',
+    price: 4320,
+    testCount: 19,
+    tests: [
+      'CBC', 'ALT', 'AST', 'Bilirubin (Total)', 'Albumin', 'Urea', 'Uric Acid',
+      'Calcium (Total)', 'Creatinine', 'ESR', 'HCV Ab', 'HBs Ag', 'HbA1c',
+      'Lipid Profile', 'TSH', 'Free T4', 'Urine Analysis', 'CEA', 'Alk.Phosphatase',
+    ],
+  },
+  {
+    id: 'bronze',
+    name: 'برونزية',
+    price: 2160,
+    testCount: 11,
+    tests: ['CBC', 'ALT', 'AST', 'Urea', 'Uric Acid', 'Creatinine', 'ESR', 'TSH', 'Lipid Profile', 'Urine Analysis', 'HCV Ab'],
+  },
+  {
+    id: 'liver',
+    name: 'الكبد',
+    price: 1498,
+    testCount: 8,
+    tests: ['ALT', 'AST', 'Bilirubin (Total)', 'Bilirubin (Direct)', 'Albumin', 'Alk.Phosphatase', 'HCV Ab', 'HBs Ag'],
+  },
+  {
+    id: 'fertility-men',
+    name: 'الخصوبة (رجال)',
+    price: 1138,
+    testCount: 5,
+    tests: ['Semen Analysis', 'Testosterone (Free)', 'Prolactin (PRL)', 'FSH', 'LH'],
+  },
+  {
+    id: 'fertility-women',
+    name: 'الخصوبة (سيدات)',
+    price: 994,
+    testCount: 4,
+    tests: ['FSH', 'LH', 'Prolactin (PRL)', 'Estradiol (E2)'],
+  },
+  {
+    id: 'thyroid',
+    name: 'الغدة الدرقية',
+    price: 806,
+    testCount: 3,
+    tests: ['Free T3', 'TSH', 'Free T4'],
+  },
+  {
+    id: 'kidney',
+    name: 'الكُلى',
+    price: 994,
+    testCount: 7,
+    tests: ['Urea', 'Creatinine', 'Uric Acid', 'Potassium (K)', 'Sodium (Na)', 'Chloride', 'Urine Analysis'],
+  },
+  {
+    id: 'children',
+    name: 'الأطفال',
+    price: 1692,
+    testCount: 10,
+    tests: ['CBC', 'ESR', 'TSH', 'SGPT', 'Urine Analysis (Random)', 'Blood Glucose', 'A.S.O Titre (ASOT)', 'HAV-IgM', 'Stool Analysis', 'Serum Creatinine'],
+  },
+  {
+    id: 'pregnancy',
+    name: 'الحمل',
+    price: 806,
+    testCount: 6,
+    tests: ['CBC', 'ABO', 'Blood Glucose (Random)', 'Creatinine', 'Urine Analysis', 'RH'],
+  },
+  {
+    id: 'bone-pain',
+    name: 'آلام العظام',
+    price: 2333,
+    testCount: 9,
+    tests: ['ANA (I.F.)', 'Rheumatoid Factor', 'CRP', 'Calcium (Total)', 'Ionized Calcium (Ca)', 'Uric Acid', 'ESR', 'PTH', 'Vitamin D'],
+  },
+].map((pkg) => ({ ...pkg, image: packageImages[pkg.id] }))
+
+export const prepInstructions = {
+  'سكر بعد الأكل': 'يُشترط احتساب الساعتين من بداية الأكل، وبعد أخذ العلاج إذا وجد ولا يُسمح بالأكل أو التدخين أثناء الساعتين، كما يُرجى الانتهاء من الأكل خلال 10 دقائق والحضور للمعمل قبل الميعاد بربع ساعة على الأقل',
+  'سرعة الترسيب': 'يُفضّل الصيام من 6-8 ساعات',
+  'ESR': 'يُفضّل الصيام من 6-8 ساعات',
+  'سكر صائم': 'يُشترط الصيام 8 ساعات (تُقبل الحالات من 6-8 ساعات)',
+  'Blood Glucose (Fasting)': 'يُشترط الصيام 8 ساعات (تُقبل الحالات من 6-8 ساعات)',
+  'HbA1c': 'يُفضّل الصيام 8 ساعات',
+  'Urine Analysis': 'يُفضّل أول بول في الصباح',
+  'PSA (Total)': 'يمتنع المريض 10 أيام قبل إجراء التحليل عن إدخال منظار أو قسطرة، ولا يجري اختبار Complex PSA - PSA Free مع Total PSA',
+  'Semen Analysis': 'يُشترط الامتناع عن الجماع أو الاحتلام لمده لا تقل عن 3 أيام ولا تزيد عن 7 أيام، تُعطى العينة داخل المعمل ولا يُسمح بقبول عينات خارج المعمل مر عليها أكثر من 20 دقيقة',
+}

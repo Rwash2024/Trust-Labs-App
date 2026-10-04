@@ -1,12 +1,13 @@
 import { FlaskIcon } from './icons'
+import { priceText, showPrices } from '../lib/price'
 
 // Cycled backgrounds standing in for real photography until an image is uploaded from Admin.
 const bannerGradients = [
-  'linear-gradient(135deg, #2F8F52 0%, #3CAF64 100%)',
-  'linear-gradient(135deg, #1F6B3D 0%, #3CAF64 100%)',
-  'linear-gradient(135deg, #3CAF64 0%, #7CE3A6 100%)',
-  'linear-gradient(135deg, #245C39 0%, #4FBE79 100%)',
-  'linear-gradient(135deg, #39B76E 0%, #1F6B3D 100%)',
+  'linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%)',
+  'linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary) 100%)',
+  'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-bright) 100%)',
+  'linear-gradient(135deg, var(--color-primary-darker) 0%, var(--color-primary-dark) 100%)',
+  'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-darker) 100%)',
 ]
 
 export default function BannerCard({ cardRef, index, image, name, price, onClick }) {
@@ -26,8 +27,14 @@ export default function BannerCard({ cardRef, index, image, name, price, onClick
       <span className="banner-card__content">
         <span className="banner-card__name">{name}</span>
         <span className="banner-card__price">
-          {price.toLocaleString('en-US')}
-          <small>جنيه</small>
+          {showPrices && price != null ? (
+            <>
+              {price.toLocaleString('en-US')}
+              <small>جنيه</small>
+            </>
+          ) : (
+            <small>{priceText(null)}</small>
+          )}
         </span>
       </span>
     </button>

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import brand from '../brand'
 import {
   PhoneIcon,
   WhatsAppIcon,
@@ -9,17 +10,18 @@ import {
   LinkedInIcon,
   ShieldIcon,
 } from '../components/icons'
-import logoWhiteFull from '../assets/logo-white-full.png'
+import logoWhiteFull from '@client/logo-white-full.png'
+import { parseHours } from '../lib/hours'
 import './Contact.css'
 
 const insuranceMessage = encodeURIComponent('السلام عليكم، ممكن استفسر عن حاجه؟')
-const whatsappUrl = `https://wa.me/201277610492?text=${insuranceMessage}`
+const whatsappUrl = `https://wa.me/${brand.whatsapp}?text=${insuranceMessage}`
 
 const socialLinks = [
-  { label: 'فيسبوك', href: 'https://www.facebook.com/TrustLabsEgypt', Icon: FacebookIcon },
-  { label: 'انستجرام', href: 'https://www.instagram.com/trust.labs/', Icon: InstagramIcon },
-  { label: 'لينكدإن', href: 'https://www.linkedin.com/company/trust-labs-egypt', Icon: LinkedInIcon },
-]
+  { label: 'فيسبوك', href: brand.social?.facebook, Icon: FacebookIcon },
+  { label: 'انستجرام', href: brand.social?.instagram, Icon: InstagramIcon },
+  { label: 'لينكدإن', href: brand.social?.linkedin, Icon: LinkedInIcon },
+].filter((link) => link.href)
 
 export default function Contact() {
   return (
@@ -28,7 +30,7 @@ export default function Contact() {
         <span className="contact__blob contact__blob--1" />
 
         <div className="contact__topbar">
-          <img className="contact__logo" src={logoWhiteFull} alt="Trust Labs" />
+          <img className="contact__logo" src={logoWhiteFull} alt={brand.name} />
         </div>
 
         <h1 className="contact__title">تواصل معنا</h1>
@@ -36,52 +38,56 @@ export default function Contact() {
       </section>
 
       <div className="contact__list">
-        <a className="contact__card" href="tel:16183">
+        <a className="contact__card" href={`tel:${brand.hotline}`}>
           <span className="contact__card-icon">
             <PhoneIcon color="#fff" />
           </span>
           <span className="contact__card-info">
             <span className="contact__card-title">الخط الساخن</span>
-            <span className="contact__card-value">16183</span>
+            <span className="contact__card-value">{brand.hotline}</span>
           </span>
           <ArrowIcon className="contact__card-arrow" />
         </a>
 
-        <a className="contact__card" href={whatsappUrl} target="_blank" rel="noreferrer">
-          <span className="contact__card-icon contact__card-icon--whatsapp">
-            <WhatsAppIcon />
-          </span>
-          <span className="contact__card-info">
-            <span className="contact__card-title">واتساب خدمة العملاء</span>
-            <span className="contact__card-value">تواصل مباشر مع الكول سنتر</span>
-          </span>
-          <ArrowIcon className="contact__card-arrow" />
-        </a>
+        {brand.whatsapp && (
+          <a className="contact__card" href={whatsappUrl} target="_blank" rel="noreferrer">
+            <span className="contact__card-icon contact__card-icon--whatsapp">
+              <WhatsAppIcon />
+            </span>
+            <span className="contact__card-info">
+              <span className="contact__card-title">واتساب خدمة العملاء</span>
+              <span className="contact__card-value">تواصل مباشر مع الكول سنتر</span>
+            </span>
+            <ArrowIcon className="contact__card-arrow" />
+          </a>
+        )}
 
-        <Link className="contact__card" to="/track-sample">
-          <span className="contact__card-icon">
-            <ShieldIcon color="#fff" />
-          </span>
-          <span className="contact__card-info">
-            <span className="contact__card-title">تتبع حالة عينتك</span>
-            <span className="contact__card-value">اعرف عينتك وصلت فين برقم موبايلك</span>
-          </span>
-          <ArrowIcon className="contact__card-arrow" />
-        </Link>
+        {brand.features?.trackSample && (
+          <Link className="contact__card" to="/track-sample">
+            <span className="contact__card-icon">
+              <ShieldIcon color="#fff" />
+            </span>
+            <span className="contact__card-info">
+              <span className="contact__card-title">تتبع حالة عينتك</span>
+              <span className="contact__card-value">اعرف عينتك وصلت فين برقم موبايلك</span>
+            </span>
+            <ArrowIcon className="contact__card-arrow" />
+          </Link>
+        )}
       </div>
 
-      <section className="contact__hours">
-        <h2 className="contact__hours-title">مواعيد العمل</h2>
-        <div className="contact__hours-row">
-          <span>السبت – الخميس</span>
-          <span>8 صباحًا – 11 مساءً</span>
-        </div>
-        <div className="contact__hours-row">
-          <span>الجمعة</span>
-          <span>إجازة</span>
-        </div>
-        <p className="contact__hours-note">فرع المهندسين يعمل يوم الجمعة من الساعة 10 صباحًا حتى 10 مساءً</p>
-      </section>
+      {brand.workingHours && (
+        <section className="contact__hours">
+          <h2 className="contact__hours-title">مواعيد العمل</h2>
+          {parseHours(brand.workingHours).map(([label, value]) => (
+            <div className="contact__hours-row" key={value}>
+              {label && <span>{label}</span>}
+              <span>{value}</span>
+            </div>
+          ))}
+          {brand.workingHoursNote && <p className="contact__hours-note">{brand.workingHoursNote}</p>}
+        </section>
+      )}
 
       <Link className="contact__branches-link" to="/branches">
         <MapPinIcon />

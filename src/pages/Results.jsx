@@ -1,9 +1,10 @@
 import { ArrowIcon, PhoneIcon } from '../components/icons'
+import brand from '../brand'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
-import logoWhiteFull from '../assets/logo-white-full.png'
+import logoWhiteFull from '@client/logo-white-full.png'
 import './Results.css'
 
-const RESULTS_URL = 'http://webresults.trustlabseg.com/Login/Index/?Type=Individual'
+const RESULTS_URL = brand.resultsUrl
 
 export default function Results() {
   const handleClick = () => {
@@ -14,7 +15,7 @@ export default function Results() {
     <div className="results">
       <section className="results__hero">
         <span className="results__blob results__blob--1" />
-        <img className="results__logo" src={logoWhiteFull} alt="Trust Labs" />
+        <img className="results__logo" src={logoWhiteFull} alt={brand.name} />
         <h1 className="results__title">نتائج التحاليل</h1>
         <p className="results__subtitle">
           ادخل على بوابة النتائج الإلكترونية وشوف نتيجة تحاليلك أونلاين بكل سهولة وأمان
@@ -37,9 +38,9 @@ export default function Results() {
           هتحتاج رقم العينة أو بيانات الدخول اللي استلمتها وقت الفحص عشان تدخل على النتيجة.
         </p>
 
-        <a className="results__help" href="tel:16183">
+        <a className="results__help" href={`tel:${brand.hotline}`}>
           <PhoneIcon />
-          محتاج مساعدة؟ اتصل بنا على 16183
+          محتاج مساعدة؟ اتصل بنا على {brand.hotline}
         </a>
       </div>
     </div>

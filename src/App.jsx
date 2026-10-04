@@ -3,7 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom'
 import { Analytics } from '@vercel/analytics/react'
 import BottomNav from './components/BottomNav'
 import RouteTracker from './components/RouteTracker'
-import Splash from './components/Splash'
+import Splash, { hasSplash } from './components/Splash'
 import { AdminAuthProvider } from './context/AdminAuthContext'
 import AdminProtectedRoute from './pages/admin/AdminProtectedRoute'
 import Home from './pages/Home'
@@ -13,6 +13,7 @@ import Branches from './pages/Branches'
 import Booking from './pages/Booking'
 import Contact from './pages/Contact'
 import TrustCard from './pages/TrustCard'
+import brand from './brand'
 import Results from './pages/Results'
 import PrepInstructions from './pages/PrepInstructions'
 import Terms from './pages/Terms'
@@ -35,11 +36,11 @@ function PatientApp() {
           <Route path="/booking" element={<Booking />} />
           <Route path="/branches" element={<Branches />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/trust-card" element={<TrustCard />} />
+          {brand.features?.trustCard && <Route path="/trust-card" element={<TrustCard />} />}
           <Route path="/results" element={<Results />} />
           <Route path="/prep-instructions" element={<PrepInstructions />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/track-sample" element={<TrackSample />} />
+          {brand.features?.trackSample && <Route path="/track-sample" element={<TrackSample />} />}
           <Route path="/news" element={<News />} />
         </Routes>
       </main>
@@ -51,7 +52,7 @@ function PatientApp() {
 export default function App() {
   const location = useLocation()
   const isAdmin = location.pathname.startsWith('/admin')
-  const [showSplash, setShowSplash] = useState(!isAdmin)
+  const [showSplash, setShowSplash] = useState(!isAdmin && hasSplash)
 
   return (
     <AdminAuthProvider>
@@ -82,7 +83,7 @@ export default function App() {
       ) : (
         <PatientApp />
       )}
-      <Analytics />
+      {brand.features?.vercelAnalytics !== false && <Analytics />}
     </AdminAuthProvider>
   )
 }

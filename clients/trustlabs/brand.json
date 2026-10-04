@@ -1,0 +1,29 @@
+{
+  "name": "Trust Labs",
+  "legalName": "Trust Labs",
+  "appDescription": "Trust Labs — حجز التحاليل الطبية والباقات والفروع",
+  "seoDescription": "Trust Labs — أفضل 10 معامل تحاليل طبية في مصر. احجز تحصيل منزلي أو موعد فرع، وتصفّح الباقات والأسعار وشروط التحضير لكل تحليل.",
+  "hotline": "16183",
+  "whatsapp": "201277610492",
+  "resultsUrl": "http://webresults.trustlabseg.com/Login/Index/?Type=Individual",
+  "colors": {
+    "primary": "#39B76E",
+    "primaryDark": "#2E9A5A",
+    "primaryDarker": "#1F6B3D",
+    "primaryLight": "#E9F8EF",
+    "primaryBright": "#43C97E",
+    "themeColor": "#3CAF64",
+    "shadowRgb": "16, 90, 55"
+  },
+  "features": {
+    "trustCard": true,
+    "trackSample": true
+  },
+  "social": {
+    "facebook": "https://www.facebook.com/TrustLabsEgypt",
+    "instagram": "https://www.instagram.com/trust.labs/",
+    "linkedin": "https://www.linkedin.com/company/trust-labs-egypt"
+  },
+  "workingHours": "السبت - الخميس: 8ص - 11م | الجمعة: إجازة",
+  "workingHoursNote": "فرع المهندسين يعمل يوم الجمعة من الساعة 10 صباحًا حتى 10 مساءً"
+}

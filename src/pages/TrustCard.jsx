@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import brand from '../brand'
 import { CardIcon, ShieldIcon, PercentIcon, GiftIcon, CheckIcon } from '../components/icons'
-import logoWhiteFull from '../assets/logo-white-full.png'
+import logoWhiteFull from '@client/logo-white-full.png'
 import './TrustCard.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
@@ -20,7 +21,7 @@ const benefits = [
   {
     Icon: CardIcon,
     title: 'كارت يلحقك ويطمنك',
-    desc: 'كارت Trust Labs المطبوع معاك على طول، لسهولة الوصول لملف الطوارئ الخاص بك عن طريق مسح الـ QR كود.',
+    desc: `كارت ${brand.name} المطبوع معاك على طول، لسهولة الوصول لملف الطوارئ الخاص بك عن طريق مسح الـ QR كود.`,
   },
   {
     Icon: PercentIcon,
@@ -30,7 +31,7 @@ const benefits = [
   {
     Icon: GiftIcon,
     title: 'برنامج النقاط',
-    desc: 'مع برنامج النقاط من Trust Labs هتقدر تستفيد بتحاليل مجانية مقابل تجميع النقاط.',
+    desc: `مع برنامج النقاط من ${brand.name} هتقدر تستفيد بتحاليل مجانية مقابل تجميع النقاط.`,
   },
 ]
 
@@ -82,7 +83,7 @@ export default function TrustCard() {
         <span className="trust-card__blob trust-card__blob--1" />
 
         <div className="trust-card__topbar">
-          <img className="trust-card__logo" src={logoWhiteFull} alt="Trust Labs" />
+          <img className="trust-card__logo" src={logoWhiteFull} alt={brand.name} />
         </div>
 
         <h1 className="trust-card__title">كارت الثقة</h1>
@@ -118,7 +119,7 @@ export default function TrustCard() {
       ) : showForm ? (
         <form className="trust-card__form" onSubmit={handleSubmit}>
           <h2 className="trust-card__form-title">تواصل معنا</h2>
-          <p className="trust-card__form-subtitle">لطلب كارت الثقة من معامل Trust Labs</p>
+          <p className="trust-card__form-subtitle">لطلب كارت الثقة من معامل {brand.name}</p>
 
           <label className="trust-card__field">
             <span>الاسم</span>
@@ -161,8 +162,8 @@ export default function TrustCard() {
           {status === 'error' && (
             <p className="trust-card__error">
               {FORMSPREE_ENDPOINT
-                ? 'حصل خطأ أثناء إرسال الطلب، حاول تاني أو اتصل بينا على 16183.'
-                : 'الطلب أونلاين لسه مش متفعّل بالكامل — كلّم فريقنا على الخط الساخن 16183.'}
+                ? `حصل خطأ أثناء إرسال الطلب، حاول تاني أو اتصل بينا على ${brand.hotline}.`
+                : `الطلب أونلاين لسه مش متفعّل بالكامل — كلّم فريقنا على الخط الساخن ${brand.hotline}.`}
             </p>
           )}
 

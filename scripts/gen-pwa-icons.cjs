@@ -1,17 +1,24 @@
 const sharp = require('sharp');
+const CLIENT = process.env.VITE_CLIENT || 'trustlabs';
 const fs = require('fs');
 const path = require('path');
 
-const OUT_DIR = path.join(__dirname, '..', 'public', 'icons');
+const OUT_DIR = path.join(__dirname, '..', 'clients', CLIENT, 'public', 'icons');
 const BG_COLOR = '#FFFFFF';
 const SRC_MARK = path.join(__dirname, '..', 'scripts', '_icon_mark.png');
 
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
 async function buildMark() {
-  const meta = await sharp('src/assets/logo-en.png').metadata();
+  // A client can ship a ready-made square mark; otherwise crop it from the top of logo-en.png.
+  const custom = `clients/${CLIENT}/icon-mark.png`;
+  if (fs.existsSync(custom)) {
+    await sharp(custom).trim().toFile(SRC_MARK);
+    return;
+  }
+  const meta = await sharp(`clients/${CLIENT}/logo-en.png`).metadata();
   const cropH = Math.round(meta.height * 0.52);
-  const top = await sharp('src/assets/logo-en.png')
+  const top = await sharp(`clients/${CLIENT}/logo-en.png`)
     .extract({ left: 0, top: 0, width: meta.width, height: cropH })
     .png()
     .toBuffer();

@@ -1,11 +1,13 @@
 import { supabase } from './supabase'
-import { packages as staticPackages, prepInstructions as staticPrepInstructions } from '../data/packages'
-import { packageImages } from '../data/packageImages'
-import { allTests as staticAllTests } from '../data/tests'
-import { popularTests as staticPopularTests } from '../data/popularTests'
-import { featuredTests as staticFeaturedTests } from '../data/featuredTests'
-import { branches as staticBranchGroups, mapsUrl, whatsappUrl } from '../data/branches'
-import { defaultAboutContent } from '../data/aboutContent'
+import { packages as staticPackages, prepInstructions as staticPrepInstructions } from '@client/data/packages'
+import { packageImages } from '@client/data/packageImages'
+import { allTests as staticAllTests } from '@client/data/tests'
+import { popularTests as staticPopularTests } from '@client/data/popularTests'
+import { featuredTests as staticFeaturedTests } from '@client/data/featuredTests'
+import { branches as staticBranchGroups } from '@client/data/branches'
+import { mapsUrl, whatsappUrl } from './links'
+
+import { defaultAboutContent } from '@client/data/aboutContent'
 
 export async function fetchPackages() {
   if (!supabase) return staticPackages

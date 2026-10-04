@@ -1,6 +1,7 @@
 import { useAdminAuth } from '../../context/AdminAuthContext'
+import brand from '../../brand'
 import SampleTrackingTab from './SampleTrackingTab'
-import logoWhiteFull from '../../assets/logo-white-full.png'
+import logoWhiteFull from '@client/logo-white-full.png'
 import './Admin.css'
 
 export default function BranchSamplesDashboard() {
@@ -10,7 +11,7 @@ export default function BranchSamplesDashboard() {
     <div className="admin-dashboard">
       <header className="admin-header">
         <div className="admin-header__brand">
-          <img src={logoWhiteFull} alt="Trust Labs" />
+          <img src={logoWhiteFull} alt={brand.name} />
           <span>تتبع العينات</span>
         </div>
         <div className="admin-header__user">

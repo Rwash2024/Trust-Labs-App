@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchBranchGroups } from '../lib/data'
+import { parseHours } from '../lib/hours'
 import { MapPinIcon, PhoneIcon, WhatsAppIcon, ChevronDownIcon, CartIcon } from '../components/icons'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import { useBooking } from '../context/BookingContext'
@@ -28,17 +29,12 @@ function BranchCard({ branch, governorate }) {
 
       <div className="branch-card__hours-box">
         <span className="branch-card__hours-title">مواعيد العمل</span>
-        <div className="branch-card__hours-row">
-          <span>السبت – الخميس</span>
-          <span>8 صباحًا – 11 مساءً</span>
-        </div>
-        <div className="branch-card__hours-row">
-          <span>الجمعة</span>
-          <span>إجازة</span>
-        </div>
-        {branch.name.includes('المهندسين') && (
-          <p className="branch-card__hours-note">فرع المهندسين يعمل يوم الجمعة من 10 صباحًا حتى 10 مساءً</p>
-        )}
+        {parseHours(branch.hours).map(([label, value]) => (
+          <div className="branch-card__hours-row" key={value}>
+            {label && <span>{label}</span>}
+            <span>{value}</span>
+          </div>
+        ))}
       </div>
 
       <div className="branch-card__actions">
@@ -46,15 +42,17 @@ function BranchCard({ branch, governorate }) {
           <PhoneIcon />
           {branch.phone}
         </a>
-        <a
-          className="branch-card__action branch-card__action--whatsapp"
-          href={branch.whatsappUrl}
-          target="_blank"
-          rel="noreferrer"
-        >
-          <WhatsAppIcon />
-          واتساب
-        </a>
+        {branch.whatsappUrl && (
+          <a
+            className="branch-card__action branch-card__action--whatsapp"
+            href={branch.whatsappUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <WhatsAppIcon />
+            واتساب
+          </a>
+        )}
         <a
           className="branch-card__action branch-card__action--primary"
           href={branch.mapsUrl}
@@ -120,7 +118,7 @@ export default function Branches() {
             )}
           </Link>
         </div>
-        <p className="branches__subtitle">19 فرعًا في خدمتك — اختار المحافظة لعرض الفروع القريبة منك</p>
+        <p className="branches__subtitle">{branches.reduce((n, g) => n + g.list.length, 0) || ""} فرعًا في خدمتك — اختار المحافظة لعرض الفروع القريبة منك</p>
       </section>
 
       <div className="branches__list">

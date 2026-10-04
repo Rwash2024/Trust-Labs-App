@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import brand from '../../brand'
 import { Navigate } from 'react-router-dom'
 import { useAdminAuth } from '../../context/AdminAuthContext'
-import logoWhiteFull from '../../assets/logo-white-full.png'
+import logoWhiteFull from '@client/logo-white-full.png'
 import './Admin.css'
 
 export default function AdminLogin() {
@@ -25,8 +26,8 @@ export default function AdminLogin() {
   return (
     <div className="admin-login">
       <form className="admin-login__card" onSubmit={handleSubmit}>
-        <img className="admin-login__logo" src={logoWhiteFull} alt="Trust Labs" />
-        <h1 className="admin-login__title">لوحة تحكم Trust Labs</h1>
+        <img className="admin-login__logo" src={logoWhiteFull} alt={brand.name} />
+        <h1 className="admin-login__title">لوحة تحكم {brand.name}</h1>
         <p className="admin-login__subtitle">تسجيل دخول فريق الإدارة فقط</p>
 
         <label className="admin-login__field">
