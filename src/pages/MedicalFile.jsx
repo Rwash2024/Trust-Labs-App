@@ -159,6 +159,60 @@ function PersonHeader({ photoUrl, name, address, badge, danger }) {
   )
 }
 
+const DISCOUNT_PERCENT = 25
+const MS_DAY = 86400000
+
+function formatDate(d) {
+  return d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+// The one-year membership starts the moment the card is activated: shows the
+// 25% discount, both dates and a live countdown (refreshes every minute).
+function CardValidity({ file }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000)
+    return () => clearInterval(id)
+  }, [])
+
+  if (!file.activated_at) return null
+  const start = new Date(file.activated_at)
+  const end = file.expires_at ? new Date(file.expires_at) : new Date(new Date(start).setFullYear(start.getFullYear() + 1))
+  const remaining = end.getTime() - now
+  const expired = remaining <= 0
+  const days = Math.floor(remaining / MS_DAY)
+  const hours = Math.floor((remaining % MS_DAY) / 3600000)
+  const progress = Math.min(100, Math.max(0, ((now - start.getTime()) / (end.getTime() - start.getTime())) * 100))
+
+  return (
+    <div className={`medfile__validity${expired ? ' medfile__validity--expired' : ''}`}>
+      <div className="medfile__validity-head">
+        <span className="medfile__validity-badge">خصم {DISCOUNT_PERCENT}% على كل التحاليل</span>
+        <span className="medfile__validity-state">{expired ? 'انتهت صلاحية الكارت' : 'الكارت ساري'}</span>
+      </div>
+      {!expired && (
+        <div className="medfile__validity-count">
+          <strong>{days.toLocaleString('ar-EG')}</strong> يوم
+          <span> و {hours.toLocaleString('ar-EG')} ساعة متبقية</span>
+        </div>
+      )}
+      <div className="medfile__validity-bar">
+        <span style={{ width: `${progress}%` }} />
+      </div>
+      <div className="medfile__validity-dates">
+        <span>
+          تاريخ التفعيل
+          <b>{formatDate(start)}</b>
+        </span>
+        <span>
+          تاريخ الانتهاء
+          <b>{formatDate(end)}</b>
+        </span>
+      </div>
+    </div>
+  )
+}
+
 function ProfileCard({ file }) {
   const age = calcAge(file.dob)
   return (
@@ -392,6 +446,7 @@ function FileHome({ file, auth, onExit }) {
     return (
       <div className="medfile__view">
         <ScreenHeader title="الملف الطبي" onBack={() => setSection(null)} />
+        <CardValidity file={file} />
         <ProfileCard file={file} />
         <div className="medfile__accordion">
           <AccordionItem title="التشخيصات" value={file.diagnoses} />
@@ -457,6 +512,7 @@ function FileHome({ file, auth, onExit }) {
   return (
     <div className="medfile__view">
       <p className="medfile__greeting">أهلاً، {file.name}</p>
+      <CardValidity file={file} />
       <div className="medfile__menu">
         {visibleItems.map(({ key, label, Icon, tone }) => (
           <button key={key} className="medfile__nav-card" onClick={() => setSection(key)}>

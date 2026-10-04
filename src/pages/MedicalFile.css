@@ -487,3 +487,74 @@
   border-radius: var(--radius-pill);
   margin: var(--space-1) 0 0;
 }
+
+.medfile__validity {
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary));
+  color: #fff;
+  border-radius: var(--radius-xl);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-float-lg);
+}
+.medfile__validity--expired {
+  background: linear-gradient(135deg, #8a2d2d, #c0392b);
+}
+.medfile__validity-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.medfile__validity-badge {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-weight: var(--font-weight-extrabold);
+  font-size: 0.85rem;
+}
+.medfile__validity-state {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+.medfile__validity-count {
+  font-size: 1rem;
+  margin-bottom: var(--space-3);
+}
+.medfile__validity-count strong {
+  font-size: 2.2rem;
+  font-weight: var(--font-weight-extrabold);
+  margin-inline-end: 4px;
+}
+.medfile__validity-count span {
+  opacity: 0.9;
+  font-size: 0.9rem;
+}
+.medfile__validity-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: var(--space-3);
+}
+.medfile__validity-bar span {
+  display: block;
+  height: 100%;
+  background: #fff;
+  border-radius: 999px;
+}
+.medfile__validity-dates {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: 0.8rem;
+  opacity: 0.95;
+}
+.medfile__validity-dates span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.medfile__validity-dates b {
+  font-size: 0.95rem;
+}

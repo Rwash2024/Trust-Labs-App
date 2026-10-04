@@ -353,6 +353,22 @@ export async function adminFindPatientCard(query) {
   return data
 }
 
+// Every activated card, newest first, plus how many cards exist in total.
+export async function adminListActivatedCards() {
+  const client = requireClient()
+  const [list, total] = await Promise.all([
+    client
+      .from('patient_cards')
+      .select('card_code, card_type, name, phone, gender, dob, blood_group, activated_at, expires_at')
+      .not('activated_at', 'is', null)
+      .order('activated_at', { ascending: false }),
+    client.from('patient_cards').select('card_code', { count: 'exact', head: true }),
+  ])
+  if (list.error) throw list.error
+  if (total.error) throw total.error
+  return { cards: list.data, total: total.count }
+}
+
 export async function adminListFamilyMembers(cardCode) {
   const { data, error } = await requireClient()
     .from('family_members')

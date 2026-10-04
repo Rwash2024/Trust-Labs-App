@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   adminFindPatientCard,
+  adminListActivatedCards,
   adminListFamilyMembers,
   adminUpdatePatientMedicalFile,
   adminUpdateFamilyMemberMedicalFile,
@@ -10,6 +11,78 @@ import {
 } from '../../lib/admin'
 
 const CARD_TYPE_LABEL = { personal: 'شخصي', family: 'عائلي' }
+
+const fmtDate = (v) => (v ? new Date(v).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }) : '—')
+
+// كل كارت اتفعّل: كوده، تاريخ التفعيل، تاريخ الانتهاء (سنة كاملة)، وبيانات صاحبه.
+function ActivatedCardsPanel({ onOpen }) {
+  const [data, setData] = useState(null)
+  const [error, setError] = useState('')
+  const [filter, setFilter] = useState('all') // all | personal | family
+  const [now] = useState(() => Date.now())
+
+  useEffect(() => {
+    adminListActivatedCards()
+      .then(setData)
+      .catch((e) => setError(e.message))
+  }, [])
+
+  if (error) return <p className="admin-error">{error}</p>
+  if (!data) return null
+
+  const rows = data.cards.filter((c) => filter === 'all' || c.card_type === filter)
+  const daysLeft = (c) => Math.ceil((new Date(c.expires_at) - now) / 86400000)
+
+  return (
+    <div style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="admin-toolbar">
+        <h2>
+          الكروت المفعّلة ({data.cards.length} من {data.total})
+        </h2>
+        <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <option value="all">الكل</option>
+          <option value="personal">شخصي</option>
+          <option value="family">عائلي</option>
+        </select>
+      </div>
+      {rows.length === 0 ? (
+        <p className="admin-form__hint">لسه مفيش كروت مفعّلة.</p>
+      ) : (
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>الكود</th>
+              <th>النوع</th>
+              <th>الاسم</th>
+              <th>الموبايل</th>
+              <th>فصيلة الدم</th>
+              <th>تاريخ التفعيل</th>
+              <th>تاريخ الانتهاء</th>
+              <th>المتبقي</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((c) => {
+              const left = daysLeft(c)
+              return (
+                <tr key={c.card_code} style={{ cursor: 'pointer' }} onClick={() => onOpen(c.card_code)}>
+                  <td dir="ltr">{c.card_code}</td>
+                  <td>{CARD_TYPE_LABEL[c.card_type] || c.card_type}</td>
+                  <td>{c.name}</td>
+                  <td dir="ltr">{c.phone}</td>
+                  <td>{c.blood_group || '—'}</td>
+                  <td>{fmtDate(c.activated_at)}</td>
+                  <td>{fmtDate(c.expires_at)}</td>
+                  <td>{left > 0 ? `${left.toLocaleString('ar-EG')} يوم` : 'منتهي'}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
 
 // أسعار الكروت — بيانها الأول مرة في الشات مع الفريق (شخصي 250 = 200 نصيب
 // المعمل + 50 عمولة الموظف؛ عائلي 650 = 600 + 50)، متسجّلة هنا بدل ما تفضل
@@ -208,13 +281,12 @@ export default function MedicalFilesTab() {
 
   const loadMembers = (cardCode) => adminListFamilyMembers(cardCode).then(setMembers)
 
-  const handleSearch = async (e) => {
-    e.preventDefault()
+  const runSearch = async (q) => {
     setStatus('loading')
     setError('')
     setEditingMember(null)
     try {
-      const found = await adminFindPatientCard(query)
+      const found = await adminFindPatientCard(q)
       if (!found) {
         setCard(null)
         setStatus('not-found')
@@ -230,11 +302,24 @@ export default function MedicalFilesTab() {
     }
   }
 
+  const handleSearch = (e) => {
+    e.preventDefault()
+    runSearch(query)
+  }
+
+  const openByCode = (code) => {
+    setQuery(code)
+    runSearch(code)
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+  }
+
   return (
     <div>
       <div className="admin-toolbar">
         <h2>الملفات الطبية — كارت الثقة</h2>
       </div>
+
+      <ActivatedCardsPanel onOpen={openByCode} />
 
       <PricingPanel />
 
