@@ -9,6 +9,11 @@ const SRC_MARK = path.join(__dirname, '..', 'scripts', '_icon_mark.png');
 
 fs.mkdirSync(OUT_DIR, { recursive: true });
 
+// A client with a wide mark (e.g. icon + wordmark) can loosen the default padding
+// in clients/<name>/icon-config.json: { "padRatio": 0.1, "maskablePadRatio": 0.22 }.
+const iconConfigPath = path.join(__dirname, '..', 'clients', CLIENT, 'icon-config.json');
+const iconConfig = fs.existsSync(iconConfigPath) ? JSON.parse(fs.readFileSync(iconConfigPath, 'utf8')) : {};
+
 async function buildMark() {
   // A client can ship a ready-made square mark; otherwise crop it from the top of logo-en.png.
   const custom = `clients/${CLIENT}/icon-mark.png`;
@@ -28,7 +33,8 @@ async function buildMark() {
 
 // Square icon: mark centered on a brand-green rounded canvas, with padding
 async function makeIcon(size, { maskable = false, filename } = {}) {
-  const padRatio = maskable ? 0.32 : 0.16; // maskable needs bigger safe-zone padding
+  // maskable needs bigger safe-zone padding
+  const padRatio = maskable ? (iconConfig.maskablePadRatio ?? 0.32) : (iconConfig.padRatio ?? 0.16)
   const markSize = Math.round(size * (1 - padRatio * 2));
   const mark = await sharp(SRC_MARK)
     .resize(markSize, markSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
