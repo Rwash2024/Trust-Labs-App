@@ -29,3 +29,11 @@ vercel-env-import.env
 .claude/settings.local.json
 supabase/.temp
 exports/
+
+# Android (Bubblewrap) — keep only android/twa-manifest.json; never commit keys or build output
+android/*
+!android/twa-manifest.json
+*.keystore
+*.jks
+*.aab
+*.apk

@@ -1,0 +1,33 @@
+{
+  "packageId": "com.trustlabseg.app",
+  "host": "app.trustlabseg.com",
+  "name": "معامل ترست - Trust Labs",
+  "launcherName": "Trust Labs",
+  "display": "standalone",
+  "themeColor": "#3CAF64",
+  "themeColorDark": "#3CAF64",
+  "navigationColor": "#FFFFFF",
+  "navigationColorDark": "#FFFFFF",
+  "navigationDividerColor": "#FFFFFF",
+  "navigationDividerColorDark": "#FFFFFF",
+  "backgroundColor": "#FFFFFF",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://app.trustlabseg.com/icons/icon-512.png",
+  "maskableIconUrl": "https://app.trustlabseg.com/icons/icon-maskable-512.png",
+  "webManifestUrl": "https://app.trustlabseg.com/manifest.webmanifest",
+  "splashScreenFadeOutDuration": 300,
+  "appVersion": "1.0.0",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "signingKey": {
+    "path": "C:/Users/Marketing/TrustLabs-Keys/trustlabs-release.keystore",
+    "alias": "trustlabs"
+  },
+  "orientation": "portrait",
+  "fallbackType": "customtabs",
+  "enableSiteSettingsShortcut": false,
+  "isChromeOSOnly": false,
+  "minSdkVersion": 21,
+  "generatorApp": "bubblewrap-cli"
+}

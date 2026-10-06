@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.trustlabseg.app",
+      "sha256_cert_fingerprints": ["E2:29:52:66:83:2A:10:4C:7A:C5:BC:34:25:80:46:07:2C:BB:87:BD:F0:67:30:02:92:74:01:76:B2:98:AE:76"]
+    }
+  }
+]
