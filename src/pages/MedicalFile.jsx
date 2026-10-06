@@ -7,6 +7,7 @@ import {
   fetchFamilyMembers,
   addFamilyMember,
   fetchReportUrl,
+  fetchPhotoUrl,
 } from '../lib/data'
 import {
   ShieldIcon,
@@ -113,11 +114,30 @@ function AccordionItem({ title, value, download }) {
   )
 }
 
-function Avatar({ photoUrl, danger, Icon = PersonIcon, size = 64 }) {
-  if (photoUrl) {
+// Profile photos live in a private bucket. `photoUrl` is only the stored
+// reference (it tells us a photo exists); the image itself comes from a
+// short-lived signed URL minted after card_code + phone are re-checked.
+function usePhotoSrc(auth, memberId, hasPhoto) {
+  const [src, setSrc] = useState(null)
+  useEffect(() => {
+    if (!hasPhoto || !auth) return undefined
+    let alive = true
+    fetchPhotoUrl({ cardCode: auth.cardCode, phone: auth.phone, memberId }).then((url) => {
+      if (alive) setSrc(url)
+    })
+    return () => {
+      alive = false
+    }
+  }, [hasPhoto, auth, memberId])
+  return hasPhoto && auth ? src : null
+}
+
+function Avatar({ photoUrl, auth, memberId, danger, Icon = PersonIcon, size = 64 }) {
+  const src = usePhotoSrc(auth, memberId, Boolean(photoUrl))
+  if (src) {
     return (
       <span className={`medfile__avatar medfile__avatar--photo${danger ? ' medfile__avatar--danger' : ''}`} style={{ width: size, height: size }}>
-        <img src={photoUrl} alt="" />
+        <img src={src} alt="" />
       </span>
     )
   }
@@ -146,10 +166,10 @@ function FactsList({ facts }) {
 
 // Avatar + name + address side by side, same header shape as the reference
 // screen — the avatar sits beside the text instead of centered above it.
-function PersonHeader({ photoUrl, name, address, badge, danger }) {
+function PersonHeader({ photoUrl, auth, memberId, name, address, badge, danger }) {
   return (
     <div className="medfile__card-header">
-      <Avatar photoUrl={photoUrl} danger={danger} size={56} />
+      <Avatar photoUrl={photoUrl} auth={auth} memberId={memberId} danger={danger} size={56} />
       <div className="medfile__card-header-text">
         <h2 className="medfile__name">{name}</h2>
         {address && <p className="medfile__address">{address}</p>}
@@ -213,11 +233,11 @@ function CardValidity({ file }) {
   )
 }
 
-function ProfileCard({ file }) {
+function ProfileCard({ file, auth }) {
   const age = calcAge(file.dob)
   return (
     <div className="medfile__card">
-      <PersonHeader photoUrl={file.photo_url} name={file.name} address={file.address} />
+      <PersonHeader photoUrl={file.photo_url} auth={auth} name={file.name} address={file.address} />
       <FactsList
         facts={[
           ['فصيلة الدم', file.blood_group || 'غير معروفة'],
@@ -277,7 +297,7 @@ function FamilySection({ auth, onBack }) {
       <div className="medfile__view">
         <ScreenHeader title={openMember.name} onBack={() => setOpenMember(null)} />
         <div className="medfile__card">
-          <PersonHeader photoUrl={openMember.photo_url} name={openMember.name} badge={openMember.relation} />
+          <PersonHeader photoUrl={openMember.photo_url} auth={auth} memberId={openMember.id} name={openMember.name} badge={openMember.relation} />
           <FactsList
             facts={[
               ['فصيلة الدم', openMember.blood_group || 'غير معروفة'],
@@ -447,7 +467,7 @@ function FileHome({ file, auth, onExit }) {
       <div className="medfile__view">
         <ScreenHeader title="الملف الطبي" onBack={() => setSection(null)} />
         <CardValidity file={file} />
-        <ProfileCard file={file} />
+        <ProfileCard file={file} auth={auth} />
         <div className="medfile__accordion">
           <AccordionItem title="التشخيصات" value={file.diagnoses} />
           <AccordionItem title="الأدوية الحالية" value={file.current_medications} />
@@ -471,7 +491,7 @@ function FileHome({ file, auth, onExit }) {
       <div className="medfile__view">
         <ScreenHeader title="ملف الطوارئ" onBack={() => setSection(null)} />
         <div className="medfile__card medfile__card--emergency">
-          <PersonHeader photoUrl={file.photo_url} name={file.name} danger />
+          <PersonHeader photoUrl={file.photo_url} auth={auth} name={file.name} danger />
           <FactsList
             facts={[
               ['فصيلة الدم', file.blood_group || 'غير معروفة'],

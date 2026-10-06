@@ -38,10 +38,14 @@ Deno.serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
     const { cardCode, phone, kind, memberId } = await req.json()
-    if (!cardCode || !phone || (kind !== 'investigation' && kind !== 'imaging')) {
+    if (!cardCode || !phone || (kind !== 'investigation' && kind !== 'imaging' && kind !== 'photo')) {
       return json({ error: 'bad_request' }, 400)
     }
-    const column = kind === 'investigation' ? 'investigation_file_path' : 'imaging_file_path'
+    // 'photo' is the profile photo in the private `patient-photos` bucket; the
+    // other two are reports in `patient-reports`.
+    const column =
+      kind === 'photo' ? 'photo_url' : kind === 'investigation' ? 'investigation_file_path' : 'imaging_file_path'
+    const bucket = kind === 'photo' ? 'patient-photos' : 'patient-reports'
 
     // Always verify against the card's own phone first — a family member's
     // file is only reachable through the same already-verified holder phone,
@@ -79,12 +83,22 @@ Deno.serve(async (req) => {
 
     if (!filePath) return json({ error: 'no_file' }, 404)
 
+    // Photos uploaded before the bucket went private were stored as full public
+    // URLs (.../object/public/patient-photos/<id>.jpg); newer rows store just the
+    // path. Accept both so old cards keep their photo without a data migration.
+    if (kind === 'photo' && /^https?:\/\//.test(filePath)) {
+      const marker = '/patient-photos/'
+      const at = filePath.indexOf(marker)
+      if (at === -1) return json({ error: 'not_found' }, 404)
+      filePath = decodeURIComponent(filePath.slice(at + marker.length).split('?')[0])
+    }
+
     const { data: signed, error: signErr } = await supabase.storage
-      .from('patient-reports')
+      .from(bucket)
       .createSignedUrl(filePath, SIGNED_URL_TTL_SECONDS)
 
     if (signErr || !signed) {
-      console.error('Failed to sign patient report URL', signErr)
+      console.error('Failed to sign patient file URL', signErr)
       return json({ error: 'sign_failed' }, 500)
     }
 

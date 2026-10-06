@@ -288,18 +288,30 @@ export async function submitComplaint({ name, phone, type, branchName, rating, m
 // A card_code alone never returns anything; activation ties it to a phone
 // number first, and every later read needs both to match. See
 // supabase/patient_cards_migration.sql for why.
-// Uploads an optional profile photo to the public `patient-photos` bucket
-// before activation, so activate_patient_card can store the URL directly.
-// Filename is a random id, not the card_code — the code shouldn't be
-// guessable from the photo URL or vice versa. Best-effort: a failed upload
-// should never block registration, so callers just get null back.
+// Uploads an optional profile photo to the private `patient-photos` bucket
+// before activation and returns its storage PATH (stored in photo_url by
+// activate_patient_card). The bucket is not publicly readable: the photo is
+// shown later through a short-lived signed URL (fetchPhotoUrl) that is only
+// minted after card_code + phone check out. Filename is a random id, not the
+// card_code. Best-effort: a failed upload should never block registration,
+// so callers just get null back.
 export async function uploadPatientPhoto(file) {
   if (!supabase || !file) return null
   const ext = file.name.split('.').pop() || 'jpg'
   const path = `${crypto.randomUUID()}.${ext}`
   const { error } = await supabase.storage.from('patient-photos').upload(path, file)
   if (error) return null
-  return supabase.storage.from('patient-photos').getPublicUrl(path).data.publicUrl
+  return path
+}
+
+// Signed URL for a card holder's (or family member's) profile photo.
+export async function fetchPhotoUrl({ cardCode, phone, memberId }) {
+  if (!supabase) return null
+  const { data, error } = await supabase.functions.invoke('get-patient-report-url', {
+    body: { cardCode, phone, kind: 'photo', memberId: memberId || null },
+  })
+  if (error || !data?.url) return null
+  return data.url
 }
 
 export async function activatePatientCard({
