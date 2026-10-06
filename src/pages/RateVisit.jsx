@@ -169,7 +169,11 @@ export default function RateVisit() {
       setScreen('thanks')
     } catch (err) {
       console.error('submitVisitRating failed', err)
-      setError('حصل خطأ وإحنا بنبعت تقييمك، جرب تاني كمان شوية.')
+      // The database raises an Arabic message (hint 'rate_limited*') when a phone
+      // or the whole app is sending too much — show that one as-is.
+      setError(
+        err?.hint?.startsWith('rate_limited') ? err.message : 'حصل خطأ وإحنا بنبعت تقييمك، جرب تاني كمان شوية.',
+      )
       setStatus('error')
     }
   }

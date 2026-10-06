@@ -229,18 +229,83 @@ async function callClaude(messages: any[], systemPrompt: string) {
   return res.json()
 }
 
+// --- Abuse / cost limits --------------------------------------------------
+// The function is public (called with the anon key from the app), and every
+// message costs money, so cap what one visitor can send and how often.
+const MAX_MESSAGE_CHARS = 1000
+const MAX_HISTORY_MESSAGES = 12
+const MAX_HISTORY_CHARS = 1500
+const PER_IP_PER_HOUR = 20
+const GLOBAL_PER_HOUR = 400
+
+function reply(text: string) {
+  return new Response(JSON.stringify({ reply: text }), {
+    headers: { ...CORS_HEADERS, 'content-type': 'application/json' },
+  })
+}
+
+// History comes from the browser, so treat it as untrusted: only plain
+// user/assistant text, bounded in count and length, starting with a user turn.
+function sanitizeHistory(history: unknown) {
+  if (!Array.isArray(history)) return []
+  const clean = history
+    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+    .slice(-MAX_HISTORY_MESSAGES)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_HISTORY_CHARS) }))
+  while (clean.length && clean[0].role !== 'user') clean.shift()
+  return clean
+}
+
+async function sha256Hex(text: string) {
+  const bytes = new TextEncoder().encode(text)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+// Returns true when this request should be refused. Fails open: if the limiter
+// table is missing or errors, chat keeps working rather than going down.
+async function isRateLimited(supabase: ReturnType<typeof createClient>, req: Request) {
+  try {
+    const ip =
+      req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
+    const ipHash = await sha256Hex(`trustlabs-chat:${ip}`)
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+
+    await supabase.from('chat_rate_limits').delete().lt('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+
+    const [{ count: mine, error: e1 }, { count: all, error: e2 }] = await Promise.all([
+      supabase.from('chat_rate_limits').select('*', { count: 'exact', head: true }).eq('ip_hash', ipHash).gt('created_at', hourAgo),
+      supabase.from('chat_rate_limits').select('*', { count: 'exact', head: true }).gt('created_at', hourAgo),
+    ])
+    if (e1 || e2) throw e1 || e2
+    if ((mine ?? 0) >= PER_IP_PER_HOUR || (all ?? 0) >= GLOBAL_PER_HOUR) return true
+
+    await supabase.from('chat_rate_limits').insert({ ip_hash: ipHash })
+    return false
+  } catch (err) {
+    console.error('rate limiter unavailable, allowing request', err)
+    return false
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
 
   try {
     const supabase = getSupabaseClient()
-    const { message, history = [] } = await req.json()
-    if (!message || typeof message !== 'string') {
+    const { message, history } = await req.json()
+    if (!message || typeof message !== 'string' || !message.trim()) {
       return new Response(JSON.stringify({ error: 'message is required' }), { status: 400, headers: CORS_HEADERS })
+    }
+    if (message.length > MAX_MESSAGE_CHARS) {
+      return reply('رسالتك طويلة شوية، ممكن تختصرها؟ 🙏')
+    }
+    if (await isRateLimited(supabase, req)) {
+      return reply(`وصلت للحد المسموح من الرسائل دلوقتي، جرّب بعد شوية أو كلّم الخط الساخن ${HOTLINE}.`)
     }
 
     const systemPrompt = await buildSystemPrompt(supabase)
-    const messages = [...history, { role: 'user', content: message }]
+    const messages = [...sanitizeHistory(history), { role: 'user', content: message }]
 
     // Tool-use loop: Claude may call a tool, we run it, feed the result back, repeat.
     for (let i = 0; i < 4; i++) {
