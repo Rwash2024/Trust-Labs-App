@@ -20,6 +20,7 @@ import Results from './pages/Results'
 import PrepInstructions from './pages/PrepInstructions'
 import Terms from './pages/Terms'
 import Privacy from './pages/Privacy'
+import DeleteData from './pages/DeleteData'
 import TrackSample from './pages/TrackSample'
 import News from './pages/News'
 import Complaints from './pages/Complaints'
@@ -58,6 +59,7 @@ function PatientApp() {
           <Route path="/prep-instructions" element={<PrepInstructions />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/delete-data" element={<DeleteData />} />
           {brand.features?.trackSample && <Route path="/track-sample" element={<TrackSample />} />}
           <Route path="/news" element={<News />} />
           {brand.features?.feedback && <Route path="/complaints" element={<Complaints />} />}

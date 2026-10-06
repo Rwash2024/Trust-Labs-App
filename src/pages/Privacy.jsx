@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { ShieldIcon } from '../components/icons'
 import './Terms.css'
 
@@ -99,6 +100,11 @@ export default function Privacy() {
             <p className="terms__section-text" style={{ whiteSpace: 'pre-line' }}>{section.body}</p>
           </section>
         ))}
+        <section className="terms__section">
+          <p className="terms__section-text">
+            عايز تطلب حذف بياناتك؟ <Link to="/delete-data">اعرف إزاي من هنا</Link>.
+          </p>
+        </section>
       </div>
     </div>
   )
