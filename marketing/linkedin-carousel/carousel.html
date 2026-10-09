@@ -130,8 +130,10 @@
   .stat .d { font-size: 30px; opacity: .8; margin-top: 4px; }
   .st-time { top: 440px; background: var(--green); color: var(--ink); }
   .st-money { top: 800px; background: transparent; border: 3px solid rgba(255,255,255,.4); }
-  .st-money .v { color: var(--green-bright); }
-  .st-money.todo .v { color: var(--mint); letter-spacing: .04em; }
+  .st-money .v { color: var(--green-bright); direction: ltr; text-align: right; }
+  .st-money .v small { color: var(--white); }
+  .st-money .d { font-size: 32px; opacity: .85; margin-top: 10px; }
+  .st-money .approx { font-size: .6em; margin-left: 14px; opacity: .8; }
   .st-money .gap { display: flex; gap: 28px; margin-top: 20px; }
   .st-money .gap div { flex: 1; background: rgba(255,255,255,.08); border-radius: 20px; padding: 18px 24px; font-size: 28px; line-height: 1.4; }
   .st-money .gap b { display: block; font-size: 52px; font-weight: 900; direction: ltr; text-align: right; color: var(--white); }
@@ -279,7 +281,7 @@
 <section class="slide s8 bg-ink" id="s8">
   <div class="pad">
     <div class="eyebrow">THE NUMBERS</div>
-    <h2>كلفني كام؟ وفّرت كام؟</h2>
+    <h2>الوقت<br>والفلوس</h2>
   </div>
   <div class="stat st-time">
     <div class="k">وقت التنفيذ</div>
@@ -288,11 +290,8 @@
   </div>
   <div class="stat st-money" id="money">
     <div class="k">اللي وفّرته على المعمل</div>
-    <div class="v todo-flag" id="saved"></div>
-    <div class="gap">
-      <div>عند شركة برمجة<b id="quote"></b></div>
-      <div>تكلفتي الفعلية<b id="actual"></b></div>
-    </div>
+    <div class="v"><span class="approx">≈</span>2,500,000<small>جنيه</small></div>
+    <div class="d">مقارنة بتنفيذ تطبيق بنفس المواصفات عند شركة برمجة</div>
   </div>
   <div class="rail"><div class="segs" data-n="8"></div><div class="who">Mohamed Rwash · Trust Labs</div></div>
 </section>
@@ -311,18 +310,7 @@
 </section>
 
 <script>
-  // Fill these three numbers (EGP) to replace the placeholders on slide 8. Leave null while unknown.
-  const CFG = { quote: null, actual: null };
   const TOTAL = 9;
-  const fmt = (n) => n.toLocaleString("en-US");
-  const unit = (s) => s + '<small style="font-size:.4em;font-weight:800;margin-right:10px">جنيه</small>';
-
-  const have = CFG.quote != null && CFG.actual != null;
-  document.getElementById("saved").innerHTML = have ? unit(fmt(CFG.quote - CFG.actual)) : "XXX,000";
-  document.getElementById("quote").textContent = have ? fmt(CFG.quote) : "XXX,000";
-  document.getElementById("actual").textContent = have ? fmt(CFG.actual) : "XXX,000";
-  if (have) document.querySelectorAll(".todo-flag").forEach((e) => e.classList.remove("todo-flag"));
-
   document.querySelectorAll(".segs").forEach((el) => {
     const n = +el.dataset.n;
     for (let i = 1; i <= TOTAL; i++) { const s = document.createElement("i"); if (i <= n) s.className = "on"; el.appendChild(s); }
