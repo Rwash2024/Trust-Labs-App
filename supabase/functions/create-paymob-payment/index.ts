@@ -30,7 +30,13 @@ const CORS_HEADERS = {
 
 const SECRET_KEY = Deno.env.get('PAYMOB_SECRET_KEY')
 const PUBLIC_KEY = Deno.env.get('PAYMOB_PUBLIC_KEY')
-const INTEGRATION_ID = Number(Deno.env.get('PAYMOB_INTEGRATION_ID'))
+// One id in normal use. A comma-separated list is tried in order while finding out which of
+// an account's integrations Paymob's Intention API accepts; the winner is logged. Cut the
+// secret down to that single id afterwards.
+const INTEGRATION_IDS = (Deno.env.get('PAYMOB_INTEGRATION_ID') ?? '')
+  .split(',')
+  .map((s) => Number(s.trim()))
+  .filter((n) => Number.isInteger(n) && n > 0)
 const APP_URL = (Deno.env.get('APP_URL') ?? '').replace(/\/$/, '')
 const HOME_VISIT_FEE = Number(Deno.env.get('HOME_VISIT_FEE') ?? 75)
 const API_BASE = Deno.env.get('PAYMOB_API_BASE') ?? 'https://accept.paymob.com'
@@ -50,7 +56,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
   try {
-    if (!SECRET_KEY || !PUBLIC_KEY || !INTEGRATION_ID || !APP_URL || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!SECRET_KEY || !PUBLIC_KEY || !INTEGRATION_IDS.length || !APP_URL || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing Paymob/Supabase configuration (see the header of this file)')
     }
 
@@ -136,47 +142,58 @@ Deno.serve(async (req) => {
     ]
     const [firstName, ...rest] = String(booking.name).trim().split(/\s+/)
 
-    const res = await fetch(`${API_BASE}/v1/intention/`, {
-      method: 'POST',
-      headers: { Authorization: `Token ${SECRET_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        amount: amountCents,
-        currency: 'EGP',
-        payment_methods: [INTEGRATION_ID],
-        items,
-        billing_data: {
-          first_name: firstName || 'NA',
-          last_name: rest.join(' ') || 'NA',
-          phone_number: `+2${booking.phone}`,
-          email: Deno.env.get('PAYMOB_BILLING_EMAIL') ?? 'na@example.com',
-          apartment: 'NA',
-          floor: 'NA',
-          building: 'NA',
-          street: 'NA',
-          city: 'NA',
-          state: 'NA',
-          country: 'EG',
-        },
-        special_reference: booking.booking_ref,
-        expiration: 3600,
-        notification_url: `${SUPABASE_URL}/functions/v1/paymob-webhook`,
-        redirection_url: `${APP_URL}/payment-result`,
-      }),
-    })
-    const intention = await res.json().catch(() => null)
-    if (!res.ok || !intention?.client_secret) {
+    const requestBody = {
+      amount: amountCents,
+      currency: 'EGP',
+      items,
+      billing_data: {
+        first_name: firstName || 'NA',
+        last_name: rest.join(' ') || 'NA',
+        phone_number: `+2${booking.phone}`,
+        email: Deno.env.get('PAYMOB_BILLING_EMAIL') ?? 'na@example.com',
+        apartment: 'NA',
+        floor: 'NA',
+        building: 'NA',
+        street: 'NA',
+        city: 'NA',
+        state: 'NA',
+        country: 'EG',
+      },
+      special_reference: booking.booking_ref,
+      expiration: 3600,
+      notification_url: `${SUPABASE_URL}/functions/v1/paymob-webhook`,
+      redirection_url: `${APP_URL}/payment-result`,
+    }
+
+    // deno-lint-ignore no-explicit-any
+    let intention: any = null
+    for (const integrationId of INTEGRATION_IDS) {
+      const res = await fetch(`${API_BASE}/v1/intention/`, {
+        method: 'POST',
+        headers: { Authorization: `Token ${SECRET_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...requestBody, payment_methods: [integrationId] }),
+      })
+      const body = await res.json().catch(() => null)
+      if (res.ok && body?.client_secret) {
+        intention = body
+        console.log(`Paymob intention created with integration=${integrationId}`)
+        break
+      }
       // The response can echo the request, so never log the body. Log the status, the keys,
       // and only Paymob's own short error message (`detail`) — enough to diagnose a
       // wrong integration id / key mix-up without leaking billing data.
       console.error(
         'Paymob create-intention failed',
         res.status,
-        intention ? Object.keys(intention) : 'non-JSON body',
-        typeof intention?.detail === 'string' ? intention.detail.slice(0, 200) : '',
-        `integration=${INTEGRATION_ID}`,
+        body ? Object.keys(body) : 'non-JSON body',
+        typeof body?.detail === 'string' ? body.detail.slice(0, 200) : '',
+        `integration=${integrationId}`,
       )
-      return json({ error: 'payment_provider_error' }, 502)
+      // Only an unknown integration id is worth trying the next id for; anything else
+      // (bad key, bad amount, Paymob down) would fail the same way for every id.
+      if (res.status !== 404) break
     }
+    if (!intention) return json({ error: 'payment_provider_error' }, 502)
 
     // 5. Record what the webhook must later see, and correct the booking's money fields.
     const { error: upsertErr } = await db.from('payments').upsert(
