@@ -3,7 +3,7 @@ import brand from '../brand'
 import { priceText, showPrices } from '../lib/price'
 import { Link } from 'react-router-dom'
 import { useBooking } from '../context/BookingContext'
-import { fetchBranchGroups, fetchAllTests, redeemLaunchOfferSeat, recordBooking } from '../lib/data'
+import { fetchBranchGroups, fetchAllTests, redeemLaunchOfferSeat, recordBooking, startOnlinePayment } from '../lib/data'
 import { trackEvent, AnalyticsEvents } from '../lib/analytics'
 import { FlaskIcon, MapPinIcon, CheckIcon, SearchIcon, PlusIcon } from '../components/icons'
 import LaunchOfferCounter from '../components/LaunchOfferCounter'
@@ -13,9 +13,10 @@ import './Booking.css'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
 const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : null
-const PAYMOB_LINK = import.meta.env.VITE_PAYMOB_LINK
 const HOME_VISIT_FEE = brand.homeVisitFee ?? 75
-const ONLINE_PAYMENT_ENABLED = false // hidden temporarily until a payment provider (Paymob/InstaPay) is finalized
+// Off unless the build opts in: the paymob Edge Functions + secrets must be set up first
+// (supabase/PAYMOB_SETUP.md). Without them the Visa option would only create unpaid bookings.
+const ONLINE_PAYMENT_ENABLED = import.meta.env.VITE_ONLINE_PAYMENT_ENABLED === 'true'
 
 function testToCartItem(test) {
   return { id: `test-${test.code}`, name: test.name, price: test.price, testCount: 1, tests: [test.name] }
@@ -128,7 +129,8 @@ export default function Booking() {
     // Best-effort: persisted in our own DB so staff see it in the admin dashboard and
     // it can later back the visit-rating survey. Formspree (below) remains the source
     // of truth for the confirmation email, so a failure here must never block that.
-    recordBooking({
+    // For Visa bookings the payment function looks this row up, so that path awaits it.
+    const bookingSaved = recordBooking({
       bookingRef,
       mode,
       name: form.name,
@@ -146,7 +148,12 @@ export default function Booking() {
       patientType,
       cardIssuer: hasCard ? cardIssuer : '',
       launchOfferApplied: offerApplied,
-    }).catch((err) => console.error('recordBooking failed (non-blocking)', err))
+    })
+      .then(() => true)
+      .catch((err) => {
+        console.error('recordBooking failed (non-blocking)', err)
+        return false
+      })
 
     try {
       const res = await fetch(FORMSPREE_ENDPOINT, {
@@ -185,9 +192,21 @@ export default function Booking() {
       })
       clearCart()
 
-      if (paymentMethod === 'visa' && PAYMOB_LINK) {
-        window.location.href = PAYMOB_LINK
-        return
+      if (paymentMethod === 'visa') {
+        // Falls through to the "call center will follow up" screen if anything
+        // below fails — the booking itself is already saved and emailed.
+        try {
+          if (await bookingSaved) {
+            window.location.href = await startOnlinePayment({
+              bookingRef,
+              phone: form.phone,
+              itemIds: selectedPackages.map((p) => p.id),
+            })
+            return
+          }
+        } catch (err) {
+          console.error('startOnlinePayment failed', err)
+        }
       }
       setStatus(paymentMethod === 'visa' ? 'success-visa' : 'success')
     } catch (err) {
@@ -204,7 +223,7 @@ export default function Booking() {
         </span>
         <h1>تم إرسال طلب الحجز</h1>
         {status === 'success-visa' ? (
-          <p>الدفع الإلكتروني هيتفعل قريبًا — هيتواصل معاك فريق خدمة العملاء لتأكيد الموعد وإتمام الدفع بالفيزا.</p>
+          <p>مقدرناش نفتح صفحة الدفع الإلكتروني دلوقتي — حجزك اتسجّل، وهيتواصل معاك فريق خدمة العملاء لتأكيد الموعد وإتمام الدفع بالفيزا.</p>
         ) : (
           <p>هيتواصل معاك فريق خدمة العملاء لتأكيد الموعد في أقرب وقت.</p>
         )}

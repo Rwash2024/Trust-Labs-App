@@ -12,6 +12,7 @@ import Packages from './pages/Packages'
 import About from './pages/About'
 import Branches from './pages/Branches'
 import Booking from './pages/Booking'
+import PaymentResult from './pages/PaymentResult'
 import Contact from './pages/Contact'
 import TrustCard from './pages/TrustCard'
 import brand from './brand'
@@ -51,6 +52,7 @@ function PatientApp() {
           <Route path="/packages" element={<Packages />} />
           <Route path="/about" element={<About />} />
           <Route path="/booking" element={<Booking />} />
+          <Route path="/payment-result" element={<PaymentResult />} />
           <Route path="/branches" element={<Branches />} />
           <Route path="/contact" element={<Contact />} />
           {brand.features?.trustCard && <Route path="/trust-card" element={<TrustCard />} />}
