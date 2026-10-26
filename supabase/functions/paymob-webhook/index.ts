@@ -37,7 +37,10 @@ Deno.serve(async (req) => {
     const payload = await req.json().catch(() => null)
     const obj = payload?.obj
     // Card-token and other callback types use a different HMAC recipe — we don't enable them.
-    if (payload?.type !== 'TRANSACTION' || !obj) return reply({ ignored: 'not_a_transaction' })
+    if (payload?.type !== 'TRANSACTION' || !obj) {
+      console.log('Ignored non-transaction callback', { type: payload?.type, keys: Object.keys(payload ?? {}) })
+      return reply({ ignored: 'not_a_transaction' })
+    }
 
     const received = new URL(req.url).searchParams.get('hmac')?.toLowerCase() ?? ''
     const expected = await computePaymobHmac(obj, HMAC_SECRET)
@@ -46,27 +49,33 @@ Deno.serve(async (req) => {
       return reply({ error: 'invalid_hmac' }, 401)
     }
 
+    // Correlate by Paymob's own order id: it is part of the signed fields, so it cannot be
+    // swapped in a replayed callback (merchant_order_id is NOT signed). The merchant
+    // reference is only a fallback for payments created before paymob_order_id was stored.
+    const orderId = obj.order?.id
     const ref = obj.order?.merchant_order_id ?? obj.merchant_order_id
-    if (!ref) {
-      console.error('Signed callback without merchant_order_id', obj.id)
-      return reply({ ignored: 'no_reference' })
-    }
-
     const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-    const { data: payment, error } = await db
-      .from('payments')
-      .select('booking_ref, amount_cents, currency, status, paymob_transaction_id')
-      .eq('booking_ref', String(ref))
-      .maybeSingle()
-    if (error) throw error
+    const columns = 'booking_ref, amount_cents, currency, status, paymob_transaction_id'
+
+    // deno-lint-ignore no-explicit-any
+    let payment: any = null
+    if (orderId) {
+      const { data, error } = await db.from('payments').select(columns).eq('paymob_order_id', orderId).maybeSingle()
+      if (error) throw error
+      payment = data
+    }
+    if (!payment && ref) {
+      const { data, error } = await db.from('payments').select(columns).eq('booking_ref', String(ref)).maybeSingle()
+      if (error) throw error
+      payment = data
+    }
     if (!payment) {
-      console.error('Signed callback for a booking we never started a payment for', ref)
+      console.error('Signed callback we cannot match to a payment', { transaction: obj.id, orderId, hasRef: !!ref })
       return reply({ ignored: 'unknown_booking' })
     }
 
-    // merchant_order_id is not covered by the HMAC, so a replayed genuine
-    // callback could carry a different booking reference. The amount is signed,
-    // and the transaction id below can only ever be attached to one booking.
+    // The amount is signed too, and the transaction id below can only ever be
+    // attached to one booking.
     if (Number(obj.amount_cents) !== payment.amount_cents || obj.currency !== payment.currency) {
       console.error('Amount/currency mismatch', { ref, got: obj.amount_cents, expected: payment.amount_cents })
       return reply({ ignored: 'amount_mismatch' })
@@ -81,7 +90,18 @@ Deno.serve(async (req) => {
     else if (obj.is_voided && isOurTransaction) next = 'voided'
     else if (obj.success === true && obj.pending === false && obj.error_occured === false && !obj.is_refunded && !obj.is_voided) next = 'paid'
     else if (obj.success === false && obj.pending === false) next = 'failed'
-    if (!next) return reply({ ignored: 'no_state_change' })
+    if (!next) {
+      console.log('Callback caused no state change', {
+        transaction: obj.id,
+        success: obj.success,
+        pending: obj.pending,
+        error_occured: obj.error_occured,
+        is_refunded: obj.is_refunded,
+        is_voided: obj.is_voided,
+        current: payment.status,
+      })
+      return reply({ ignored: 'no_state_change' })
+    }
 
     const now = new Date().toISOString()
     if (next === 'paid') {

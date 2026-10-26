@@ -49,6 +49,10 @@ create table if not exists payments (
   updated_at timestamptz not null default now()
 );
 
+-- Paymob's own order id (the intention's `intention_order_id`). It is covered by the
+-- callback's HMAC, unlike merchant_order_id, so the webhook finds the payment through it.
+alter table payments add column if not exists paymob_order_id bigint unique;
+
 alter table payments enable row level security;
 
 drop policy if exists "authenticated read payments" on payments;

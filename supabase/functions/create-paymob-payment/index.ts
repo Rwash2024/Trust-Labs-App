@@ -208,6 +208,8 @@ Deno.serve(async (req) => {
         amount_cents: amountCents,
         currency: 'EGP',
         intention_id: intention.id ? String(intention.id) : null,
+        // Paymob's order id: the (signed) key the webhook uses to find this payment again.
+        paymob_order_id: intention.intention_order_id ?? null,
         status: 'pending',
         updated_at: new Date().toISOString(),
       },
