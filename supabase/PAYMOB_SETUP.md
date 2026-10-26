@@ -8,15 +8,16 @@
 2. الدالة `create-paymob-payment` تحسب المبلغ **من أسعار قاعدة البيانات** (مش من المتصفح)،
    وتعمل Intention عند Paymob، وترجّع رابط صفحة الدفع الخاصة بـ Paymob.
 3. المريض يدخل بيانات الكارت **على صفحة Paymob** (بياناته مبتعدّيش علينا).
-4. Paymob يبعت نتيجة الدفع للدالة `paymob-webhook`، وهي تتأكد من التوقيع (HMAC) والمبلغ
-   وبعدين تحدّث حالة الحجز. **ده المصدر الوحيد لحالة "تم الدفع"** — صفحة الرجوع للموقع
+4. Paymob يبعت نتيجة الدفع للدالة `paymob-webhook`. الـ callback بتاع Intention API توقيعه مش موثّق،
+   فالدالة **ما بتثقش في محتواه**: بتاخد رقم المعاملة بس، وتسأل Paymob مباشرة (Transaction Inquiry بالـ API key)،
+   وتربط الرد بالدفعة عن طريق `order.id`، وتتأكد من المبلغ، وبعدين تحدّث حالة الحجز. **ده المصدر الوحيد لحالة "تم الدفع"** — صفحة الرجوع للموقع
    مجرد رسالة للمريض ويقدر أي حد يزوّر رابطها.
 
 ## الخطوات
 
 ### 1) من حسابك على Paymob (ابعتهم لنفسك بس، مش في أي شات)
-- `Secret key` (بيبدأ بـ `sk_`) و`Public key` (بيبدأ بـ `pk_`)، و`Integration ID` لـ Online Card (رقم)،
-  و`HMAC secret`. مكانهم في الداشبورد موضّح في صفحة **Getting Integration Credentials** في توثيق Paymob.
+- `Secret key` و`Public key` (بيبدأوا بـ `egy_sk_` و`egy_pk_` لحسابات مصر)، و`Integration ID` لـ Online Card (رقم)،
+  و`HMAC` و`API key` (من نفس صفحة Settings ← API Keys). مكانهم في الداشبورد موضّح في صفحة **Getting Integration Credentials** في توثيق Paymob.
 - ابدأ بمفاتيح **test**. عندهم كروت تجريبية في صفحة **Test Credentials** في نفس التوثيق.
 
 ### 2) قاعدة البيانات
@@ -28,6 +29,7 @@ supabase secrets set PAYMOB_SECRET_KEY=...
 supabase secrets set PAYMOB_PUBLIC_KEY=...
 supabase secrets set PAYMOB_INTEGRATION_ID=...
 supabase secrets set PAYMOB_HMAC_SECRET=...
+supabase secrets set PAYMOB_API_KEY=...   # كارت "API key" في Settings ← API Keys (بيتحقق بيه الـ webhook من Paymob)
 supabase secrets set APP_URL=https://<دومين الموقع بدون / في الآخر>
 supabase secrets set HOME_VISIT_FEE=75   # لازم يساوي brand.homeVisitFee
 ```
