@@ -165,8 +165,16 @@ Deno.serve(async (req) => {
     })
     const intention = await res.json().catch(() => null)
     if (!res.ok || !intention?.client_secret) {
-      // The response can echo the request; log status and keys only, never the body.
-      console.error('Paymob create-intention failed', res.status, intention ? Object.keys(intention) : 'non-JSON body')
+      // The response can echo the request, so never log the body. Log the status, the keys,
+      // and only Paymob's own short error message (`detail`) — enough to diagnose a
+      // wrong integration id / key mix-up without leaking billing data.
+      console.error(
+        'Paymob create-intention failed',
+        res.status,
+        intention ? Object.keys(intention) : 'non-JSON body',
+        typeof intention?.detail === 'string' ? intention.detail.slice(0, 200) : '',
+        `integration=${INTEGRATION_ID}`,
+      )
       return json({ error: 'payment_provider_error' }, 502)
     }
 
