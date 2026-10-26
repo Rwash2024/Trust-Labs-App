@@ -4,6 +4,13 @@ import { adminListBookings, adminUpdateBookingStatus } from '../../lib/admin'
 const STATUSES = ['جديد', 'تم التأكيد', 'تم السحب', 'ملغي']
 const MODES = { home: 'زيارة منزلية', branch: 'فرع' }
 const SOURCES = { booking_form: 'صفحة الحجز', chat_assistant: 'المساعد الذكي' }
+const PAYMENT_STATUSES = {
+  pending: 'بانتظار الدفع',
+  paid: 'تم الدفع ✅',
+  failed: 'فشل الدفع',
+  refunded: 'تم الاسترداد',
+  voided: 'تم الإلغاء',
+}
 
 export default function BookingsTab() {
   const [items, setItems] = useState([])
@@ -87,6 +94,7 @@ export default function BookingsTab() {
               <td style={{ maxWidth: 220 }}>{(i.tests || []).join('، ') || '—'}</td>
               <td>
                 {i.payment_method || '—'}
+                {i.payment_status && <div className="admin-badge">{PAYMENT_STATUSES[i.payment_status] || i.payment_status}</div>}
                 {i.launch_offer_applied && <div className="admin-badge">عرض الإطلاق</div>}
               </td>
               <td>
