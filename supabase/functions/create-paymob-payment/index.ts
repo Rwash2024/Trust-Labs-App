@@ -47,6 +47,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 // A booking can only be paid for shortly after it was made.
 const MAX_BOOKING_AGE_MS = 2 * 60 * 60 * 1000
 
+function maskKey(key: string | undefined): string {
+  return key ? key.replace(/[^_]+$/, '***') : 'unset'
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS_HEADERS, 'content-type': 'application/json' } })
 }
@@ -188,6 +192,8 @@ Deno.serve(async (req) => {
         body ? Object.keys(body) : 'non-JSON body',
         typeof body?.detail === 'string' ? body.detail.slice(0, 200) : '',
         `integration=${integrationId}`,
+        // Key *shape* only (e.g. "egy_sk_test_***"): the random tail is masked.
+        `keys=${maskKey(SECRET_KEY)} ${maskKey(PUBLIC_KEY)}`,
       )
       // Only an unknown integration id is worth trying the next id for; anything else
       // (bad key, bad amount, Paymob down) would fail the same way for every id.
