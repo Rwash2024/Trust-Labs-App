@@ -4,7 +4,7 @@ import { adminListTrustCardRequests, adminUpdateTrustCardRequestStatus, adminDel
 const STATUSES = ['جديد', 'تم التواصل', 'تم التفعيل', 'ملغي']
 
 // Trust Card orders placed from /trust-card. Same shape as ComplaintsTab.
-export default function TrustCardRequests() {
+export default function TrustCardRequests({ canDelete = true }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -75,7 +75,7 @@ export default function TrustCardRequests() {
             <th>السعر</th>
             <th>التاريخ</th>
             <th>الحالة</th>
-            <th></th>
+            {canDelete && <th></th>}
           </tr>
         </thead>
         <tbody>
@@ -97,16 +97,18 @@ export default function TrustCardRequests() {
                   ))}
                 </select>
               </td>
-              <td className="admin-table__actions">
-                <button className="admin-btn admin-btn--sm admin-btn--danger" onClick={() => handleDelete(i.id)}>
-                  حذف
-                </button>
-              </td>
+              {canDelete && (
+                <td className="admin-table__actions">
+                  <button className="admin-btn admin-btn--sm admin-btn--danger" onClick={() => handleDelete(i.id)}>
+                    حذف
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
           {filtered.length === 0 && (
             <tr>
-              <td colSpan={9} style={{ textAlign: 'center' }}>
+              <td colSpan={canDelete ? 9 : 8} style={{ textAlign: 'center' }}>
                 مفيش طلبات
               </td>
             </tr>

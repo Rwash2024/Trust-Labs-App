@@ -3,6 +3,7 @@ import { useAdminAuth } from '../../context/AdminAuthContext'
 import brand from '../../brand'
 import SampleTrackingTab from './SampleTrackingTab'
 import ComplaintsTab from './ComplaintsTab'
+import TrustCardRequests from './TrustCardRequests'
 import logoWhiteFull from '@client/logo-white-full.png'
 import './Admin.css'
 
@@ -10,12 +11,14 @@ export default function BranchSamplesDashboard() {
   const { session, signOut } = useAdminAuth()
   const [activeTab, setActiveTab] = useState('samples')
 
-  // Customer-service / branch account: samples plus complaints (read and
-  // change status only — deleting a complaint is admin-only, enforced in the
-  // database by supabase/complaints_staff_permissions_migration.sql).
+  // Customer-service / branch account: samples, complaints and Trust Card
+  // orders (read and change status only — deleting is admin-only, enforced in
+  // the database by supabase/complaints_staff_permissions_migration.sql and
+  // supabase/trust_card_requests_staff_access_migration.sql).
   const tabs = [
     { key: 'samples', label: 'تتبع العينات' },
     { key: 'complaints', label: 'شكاوى واقتراحات' },
+    { key: 'cards', label: 'طلبات الكارت' },
   ]
 
   return (
@@ -46,6 +49,7 @@ export default function BranchSamplesDashboard() {
       <main className="admin-content">
         {activeTab === 'samples' && <SampleTrackingTab />}
         {activeTab === 'complaints' && <ComplaintsTab canDelete={false} />}
+        {activeTab === 'cards' && <TrustCardRequests canDelete={false} />}
       </main>
     </div>
   )
