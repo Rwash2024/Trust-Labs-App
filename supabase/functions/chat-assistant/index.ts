@@ -30,7 +30,9 @@ function getSupabaseClient() {
 
 const MODEL = 'claude-sonnet-5'
 const RESULTS_PORTAL_URL = 'http://webresults.trustlabseg.com/Login/Index/?Type=Individual'
-const HOME_VISIT_FEE = 75
+// No fixed home-visit fee: it differs by area and customer service confirms it when they
+// confirm the visit. Bookings carry this note so staff can see the fee was NOT included.
+const HOME_VISIT_FEE_NOTE = 'رسوم الزيارة المنزلية تُحدد حسب المنطقة عند تأكيد الحجز'
 const HOTLINE = '16183'
 
 function generateBookingRef() {
@@ -158,7 +160,7 @@ async function runTool(supabase: ReturnType<typeof createClient>, name: string, 
       const phone = cleanEgyptPhone(input.phone)
       if (!phone) return { success: false, message: INVALID_PHONE_MESSAGE }
       const bookingRef = generateBookingRef()
-      const homeVisitFee = input.mode === 'home' ? HOME_VISIT_FEE : 0
+      const notes = [input.notes, input.mode === 'home' ? HOME_VISIT_FEE_NOTE : ''].filter(Boolean).join(' | ')
       const { error } = await supabase.from('bookings').insert({
         booking_ref: bookingRef,
         source: 'chat_assistant',
@@ -171,12 +173,18 @@ async function runTool(supabase: ReturnType<typeof createClient>, name: string, 
         preferred_date: input.preferred_date || null,
         tests: input.tests || [],
         subtotal: 0,
-        home_visit_fee: homeVisitFee,
-        total: homeVisitFee,
-        notes: input.notes || null,
+        home_visit_fee: 0,
+        total: 0,
+        notes: notes || null,
       })
       if (error) return { success: false, message: 'حصل خطأ وإحنا بنسجل الحجز، جرب تاني أو كلّم الخط الساخن.' }
-      return { success: true, booking_ref: bookingRef, home_visit_fee: homeVisitFee, message: 'اتسجل الحجز بنجاح.' }
+      return {
+        success: true,
+        booking_ref: bookingRef,
+        message: input.mode === 'home'
+          ? 'اتسجل الحجز بنجاح. رسوم الزيارة المنزلية بتختلف حسب المنطقة وفريق خدمة العملاء هيأكدها مع المريض وقت تأكيد الموعد (متذكرش أي رقم للرسوم).'
+          : 'اتسجل الحجز بنجاح.',
+      }
     }
 
     default:

@@ -14,7 +14,10 @@ import './Booking.css'
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
 const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : null
 const PAYMOB_LINK = import.meta.env.VITE_PAYMOB_LINK
-const HOME_VISIT_FEE = brand.homeVisitFee ?? 75
+// No fixed home-visit fee: it differs by area, so customer service prices it when
+// they confirm the visit. It is never added to the total, but the booking carries a
+// note so staff see the fee was not included.
+const HOME_VISIT_FEE_NOTE = 'رسوم الزيارة المنزلية تُحدد حسب المنطقة عند تأكيد الحجز'
 const ONLINE_PAYMENT_ENABLED = false // hidden temporarily until a payment provider (Paymob/InstaPay) is finalized
 
 function testToCartItem(test) {
@@ -61,7 +64,7 @@ export default function Booking() {
 
   const addedIds = selectedPackages.map((p) => p.id)
   const subtotal = selectedPackages.reduce((sum, p) => sum + (p.price ?? 0), 0)
-  const homeVisitFee = mode === 'home' ? HOME_VISIT_FEE : 0
+  const homeVisitFee = 0
   const total = subtotal + homeVisitFee
 
   const testSearchResults = useMemo(() => {
@@ -105,6 +108,8 @@ export default function Booking() {
     const offerApplied = mode === 'home' && (await redeemLaunchOfferSeat(form.phone, bookingRef))
     const effectiveHomeVisitFee = offerApplied ? 0 : homeVisitFee
     const effectiveTotal = subtotal + effectiveHomeVisitFee
+    const feeNote = mode === 'home' && !offerApplied ? HOME_VISIT_FEE_NOTE : ''
+    const bookingNotes = [form.notes.trim(), feeNote].filter(Boolean).join(' | ')
 
     const data = new FormData()
     data.append('bookingRef', bookingRef)
@@ -115,10 +120,10 @@ export default function Booking() {
     if (mode === 'home') data.append('address', form.address)
     if (mode === 'branch') data.append('branch', form.branchName)
     data.append('date', form.date)
-    data.append('notes', form.notes)
+    data.append('notes', bookingNotes)
     data.append('packages', selectedPackages.map((p) => p.name).join(', '))
     data.append('subtotal', subtotal)
-    data.append('homeVisitFee', effectiveHomeVisitFee)
+    data.append('homeVisitFee', feeNote ? 'تُحدد حسب المنطقة عند تأكيد الحجز' : effectiveHomeVisitFee)
     data.append('total', effectiveTotal)
     data.append('paymentMethod', paymentLabel)
     data.append('hasInsuranceOrClubCard', patientType)
@@ -141,7 +146,7 @@ export default function Booking() {
       subtotal,
       homeVisitFee: effectiveHomeVisitFee,
       total: effectiveTotal,
-      notes: form.notes,
+      notes: bookingNotes,
       paymentMethod: paymentLabel,
       patientType,
       cardIssuer: hasCard ? cardIssuer : '',
@@ -259,11 +264,11 @@ export default function Booking() {
           {receipt.mode === 'home' && (
             <div className="booking__receipt-row">
               <span>تكلفة الزيارة</span>
-              <span>{receipt.offerApplied ? 'مجانًا (عرض الإطلاق)' : `${receipt.homeVisitFee.toLocaleString('en-US')} جنيه`}</span>
+              <span>{receipt.offerApplied ? 'مجانًا (عرض الإطلاق)' : 'بتتحدد حسب المنطقة وبتتأكد معاك عند تأكيد الموعد'}</span>
             </div>
           )}
           <div className="booking__receipt-row booking__receipt-row--total">
-            <span>الإجمالي</span>
+            <span>{receipt.mode === 'home' ? 'إجمالي التحاليل' : 'الإجمالي'}</span>
             <span>{receipt.total.toLocaleString('en-US')} جنيه</span>
           </div>
           </>)}
@@ -382,14 +387,14 @@ export default function Booking() {
               {mode === 'home' && (
                 <div className="booking__total-row">
                   <span>رسوم الزيارة المنزلية</span>
-                  <span>{HOME_VISIT_FEE.toLocaleString('en-US')} جنيه</span>
+                  <span>حسب المنطقة</span>
                 </div>
               )}
               {mode === 'home' && (
-                <p className="booking__offer-note">* لو لسه فيه مقاعد فاضلة من عرض الإطلاق، الرسوم دي هتتلغي تلقائيًا عند تأكيد الحجز</p>
+                <p className="booking__offer-note">* رسوم الزيارة المنزلية بتختلف حسب المنطقة، وفريق خدمة العملاء هيأكدها معاك وقت تأكيد الموعد. ولو لسه فيه مقاعد من عرض الإطلاق، الرسوم بتتلغي تلقائيًا.</p>
               )}
               <div className="booking__total-row booking__total-row--final">
-                <span>الإجمالي</span>
+                <span>{mode === 'home' ? 'إجمالي التحاليل' : 'الإجمالي'}</span>
                 <span>{total.toLocaleString('en-US')} جنيه</span>
               </div>
             </div>)}
