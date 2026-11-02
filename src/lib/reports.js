@@ -12,6 +12,7 @@ const LIGHT_GREEN = 'FFE9F8EF'
 
 const MODES = { home: 'زيارة منزلية', branch: 'فرع' }
 const SOURCES = { booking_form: 'صفحة الحجز', chat_assistant: 'المساعد الذكي' }
+const PAYMENT_STATUSES = { pending: 'بانتظار الدفع', paid: 'تم الدفع', failed: 'فشل', refunded: 'مسترد', voided: 'ملغي' }
 const VISIT_TYPES = { branch: 'فرع', home: 'زيارة منزلية' }
 const LEVELS = { low: 'سيء — اتسجلت شكوى', medium: 'مقبول — محتاج متابعة', good: 'كويس' }
 
@@ -305,6 +306,7 @@ export async function buildManagementReport({ fromDate, toDate, fullPhones = fal
       { header: 'التحاليل', key: 'tests', width: 36 },
       { header: 'الإجمالي (جنيه)', key: 'total', width: 12 },
       { header: 'الدفع', key: 'payment', width: 10 },
+      { header: 'حالة الدفع الأونلاين', key: 'paymentStatus', width: 14 },
       { header: 'التأمين / النادي', key: 'insurance', width: 16 },
       { header: 'عرض الإطلاق', key: 'offer', width: 10 },
       { header: 'وصل لـ Trust Lab Ops', key: 'synced', width: 12 },
@@ -323,6 +325,7 @@ export async function buildManagementReport({ fromDate, toDate, fullPhones = fal
       tests: (Array.isArray(b.tests) ? b.tests : []).join('، '),
       total: b.total ?? '',
       payment: b.payment_method || '',
+      paymentStatus: PAYMENT_STATUSES[b.payment_status] || '',
       insurance: b.patient_type && b.patient_type !== 'Normal' ? `${b.patient_type}${b.card_issuer ? ` (${b.card_issuer})` : ''}` : '',
       offer: b.launch_offer_applied ? 'أيوه' : '',
       synced: b.synced_to_erp ? 'أيوه' : 'لسه',

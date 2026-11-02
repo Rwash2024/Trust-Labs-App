@@ -250,6 +250,20 @@ export async function recordBooking({
   if (error) throw error
 }
 
+// Starts a Paymob card payment for a booking that recordBooking() has already
+// saved, and resolves to the hosted checkout URL to send the patient to. Only
+// the booking reference, phone and cart item ids are sent — the amount is
+// computed server-side from database prices (create-paymob-payment), never
+// taken from the browser.
+export async function startOnlinePayment({ bookingRef, phone, itemIds }) {
+  if (!supabase) throw new Error('الخدمة غير متاحة حاليًا')
+  const { data, error } = await supabase.functions.invoke('create-paymob-payment', {
+    body: { bookingRef, phone, itemIds },
+  })
+  if (error || !data?.checkoutUrl) throw error || new Error('payment session was not created')
+  return data.checkoutUrl
+}
+
 // Submits a "قيّم زيارتك" survey response. All fields but visitType/answers are
 // optional (the patient may skip the final name/phone/comment screen entirely).
 // This is our own durable record — forwarding it on to Trust Lab Ops (once
