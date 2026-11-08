@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import brand from '../../brand'
 import { useAdminAuth } from '../../context/AdminAuthContext'
 import PackagesTab from './PackagesTab'
@@ -36,10 +36,26 @@ const allTabs = [
   { key: 'reports', label: '📊 تقارير' },
 ]
 const tabs = allTabs.filter((t) => brand.features?.trustCard || !trustOnly.includes(t.key))
+// The most-used sections stay in the floating bar; the rest live under "المزيد".
+const primaryKeys = ['packages', 'tests', 'branches', 'bookings', 'reports']
+const primaryTabs = tabs.filter((t) => primaryKeys.includes(t.key))
+const moreTabs = tabs.filter((t) => !primaryKeys.includes(t.key))
 
 export default function AdminDashboard() {
   const { session, signOut } = useAdminAuth()
   const [activeTab, setActiveTab] = useState('packages')
+  const [moreOpen, setMoreOpen] = useState(false)
+  const moreRef = useRef(null)
+  const activeInMore = moreTabs.some((t) => t.key === activeTab)
+
+  useEffect(() => {
+    if (!moreOpen) return undefined
+    const close = (e) => { if (!moreRef.current?.contains(e.target)) setMoreOpen(false) }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [moreOpen])
+
+  const pick = (key) => { setActiveTab(key); setMoreOpen(false) }
 
   return (
     <div className="admin-dashboard">
@@ -48,23 +64,48 @@ export default function AdminDashboard() {
           <img src={logoWhiteFull} alt={brand.name} />
           <span>لوحة التحكم</span>
         </div>
+
+        <nav className="admin-tabs">
+          {primaryTabs.map((t) => (
+            <button
+              key={t.key}
+              className={`admin-tabs__btn${activeTab === t.key ? ' active' : ''}`}
+              onClick={() => pick(t.key)}
+            >
+              {t.label}
+            </button>
+          ))}
+          {moreTabs.length > 0 && (
+            <div className="admin-tabs__more" ref={moreRef}>
+              <button
+                className={`admin-tabs__btn${activeInMore ? ' active' : ''}`}
+                onClick={() => setMoreOpen((o) => !o)}
+                aria-expanded={moreOpen}
+              >
+                {activeInMore ? tabs.find((t) => t.key === activeTab).label : 'المزيد'} ▾
+              </button>
+              {moreOpen && (
+                <div className="admin-tabs__menu">
+                  {moreTabs.map((t) => (
+                    <button
+                      key={t.key}
+                      className={`admin-tabs__item${activeTab === t.key ? ' active' : ''}`}
+                      onClick={() => pick(t.key)}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </nav>
+
         <div className="admin-header__user">
           <span>{session?.user?.email}</span>
           <button onClick={signOut}>تسجيل الخروج</button>
         </div>
       </header>
-
-      <nav className="admin-tabs">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            className={`admin-tabs__btn${activeTab === t.key ? ' active' : ''}`}
-            onClick={() => setActiveTab(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
 
       <main className="admin-content">
         {activeTab === 'packages' && <PackagesTab />}

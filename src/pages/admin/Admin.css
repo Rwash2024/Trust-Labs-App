@@ -1,7 +1,11 @@
 .admin-app {
   position: fixed;
   inset: 0;
-  background: var(--surface-sunken);
+  background:
+    radial-gradient(circle at 88% 6%, color-mix(in srgb, var(--color-primary) 26%, transparent), transparent 42%),
+    radial-gradient(circle at 6% 92%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 45%),
+    #f3f5f4;
+  background-attachment: fixed;
   overflow-y: auto;
   z-index: 100;
   font-family: var(--font-family);
@@ -101,19 +105,24 @@
   opacity: 0.6;
 }
 
-/* ---- Dashboard shell ---- */
+/* ---- Dashboard shell: floating dark bar over a light, glowing page ---- */
 .admin-dashboard {
   min-height: 100%;
+  padding: var(--space-4) var(--space-6) var(--space-8);
 }
 
 .admin-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-4);
+  max-width: 1240px;
+  margin: 0 auto;
   background: var(--gradient-banner);
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.55);
   position: sticky;
-  top: 0;
+  top: var(--space-3);
   z-index: 5;
 }
 
@@ -123,10 +132,11 @@
   gap: var(--space-3);
   color: #fff;
   font-weight: var(--font-weight-bold);
+  white-space: nowrap;
 }
 
 .admin-header__brand img {
-  height: 28px;
+  height: 26px;
   width: auto;
 }
 
@@ -134,8 +144,16 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  color: rgba(255, 255, 255, 0.75);
+  margin-right: auto;
+  color: rgba(255, 255, 255, 0.7);
   font-size: var(--text-small-size);
+  white-space: nowrap;
+}
+
+.admin-header__user span {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-header__user button {
@@ -146,36 +164,143 @@
   border-radius: var(--radius-pill);
   font-size: var(--text-small-size);
   font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
+.admin-header__user button:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Standalone tab strip (branch dashboard, Trust Card sub-tabs): light pill segments */
 .admin-tabs {
   display: flex;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-6) 0;
+  align-items: center;
+  gap: var(--space-1);
   overflow-x: auto;
-  background: var(--surface-page);
-  border-bottom: 1px solid var(--border-default);
+  scrollbar-width: none;
+}
+
+.admin-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-tabs__btn {
   background: none;
   border: none;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-family);
+  font-size: var(--text-small-size);
   font-weight: var(--font-weight-bold);
   color: var(--text-muted);
-  border-bottom: 2px solid transparent;
+  border-radius: var(--radius-pill);
   white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.admin-tabs__btn:hover {
+  background: rgba(30, 60, 45, 0.07);
 }
 
 .admin-tabs__btn.active {
-  color: var(--color-primary-dark);
-  border-bottom-color: var(--color-primary);
+  color: #fff;
+  background: var(--color-primary);
+  box-shadow: 0 6px 16px -8px var(--color-primary);
+}
+
+/* In the bar the strip must not clip the "More" dropdown, so it wraps instead of scrolling */
+.admin-header .admin-tabs {
+  overflow: visible;
+  flex-wrap: wrap;
+}
+
+/* Inside the dark floating bar the same buttons turn light-on-dark */
+.admin-header .admin-tabs__btn {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.admin-header .admin-tabs__btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.admin-header .admin-tabs__btn.active {
+  color: #fff;
+  background: var(--color-primary);
+}
+
+/* Branch dashboard: nav sits under the bar, not inside it */
+.admin-dashboard > .admin-tabs {
+  max-width: 1240px;
+  margin: var(--space-4) auto 0;
+}
+
+.admin-tabs__more {
+  position: relative;
+}
+
+.admin-tabs__menu {
+  position: absolute;
+  top: calc(100% + var(--space-3));
+  right: 0;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2);
+  background: rgba(30, 30, 30, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 18px 40px -14px rgba(0, 0, 0, 0.6);
+  animation: admin-rise 0.18s ease-out;
+  z-index: 10;
+}
+
+.admin-tabs__item {
+  background: none;
+  border: none;
+  text-align: right;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-family);
+  font-size: var(--text-small-size);
+  font-weight: var(--font-weight-bold);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.admin-tabs__item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.admin-tabs__item.active {
+  background: var(--color-primary);
+  color: #fff;
 }
 
 .admin-content {
-  max-width: 1000px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: var(--space-6);
+  padding: var(--space-6) 0 0;
+  animation: admin-rise 0.35s ease-out;
+}
+
+@keyframes admin-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+  .admin-dashboard { padding: var(--space-3); }
+  .admin-header { flex-wrap: wrap; border-radius: var(--radius-2xl); padding: var(--space-3); }
+  .admin-header__user { margin-right: 0; width: 100%; justify-content: space-between; }
+  .admin-tabs { order: 3; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-content, .admin-tabs__menu { animation: none; }
 }
 
 /* ---- Shared controls ---- */
@@ -192,14 +317,21 @@
 }
 
 .admin-btn {
-  background: var(--surface-card);
+  background: rgba(255, 255, 255, 0.8);
   border: 1px solid var(--border-default);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
   color: var(--text-body);
   font-weight: var(--font-weight-bold);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
   font-family: var(--font-family);
   font-size: var(--text-body-size);
+}
+
+.admin-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -8px rgba(30, 60, 45, 0.5);
 }
 
 .admin-btn--primary {
@@ -246,7 +378,7 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-4);
-  background: var(--surface-card);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .admin-search:focus {
@@ -256,9 +388,12 @@
 
 /* ---- Form ---- */
 .admin-form {
-  background: var(--surface-card);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 10px 30px -16px rgba(30, 60, 45, 0.35);
+  border-radius: var(--radius-xl);
   padding: var(--space-5);
   margin-bottom: var(--space-5);
   display: flex;
@@ -289,7 +424,7 @@
   padding: var(--space-3);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
-  background: var(--surface-sunken);
+  background: rgba(255, 255, 255, 0.7);
   resize: vertical;
 }
 
@@ -393,10 +528,12 @@
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--surface-card);
-  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  box-shadow: var(--shadow-card-rest);
+  box-shadow: 0 10px 30px -16px rgba(30, 60, 45, 0.35);
 }
 
 .admin-table th,
@@ -408,10 +545,18 @@
 }
 
 .admin-table th {
-  background: var(--surface-sunken);
+  background: rgba(30, 60, 45, 0.05);
   color: var(--text-muted);
   font-size: var(--text-small-size);
   font-weight: var(--font-weight-bold);
+}
+
+.admin-table tbody tr {
+  transition: background 0.15s;
+}
+
+.admin-table tbody tr:hover {
+  background: color-mix(in srgb, var(--color-primary) 7%, transparent);
 }
 
 .admin-table tr:last-child td {
