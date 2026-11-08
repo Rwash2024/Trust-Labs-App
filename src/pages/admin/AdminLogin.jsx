@@ -4,6 +4,7 @@ import { Navigate } from 'react-router-dom'
 import { useAdminAuth } from '../../context/AdminAuthContext'
 import logoWhiteFull from '@client/logo-white-full.png'
 import './Admin.css'
+import './AdminLogin.css'
 
 export default function AdminLogin() {
   const { session, isAdmin, signIn } = useAdminAuth()
