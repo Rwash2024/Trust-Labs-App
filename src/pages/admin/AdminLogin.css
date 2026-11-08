@@ -1,137 +1,187 @@
-/* Glassy login: dark scene with flowing light, a frosted panel and glowing corner accents. */
+/* Glassy login: brand-green scene with curved ribbons of light, and a frosted card whose
+   top-left and bottom-right corners are cut diagonally, each holding a small glass tab. */
 .admin-login {
   position: relative;
   min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-5);
+  padding: var(--space-6) var(--space-5);
   overflow: hidden;
   isolation: isolate;
   background: var(--gradient-hero);
 }
 
-/* Slow-drifting ribbons of light behind the panel */
-.admin-login::before,
-.admin-login::after {
-  content: '';
+.admin-login__scene {
   position: absolute;
-  inset: -30%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: -1;
   pointer-events: none;
-  background:
-    linear-gradient(118deg, transparent 34%, rgba(255, 255, 255, 0.16) 40%, transparent 46%),
-    linear-gradient(118deg, transparent 58%, rgba(255, 255, 255, 0.1) 62%, transparent 66%),
-    linear-gradient(118deg, transparent 72%, rgba(255, 255, 255, 0.22) 74%, transparent 76%);
-  filter: blur(2px);
-  animation: admin-login-drift 18s ease-in-out infinite alternate;
 }
 
-.admin-login::after {
-  transform: scaleX(-1) rotate(8deg);
-  opacity: 0.6;
-  animation-duration: 26s;
-  animation-direction: alternate-reverse;
+.admin-login__ribbons {
+  animation: admin-login-drift 24s ease-in-out infinite alternate;
 }
 
 @keyframes admin-login-drift {
-  from { transform: translate3d(-4%, -2%, 0); }
-  to { transform: translate3d(4%, 3%, 0); }
+  from { transform: translate(-34px, -12px); }
+  to { transform: translate(34px, 16px); }
 }
 
 @keyframes admin-login-in {
-  from { opacity: 0; transform: translateY(14px) scale(0.98); filter: blur(10px); }
-  to { opacity: 1; transform: none; filter: blur(0); }
+  from { opacity: 0; transform: translateY(16px) scale(0.985); }
+  to { opacity: 1; transform: none; }
 }
 
-.admin-login__card {
+/* The frame holds the card plus the two corner tabs (which sit outside the card's clipped shape). */
+.admin-login__frame {
   position: relative;
   width: 100%;
-  max-width: 410px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding: var(--space-8) var(--space-6);
-  text-align: center;
-  color: var(--text-heading);
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.86));
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  border-radius: 30px;
-  box-shadow:
-    0 30px 70px -26px rgba(30, 60, 45, 0.45),
-    inset 0 1px 0 #fff;
+  max-width: 440px;
   animation: admin-login-in 0.7s ease-out both;
 }
 
-/* Glowing accent tabs on two opposite corners */
-.admin-login__card::before,
-.admin-login__card::after {
+/* Soft shadow under the card (a drop-shadow filter would break the card's backdrop blur) */
+.admin-login__frame::before {
   content: '';
   position: absolute;
-  width: 64px;
-  height: 18px;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #fff, var(--color-primary-light));
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.9), 0 0 42px rgba(255, 255, 255, 0.45);
+  inset: 14px 10px -10px;
+  z-index: -1;
+  border-radius: 30px;
+  background: rgba(6, 50, 28, 0.38);
+  filter: blur(30px);
+}
+
+.admin-login__card {
+  --cut: 42px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-8) var(--space-7, 32px) var(--space-7, 32px);
+  text-align: right;
+  color: var(--text-heading);
+  border-radius: 28px;
+  clip-path: polygon(
+    var(--cut) 0,
+    100% 0,
+    100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%,
+    0 100%,
+    0 var(--cut)
+  );
+  background:
+    /* thin light line along the two diagonal cuts */
+    linear-gradient(135deg, transparent 29px, rgba(255, 255, 255, 0.95) 29.6px, rgba(255, 255, 255, 0.95) 30.9px, transparent 31.5px) top left / 64px 64px no-repeat,
+    linear-gradient(315deg, transparent 29px, rgba(255, 255, 255, 0.95) 29.6px, rgba(255, 255, 255, 0.95) 30.9px, transparent 31.5px) bottom right / 64px 64px no-repeat,
+    linear-gradient(160deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.78));
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+
+/* Thin bright edge along the straight sides */
+.admin-login__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1.4px;
+  border-radius: inherit;
+  background: linear-gradient(140deg, #fff, rgba(255, 255, 255, 0.45) 45%, #fff);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   pointer-events: none;
 }
 
-.admin-login__card::before {
-  top: 14px;
-  right: -22px;
-  transform: rotate(45deg);
+/* Glass tabs in the cut corners */
+.admin-login__tab {
+  position: absolute;
+  z-index: 2;
+  width: 52px;
+  height: 52px;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
 }
 
-.admin-login__card::after {
-  bottom: 14px;
-  left: -22px;
-  transform: rotate(45deg);
+.admin-login__tab path {
+  fill: rgba(255, 255, 255, 0.3);
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
 }
+
+.admin-login__tab--tl { top: -10px; left: -10px; }
+.admin-login__tab--br { bottom: -10px; right: -10px; transform: rotate(180deg); }
 
 .admin-login__logo {
-  height: 52px;
+  height: 44px;
   width: auto;
-  margin: 0 auto;
+  align-self: flex-start;
   /* the shared logo is white; turn it dark for the light card */
   filter: brightness(0) saturate(100%);
 }
 
 .admin-login__title {
-  font-size: var(--text-h3-size);
+  font-size: 26px;
+  line-height: 1.3;
   font-weight: var(--font-weight-extrabold);
   color: var(--text-heading);
+}
+
+.admin-login__title em {
+  font-style: normal;
+  color: var(--color-primary-dark);
 }
 
 .admin-login__subtitle {
   color: var(--text-muted);
   font-size: var(--text-small-size);
-  margin-top: -12px;
+  margin-top: -10px;
 }
 
 .admin-login__field {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  text-align: right;
   font-size: var(--text-small-size);
   font-weight: var(--font-weight-bold);
   color: var(--text-heading);
 }
 
-.admin-login__field input {
+.admin-login__input {
+  position: relative;
+  display: block;
+}
+
+.admin-login__input > svg {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.admin-login__input input {
+  width: 100%;
   font-family: var(--font-family);
   font-size: var(--text-body-size);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) 44px;
   color: var(--text-heading);
   border: 1px solid rgba(30, 60, 45, 0.16);
   border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.78);
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
-.admin-login__field input:focus {
+.admin-login__input input::placeholder {
+  color: rgba(107, 114, 128, 0.7);
+}
+
+.admin-login__input input:focus {
   outline: none;
   background: #fff;
   border-color: var(--color-primary);
@@ -139,11 +189,28 @@
 }
 
 /* Browsers paint autofilled fields pale blue; keep them white like the rest */
-.admin-login__field input:-webkit-autofill,
-.admin-login__field input:-webkit-autofill:focus {
+.admin-login__input input:-webkit-autofill,
+.admin-login__input input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--text-heading);
   -webkit-box-shadow: 0 0 0 100px #fff inset;
   transition: background-color 9999s ease-out;
+}
+
+.admin-login__eye {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 6px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.admin-login__eye:hover {
+  color: var(--color-primary-dark);
 }
 
 .admin-login__error {
@@ -156,22 +223,26 @@
 }
 
 .admin-login__submit {
-  background: linear-gradient(135deg, var(--color-primary-bright), var(--color-primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  background: linear-gradient(180deg, var(--color-primary-bright), var(--color-primary-dark));
   color: #fff;
   font-family: var(--font-family);
   font-size: var(--text-body-size);
   font-weight: var(--font-weight-bold);
   padding: var(--space-3);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-lg);
   border: none;
   cursor: pointer;
-  box-shadow: 0 10px 28px -8px color-mix(in srgb, var(--color-primary) 80%, transparent);
+  box-shadow: 0 10px 26px -8px color-mix(in srgb, var(--color-primary-dark) 80%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: transform 0.15s, box-shadow 0.2s;
 }
 
 .admin-login__submit:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 14px 34px -8px var(--color-primary);
+  box-shadow: 0 14px 32px -8px var(--color-primary-dark), inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
 .admin-login__submit:disabled {
@@ -179,7 +250,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .admin-login::before,
-  .admin-login::after,
-  .admin-login__card { animation: none; }
+  .admin-login__ribbons,
+  .admin-login__frame { animation: none; }
 }
