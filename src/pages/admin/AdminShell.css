@@ -124,6 +124,11 @@
   color: #fff;
 }
 
+.admin-dashboard--rail .admin-topbar,
+.admin-dashboard--rail .admin-content {
+  max-width: 1500px;
+}
+
 .admin-topbar {
   max-width: 1240px;
   margin: 0 auto;
@@ -211,7 +216,7 @@
   color: #fff;
 }
 
-.ov-hero h2 { font-size: 22px; margin-bottom: var(--space-1); }
+.ov-hero h2 { font-size: 22px; margin-bottom: var(--space-1); color: #fff; }
 .ov-hero p { opacity: 0.72; font-size: var(--text-body-size); }
 
 .ov-hero__btn {

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useAdminAuth } from '../../context/AdminAuthContext'
 import brand from '../../brand'
+import { AdminRail, AdminTopbar } from './AdminRail'
 import SampleTrackingTab from './SampleTrackingTab'
 import ComplaintsTab from './ComplaintsTab'
 import TrustCardRequests from './TrustCardRequests'
 import BookingsTab from './BookingsTab'
-import logoWhiteFull from '@client/logo-white-full.png'
 import './Admin.css'
 
 export default function BranchSamplesDashboard() {
@@ -19,38 +19,21 @@ export default function BranchSamplesDashboard() {
   // complaints_staff_permissions_migration.sql and
   // trust_card_requests_staff_access_migration.sql).
   const tabs = [
-    { key: 'bookings', label: 'الحجوزات' },
-    { key: 'samples', label: 'تتبع العينات' },
-    { key: 'complaints', label: 'شكاوى واقتراحات' },
-    { key: 'cards', label: 'طلبات الكارت' },
+    { key: 'bookings', label: 'الحجوزات', icon: 'calendar' },
+    { key: 'samples', label: 'تتبع العينات', icon: 'drop' },
+    { key: 'complaints', label: 'شكاوى واقتراحات', icon: 'message' },
+    { key: 'cards', label: 'طلبات الكارت', icon: 'card' },
   ]
 
   return (
-    <div className="admin-dashboard">
-      <header className="admin-header">
-        <div className="admin-header__brand">
-          <img src={logoWhiteFull} alt={brand.name} />
-          <span>{tabs.find((t) => t.key === activeTab).label}</span>
-        </div>
-        <div className="admin-header__user">
-          <span>{session?.user?.email}</span>
-          <button onClick={signOut}>تسجيل الخروج</button>
-        </div>
-      </header>
+    <div className="admin-dashboard admin-dashboard--rail">
+      <AdminRail tabs={tabs} activeTab={activeTab} onPick={setActiveTab} onSignOut={signOut} />
+      <AdminTopbar
+        email={session?.user?.email}
+        title={`${brand.name} · ${tabs.find((t) => t.key === activeTab).label}`}
+      />
 
-      <nav className="admin-tabs">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            className={`admin-tabs__btn${activeTab === t.key ? ' active' : ''}`}
-            onClick={() => setActiveTab(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </nav>
-
-      <main className="admin-content">
+      <main className="admin-content" key={activeTab}>
         {activeTab === 'bookings' && <BookingsTab />}
         {activeTab === 'samples' && <SampleTrackingTab />}
         {activeTab === 'complaints' && <ComplaintsTab canDelete={false} />}
