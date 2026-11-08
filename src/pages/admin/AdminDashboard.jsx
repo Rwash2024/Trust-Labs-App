@@ -19,6 +19,7 @@ import TrustCardTab from './TrustCardTab'
 import ReportsTab from './ReportsTab'
 import './Admin.css'
 import './AdminShell.css'
+import './AdminMotion.css'
 
 const trustOnly = ['trust-card', 'complaints', 'ratings']
 // Tabs with an `icon` live on the sidebar capsule; the rest are listed under "المزيد".

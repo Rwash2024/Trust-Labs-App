@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { adminFetchReportData } from '../../lib/admin'
 import Icon from './AdminIcons'
 
@@ -18,6 +18,40 @@ const num = (n) => Number(n).toLocaleString('ar-EG')
 const average = (values) => {
   const nums = values.filter((v) => typeof v === 'number')
   return nums.length ? Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10 : null
+}
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+// Counts from 0 up to `value` once the numbers arrive, so the cards feel alive.
+function CountUp({ value, format = (v) => num(Math.round(v)) }) {
+  const [shown, setShown] = useState(0)
+  const frame = useRef(0)
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      setShown(value)
+      return undefined
+    }
+    let start
+    const tick = (t) => {
+      start ??= t
+      const p = Math.min(1, (t - start) / 900)
+      setShown(value * (1 - (1 - p) ** 3))
+      if (p < 1) frame.current = requestAnimationFrame(tick)
+    }
+    frame.current = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame.current)
+  }, [value])
+  return format(shown)
+}
+
+// A soft green glow follows the pointer across whichever card it is over.
+function followPointer(e) {
+  const card = e.target.closest?.('.ov-card')
+  if (!card) return
+  const box = card.getBoundingClientRect()
+  card.style.setProperty('--mx', `${e.clientX - box.left}px`)
+  card.style.setProperty('--my', `${e.clientY - box.top}px`)
 }
 
 function greeting() {
@@ -102,7 +136,7 @@ export default function OverviewTab({ onNavigate }) {
   ].filter(Boolean)
 
   return (
-    <div className="ov">
+    <div className="ov" onMouseMove={followPointer}>
       <section className="ov-hero">
         <div>
           <h2>{greeting()} 👋</h2>
@@ -125,21 +159,21 @@ export default function OverviewTab({ onNavigate }) {
       <section className="ov-stats">
         <div className="ov-card ov-stat">
           <div className="ov-stat__t"><span><Icon name="calendar" /></span>حجوزات النهارده</div>
-          <strong>{num(stats.today)}</strong>
+          <strong><CountUp value={stats.today} /></strong>
           <Trend now={stats.today} before={stats.yesterday} />
         </div>
         <div className="ov-card ov-stat">
           <div className="ov-stat__t"><span><Icon name="chart" /></span>حجوزات آخر 30 يوم</div>
-          <strong>{num(stats.month)}</strong>
+          <strong><CountUp value={stats.month} /></strong>
         </div>
         <div className="ov-card ov-stat">
           <div className="ov-stat__t"><span><Icon name="card" /></span>مدفوعة أونلاين</div>
-          <strong>{num(stats.paidCount)}</strong>
+          <strong><CountUp value={stats.paidCount} /></strong>
           <em className="ov-trend">{money(stats.paidValue)}</em>
         </div>
         <div className="ov-card ov-stat">
           <div className="ov-stat__t"><span><Icon name="star" /></span>تقييم الزيارات</div>
-          <strong>{stats.rating ?? '—'}</strong>
+          <strong>{stats.rating == null ? '—' : <CountUp value={stats.rating} format={(v) => v.toFixed(1)} />}</strong>
           <em className="ov-trend">{stats.ratingCount ? `من ${num(stats.ratingCount)} تقييم` : 'مفيش تقييمات'}</em>
         </div>
       </section>

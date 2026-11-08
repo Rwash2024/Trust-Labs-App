@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import brand from '../../brand'
 import { Navigate } from 'react-router-dom'
 import { useAdminAuth } from '../../context/AdminAuthContext'
@@ -17,6 +17,9 @@ function CornerTab({ className }) {
 
 const stroke = { fill: 'none', strokeLinecap: 'round' }
 
+// Length of the "opening" animation in AdminLogin.css (tabs merge into a square, ripples spread, fade to the dashboard).
+const OPENING_MS = 1800
+
 export default function AdminLogin() {
   const { session, isAdmin, signIn } = useAdminAuth()
   const [email, setEmail] = useState('')
@@ -24,20 +27,35 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [opening, setOpening] = useState(false)
+  const [, rerender] = useState(0)
+  // While true, a fresh sign-in is NOT redirected yet, so the opening animation can play first.
+  // A visitor who is already signed in when the page loads is redirected straight away.
+  const holdRedirect = useRef(false)
 
-  if (session) return <Navigate to={isAdmin ? '/admin' : '/admin/samples'} replace />
+  if (session && !holdRedirect.current) return <Navigate to={isAdmin ? '/admin' : '/admin/samples'} replace />
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
+    holdRedirect.current = true
     const { error: err } = await signIn(email, password)
     setLoading(false)
-    if (err) setError('بيانات الدخول غير صحيحة، حاول تاني.')
+    if (err) {
+      holdRedirect.current = false
+      setError('بيانات الدخول غير صحيحة، حاول تاني.')
+      return
+    }
+    setOpening(true)
+    setTimeout(() => {
+      holdRedirect.current = false
+      rerender((n) => n + 1)
+    }, OPENING_MS)
   }
 
   return (
-    <div className="admin-login">
+    <div className={`admin-login${opening ? ' admin-login--opening' : ''}`}>
       <svg className="admin-login__scene" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="adminLoginRibbon" x1="0" x2="1" y1="0" y2="0">
@@ -65,6 +83,12 @@ export default function AdminLogin() {
       <div className="admin-login__frame">
         <CornerTab className="admin-login__tab--tl" />
         <CornerTab className="admin-login__tab--br" />
+        {opening && (
+          <>
+            <span className="admin-login__ripple" />
+            <span className="admin-login__ripple" />
+          </>
+        )}
 
         <form className="admin-login__card" onSubmit={handleSubmit}>
           <img className="admin-login__logo" src={logoWhiteFull} alt={brand.name} />

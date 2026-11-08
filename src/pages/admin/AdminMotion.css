@@ -1,0 +1,142 @@
+/* Motion for the main admin: things slide in, numbers and bars grow, cards glow under the pointer. */
+
+/* ---- Shell ---- */
+.admin-rail {
+  animation: admin-rail-in 0.6s 0.05s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.admin-topbar {
+  animation: admin-rise 0.5s 0.15s ease-out both;
+}
+
+.admin-rail__btn:active {
+  transform: scale(0.9);
+}
+
+@keyframes admin-rail-in {
+  from { opacity: 0; transform: translateX(46px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- Every tab: its blocks (toolbar, form, table, cards…) rise in one after another ---- */
+.admin-dashboard--rail .admin-content { animation: none; }
+
+.admin-dashboard--rail .admin-content > div > * {
+  animation: admin-rise 0.5s ease-out both;
+}
+
+.admin-dashboard--rail .admin-content > div > *:nth-child(2) { animation-delay: 0.07s; }
+.admin-dashboard--rail .admin-content > div > *:nth-child(3) { animation-delay: 0.14s; }
+.admin-dashboard--rail .admin-content > div > *:nth-child(4) { animation-delay: 0.21s; }
+.admin-dashboard--rail .admin-content > div > *:nth-child(n + 5) { animation-delay: 0.28s; }
+
+.admin-table tbody tr {
+  animation: admin-rise 0.4s ease-out both;
+}
+
+.admin-table tbody tr:nth-child(1) { animation-delay: 0.12s; }
+.admin-table tbody tr:nth-child(2) { animation-delay: 0.17s; }
+.admin-table tbody tr:nth-child(3) { animation-delay: 0.22s; }
+.admin-table tbody tr:nth-child(4) { animation-delay: 0.27s; }
+.admin-table tbody tr:nth-child(5) { animation-delay: 0.32s; }
+.admin-table tbody tr:nth-child(6) { animation-delay: 0.37s; }
+.admin-table tbody tr:nth-child(n + 7) { animation-delay: 0.42s; }
+
+/* ---- Overview ---- */
+.ov-stats > .ov-card {
+  animation: admin-rise 0.55s ease-out both;
+}
+
+.ov-stats > .ov-card:nth-child(1) { animation-delay: 0.1s; }
+.ov-stats > .ov-card:nth-child(2) { animation-delay: 0.18s; }
+.ov-stats > .ov-card:nth-child(3) { animation-delay: 0.26s; }
+.ov-stats > .ov-card:nth-child(4) { animation-delay: 0.34s; }
+
+.ov-grid > .ov-card,
+.ov-side > .ov-card {
+  animation: admin-rise 0.55s 0.4s ease-out both;
+}
+
+.ov-side > .ov-card:nth-child(2) { animation-delay: 0.5s; }
+
+/* soft glow under the pointer (set by OverviewTab through --mx / --my) */
+.ov-card {
+  background:
+    radial-gradient(230px circle at var(--mx, -999px) var(--my, -999px), color-mix(in srgb, var(--color-primary) 17%, transparent), transparent 70%),
+    rgba(255, 255, 255, 0.88);
+}
+
+.ov-bars__col i {
+  transform-origin: bottom;
+  animation: ov-grow-y 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.ov-bars__col:nth-child(1) i { animation-delay: 0.55s; }
+.ov-bars__col:nth-child(2) i { animation-delay: 0.62s; }
+.ov-bars__col:nth-child(3) i { animation-delay: 0.69s; }
+.ov-bars__col:nth-child(4) i { animation-delay: 0.76s; }
+.ov-bars__col:nth-child(5) i { animation-delay: 0.83s; }
+.ov-bars__col:nth-child(6) i { animation-delay: 0.9s; }
+.ov-bars__col:nth-child(7) i { animation-delay: 0.97s; }
+
+.ov-place__bar u {
+  transform-origin: right;
+  animation: ov-grow-x 0.8s 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.ov-table tbody tr {
+  animation: admin-rise 0.4s ease-out both;
+}
+
+.ov-table tbody tr:nth-child(1) { animation-delay: 0.5s; }
+.ov-table tbody tr:nth-child(2) { animation-delay: 0.56s; }
+.ov-table tbody tr:nth-child(3) { animation-delay: 0.62s; }
+.ov-table tbody tr:nth-child(4) { animation-delay: 0.68s; }
+.ov-table tbody tr:nth-child(5) { animation-delay: 0.74s; }
+.ov-table tbody tr:nth-child(6) { animation-delay: 0.8s; }
+
+.ov-hero__btn {
+  animation: ov-pulse 2.8s ease-in-out infinite;
+  transition: transform 0.15s;
+}
+
+.ov-hero__btn:hover {
+  transform: translateY(-2px);
+}
+
+.ov-chip {
+  transition: background 0.2s, transform 0.15s;
+}
+
+.ov-chip:hover {
+  transform: translateY(-1px);
+}
+
+@keyframes ov-grow-y {
+  from { transform: scaleY(0); opacity: 0; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes ov-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes ov-pulse {
+  0%, 100% { box-shadow: 0 0 14px color-mix(in srgb, var(--color-primary) 45%, transparent); }
+  50% { box-shadow: 0 0 28px color-mix(in srgb, var(--color-primary) 80%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-rail,
+  .admin-topbar,
+  .admin-dashboard--rail .admin-content > div > *,
+  .admin-table tbody tr,
+  .ov-stats > .ov-card,
+  .ov-grid > .ov-card,
+  .ov-side > .ov-card,
+  .ov-bars__col i,
+  .ov-place__bar u,
+  .ov-table tbody tr,
+  .ov-hero__btn { animation: none; }
+}
