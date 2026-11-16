@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { exportDb, importDb } from '../lib/storage.js'
 import { buildPlanCsv } from '../lib/csv.js'
+import { backupReminder, getLastExport, markExported } from '../lib/backup.js'
 
 export default function DataMenu({ db, onImport }) {
   const [error, setError] = useState('')
+  const [reminder, setReminder] = useState(() => backupReminder({ lastExportAt: getLastExport() }))
 
   function onExport() {
     const blob = new Blob([exportDb(db)], { type: 'application/json' })
@@ -13,6 +15,8 @@ export default function DataMenu({ db, onImport }) {
     a.download = `campaign-dashboard-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(url)
+    markExported()
+    setReminder(null)
   }
 
   function onCsv() {
@@ -52,6 +56,7 @@ export default function DataMenu({ db, onImport }) {
         <input type="file" accept="application/json,.json" aria-label="استيراد ملف" onChange={onFile} hidden />
       </label>
       {error && <p role="alert" className="warn">{error}</p>}
+      {reminder && <p role="status" className="warn">{reminder}</p>}
     </div>
   )
 }
