@@ -16,6 +16,7 @@ import Sidebar from './components/Sidebar.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
 import { fillPost, fillPosts, detectCategory } from './lib/templates.js'
 import { computeBenchmarks, recommendAd } from './lib/ads.js'
+import { toggleCheck } from './lib/checklist.js'
 
 const BENCH = computeBenchmarks(competitorsData.competitors)
 const withAd = (p, ideaText) => (p.ad ? p : { ...p, ad: recommendAd(p, { category: detectCategory(`${ideaText} ${p.headline} ${p.panelService}`), benchmarks: BENCH }).ad })
@@ -180,6 +181,7 @@ export default function App() {
             ideas={db.ideas}
             posts={db.posts}
             onReuse={(text) => { setReuseIdea(text); window.scrollTo?.({ top: 0, behavior: 'smooth' }) }}
+            onToggleCheck={(ideaId, itemId) => setDb((d) => ({ ...d, ideas: d.ideas.map((i) => (i.id === ideaId ? toggleCheck(i, itemId) : i)) }))}
           />
         </div>
       )}
