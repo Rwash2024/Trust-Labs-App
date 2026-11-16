@@ -10,6 +10,8 @@ import LaunchOfferCounter from '../components/LaunchOfferCounter'
 import { filterTests } from '../lib/testSearch'
 import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
 import './Booking.css'
+import { recaptcha } from '../lib/recaptcha'
+import RecaptchaNotice from '../components/RecaptchaNotice'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
 const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : null
@@ -159,6 +161,10 @@ export default function Booking() {
         console.error('recordBooking failed (non-blocking)', err)
         return false
       })
+
+    // Invisible reCAPTCHA v3: Formspree checks this token server-side. Null (blocked/not configured) just submits as before.
+    const recaptchaToken = await recaptcha.getToken('booking')
+    if (recaptchaToken) data.append('g-recaptcha-response', recaptchaToken)
 
     try {
       const res = await fetch(FORMSPREE_ENDPOINT, {
@@ -613,6 +619,7 @@ export default function Booking() {
                 ? 'تأكيد ودفع بالفيزا'
                 : 'تأكيد الحجز'}
           </button>
+          <RecaptchaNotice />
         </form>
 
         <Link className="booking__branches-link" to="/branches">

@@ -7,6 +7,8 @@ import { FlaskIcon, MapPinIcon, CheckIcon, SearchIcon, PlusIcon } from '../compo
 import InternationalNav from '../components/InternationalNav'
 import { cleanInternationalPhoneInput, internationalPhoneError } from '../lib/phone'
 import './InternationalBooking.css'
+import { recaptcha } from '../lib/recaptcha'
+import RecaptchaNotice from '../components/RecaptchaNotice'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
 const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : null
@@ -93,6 +95,10 @@ export default function InternationalBooking() {
     data.append('homeVisitFee', homeVisitFee)
     data.append('total', total)
     data.append('paymentMethod', 'Cash')
+
+    // Invisible reCAPTCHA v3: Formspree checks this token server-side. Null (blocked/not configured) just submits as before.
+    const recaptchaToken = await recaptcha.getToken('booking')
+    if (recaptchaToken) data.append('g-recaptcha-response', recaptchaToken)
 
     try {
       const res = await fetch(FORMSPREE_ENDPOINT, { method: 'POST', headers: { Accept: 'application/json' }, body: data })
@@ -349,6 +355,7 @@ export default function InternationalBooking() {
           <button className="ibooking__submit" type="submit" disabled={status === 'submitting'}>
             {status === 'submitting' ? 'Sending...' : 'Confirm booking'}
           </button>
+          <RecaptchaNotice />
         </form>
       </div>
 
