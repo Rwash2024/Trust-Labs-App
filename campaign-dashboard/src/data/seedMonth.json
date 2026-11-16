@@ -1,0 +1,558 @@
+{
+  "schemaVersion": 1,
+  "posts": [
+    {
+      "ideaId": "idea-gf",
+      "status": "idea",
+      "id": "gf-1",
+      "type": "story",
+      "platform": "instagram",
+      "date": "2026-11-22",
+      "time": "18:00",
+      "headline": "الجمعة الخضراء",
+      "caption": "الجمعة الخضراء جاية 💚 عرض هيخلي صحتك أولوية: خصم 15% على باقات الاطمئنان وزيارة منزلية مجانية. فعّل التذكير، واحجز بدري على 16183.",
+      "hashtags": [
+        "#الجمعة_الخضراء",
+        "#GreenFriday",
+        "#معمل_تثق_به",
+        "#Trust_Labs",
+        "#زيارة_منزلية"
+      ],
+      "panelService": "خصم 15% + زيارة منزلية مجانية",
+      "panelBullets": [
+        "خصم على الباقات",
+        "زيارة منزلية مجانية",
+        "من الجمعة 27 نوفمبر",
+        "احجز بدري"
+      ],
+      "image": {
+        "concept": "a fresh green leaf-shaped blank price tag hanging from a stethoscope in a bright modern living room, soft morning light",
+        "subject": "leaf tag on a stethoscope",
+        "mood": "bright fresh morning light",
+        "accent": "fresh green"
+      }
+    },
+    {
+      "ideaId": "idea-gf",
+      "status": "idea",
+      "id": "gf-2",
+      "type": "reel",
+      "platform": "instagram",
+      "date": "2026-11-24",
+      "time": "21:00",
+      "headline": "الزيارة علينا",
+      "caption": "مش لازم تروح لأي مكان. معمل تثق به يجيلك لحد البيت، والزيارة مجانية في الجمعة الخضراء. اسأل واحجز على 16183.",
+      "hashtags": [
+        "#الجمعة_الخضراء",
+        "#GreenFriday",
+        "#معمل_تثق_به",
+        "#Trust_Labs",
+        "#زيارة_منزلية"
+      ],
+      "panelService": "زيارة منزلية مجانية في الجمعة الخضراء",
+      "panelBullets": [
+        "سحب العينة في بيتك",
+        "ممرض بجوانتي وأدوات نضيفة",
+        "نتايجك أونلاين",
+        "احجز دلوقتي"
+      ],
+      "image": {
+        "concept": "a friendly Egyptian phlebotomist in a green uniform and blue gloves greeting a smiling family at their home door, warm light",
+        "subject": "phlebotomist and the family at the door",
+        "mood": "warm natural home light",
+        "accent": "fresh green"
+      },
+      "ad": {
+        "enabled": true,
+        "budget": 1300,
+        "days": 5,
+        "regions": [
+          "المهندسين",
+          "التجمع الخامس",
+          "الدقي",
+          "المنيل",
+          "مدينة نصر",
+          "مصر الجديدة",
+          "الجيزة"
+        ],
+        "ageFrom": 28,
+        "ageTo": 50,
+        "gender": "female"
+      }
+    },
+    {
+      "ideaId": "idea-gf",
+      "status": "idea",
+      "id": "gf-3",
+      "type": "post",
+      "platform": "facebook",
+      "date": "2026-11-26",
+      "time": "21:00",
+      "headline": "الجمعة الخضراء",
+      "caption": "الجمعة الخضراء في معمل تثق به 💚 خصم 15% على باقات الاطمئنان + زيارة منزلية مجانية، من الجمعة 27 لحد الأحد 29 نوفمبر. اسأل واحجز على 16183.",
+      "hashtags": [
+        "#الجمعة_الخضراء",
+        "#GreenFriday",
+        "#معمل_تثق_به",
+        "#Trust_Labs",
+        "#زيارة_منزلية"
+      ],
+      "panelService": "خصم 15% + زيارة منزلية مجانية",
+      "panelBullets": [
+        "باقة الغدة الدرقية 685 بدل 806",
+        "باقة الكلى 845 بدل 994",
+        "باقة الكبد 1273 بدل 1498",
+        "باقة الأطفال 1438 بدل 1692"
+      ],
+      "image": {
+        "concept": "a fresh green leaf-shaped blank price tag hanging from a stethoscope in a bright modern living room, a friendly Egyptian phlebotomist in a green uniform and blue gloves arriving at the front door in the blurred background",
+        "subject": "leaf tag on a stethoscope with the phlebotomist arriving",
+        "mood": "bright fresh morning light",
+        "accent": "fresh green"
+      },
+      "ad": {
+        "enabled": true,
+        "budget": 1800,
+        "days": 5,
+        "regions": [
+          "المهندسين",
+          "التجمع الخامس",
+          "الدقي",
+          "المنيل",
+          "مدينة نصر",
+          "مصر الجديدة",
+          "الجيزة"
+        ],
+        "ageFrom": 28,
+        "ageTo": 50,
+        "gender": "female"
+      }
+    },
+    {
+      "ideaId": "idea-gf",
+      "status": "idea",
+      "id": "gf-4",
+      "type": "carousel",
+      "platform": "instagram",
+      "date": "2026-11-27",
+      "time": "12:00",
+      "headline": "باقاتنا الخضراء",
+      "caption": "اسحب وشوف باقات الجمعة الخضراء بعد خصم 15%. والزيارة المنزلية مجانية. اسأل واحجز على 16183.",
+      "hashtags": [
+        "#الجمعة_الخضراء",
+        "#GreenFriday",
+        "#معمل_تثق_به",
+        "#Trust_Labs",
+        "#زيارة_منزلية"
+      ],
+      "panelService": "باقات الجمعة الخضراء بعد خصم 15%",
+      "panelBullets": [
+        "الغدة الدرقية 685",
+        "الكلى 845",
+        "الكبد 1273",
+        "الأطفال 1438"
+      ],
+      "image": {
+        "concept": "four clean green package cards fanned out on a light wooden table with a small plant and a stethoscope, flat lay",
+        "subject": "four package cards",
+        "mood": "clean bright airy light",
+        "accent": "fresh green"
+      },
+      "ad": {
+        "enabled": true,
+        "budget": 700,
+        "days": 3,
+        "regions": [
+          "المهندسين",
+          "التجمع الخامس",
+          "الدقي",
+          "المنيل",
+          "مدينة نصر",
+          "مصر الجديدة",
+          "الجيزة"
+        ],
+        "ageFrom": 35,
+        "ageTo": 60,
+        "gender": "male"
+      }
+    },
+    {
+      "ideaId": "idea-gf",
+      "status": "idea",
+      "id": "gf-5",
+      "type": "story",
+      "platform": "instagram",
+      "date": "2026-11-29",
+      "time": "18:00",
+      "headline": "آخر فرصة",
+      "caption": "آخر يوم في الجمعة الخضراء 💚 خصم 15% وزيارة منزلية مجانية. احجز دلوقتي على 16183.",
+      "hashtags": [
+        "#الجمعة_الخضراء",
+        "#GreenFriday",
+        "#معمل_تثق_به",
+        "#Trust_Labs",
+        "#زيارة_منزلية"
+      ],
+      "panelService": "آخر يوم: خصم 15% + زيارة مجانية",
+      "panelBullets": [
+        "الأحد 29 نوفمبر",
+        "خصم على الباقات",
+        "زيارة منزلية مجانية",
+        "احجز دلوقتي"
+      ],
+      "image": {
+        "concept": "a green hourglass filled with leaves on a bright desk, calm sunset light through a window",
+        "subject": "leaf hourglass",
+        "mood": "calm warm sunset light",
+        "accent": "fresh green"
+      }
+    },
+    {
+      "id": "seed-1",
+      "ideaId": "idea-1",
+      "type": "post",
+      "platform": "instagram",
+      "date": "2026-12-02",
+      "time": "20:00",
+      "headline": "أنقذ قلبك",
+      "caption": "قلبك بيشتغل 24 ساعة من غير إجازة. اطمّن عليه بتحاليل بسيطة قبل ما يتعب. 💚",
+      "hashtags": [
+        "#تحاليل_طبية",
+        "#ضغط_الدم",
+        "#صحة_القلب",
+        "#معمل_تثق_به",
+        "#Trust_Labs"
+      ],
+      "panelService": "أسأل عن باقة تحاليل ضغط الدم",
+      "panelBullets": [
+        "صورة دم كاملة",
+        "باقة الكوليسترول",
+        "وظائف الكلى",
+        "الدهون"
+      ],
+      "image": {
+        "concept": "a realistic human heart floating on an orange-white lifebuoy in a calm sea at sunset, water splashes",
+        "subject": "the heart on the lifebuoy",
+        "mood": "warm golden sunset glow",
+        "accent": "warm orange"
+      },
+      "status": "idea"
+    },
+    {
+      "id": "seed-2",
+      "ideaId": "idea-2",
+      "type": "reel",
+      "platform": "instagram",
+      "date": "2026-12-04",
+      "time": "21:00",
+      "headline": "قلبك مش لعبة",
+      "caption": "متسيبش صحة قلبك للحظ. افحص بدري واطمّن.",
+      "hashtags": [
+        "#تحاليل_طبية",
+        "#ضغط_الدم",
+        "#صحة_القلب",
+        "#معمل_تثق_به",
+        "#Trust_Labs"
+      ],
+      "panelService": "أسأل عن باقة تحاليل ضغط الدم",
+      "panelBullets": [
+        "صورة دم كاملة",
+        "باقة الكوليسترول",
+        "وظائف الكلى",
+        "الدهون"
+      ],
+      "image": {
+        "concept": "an elderly Egyptian man thoughtfully moving a small anatomical heart like a chess piece on a chessboard",
+        "subject": "the elderly man and the heart chess piece",
+        "mood": "moody dark teal cinematic light",
+        "accent": "deep blue"
+      },
+      "status": "idea"
+    },
+    {
+      "id": "seed-3",
+      "ideaId": "idea-3",
+      "type": "post",
+      "platform": "facebook",
+      "date": "2026-12-06",
+      "time": "19:00",
+      "headline": "الضغط ساكت",
+      "caption": "ارتفاع الضغط ساعات ملوش أعراض. الفحص الدوري هو اللي بيطمّنك.",
+      "hashtags": [
+        "#تحاليل_طبية",
+        "#ضغط_الدم",
+        "#صحة_القلب",
+        "#معمل_تثق_به",
+        "#Trust_Labs"
+      ],
+      "panelService": "اسأل عن باقة الاطمئنان على الضغط",
+      "panelBullets": [
+        "صورة دم كاملة",
+        "باقة الكوليسترول",
+        "وظائف الكلى",
+        "الدهون"
+      ],
+      "image": {
+        "concept": "a calm Egyptian man in his 50s measuring blood pressure at home with a digital cuff, soft morning light",
+        "subject": "man with the cuff",
+        "mood": "soft warm natural light",
+        "accent": "warm teal"
+      },
+      "status": "idea"
+    },
+    {
+      "id": "seed-4",
+      "ideaId": "idea-3",
+      "type": "carousel",
+      "platform": "instagram",
+      "date": "2026-12-09",
+      "time": "20:00",
+      "headline": "5 عادات لقلبك",
+      "caption": "خمس عادات بسيطة تفرق مع صحة قلبك، وبعدها تحليلك يطمّنك.",
+      "hashtags": [
+        "#تحاليل_طبية",
+        "#ضغط_الدم",
+        "#صحة_القلب",
+        "#معمل_تثق_به",
+        "#Trust_Labs"
+      ],
+      "panelService": "اسأل عن باقة تحاليل القلب",
+      "panelBullets": [
+        "صورة دم كاملة",
+        "باقة الكوليسترول",
+        "وظائف الكلى",
+        "الدهون"
+      ],
+      "image": {
+        "concept": "five minimal illustrated cards of heart-healthy habits in soft modern style with a glowing heart",
+        "subject": "illustrated heart-healthy habits",
+        "mood": "clean bright airy light",
+        "accent": "mint green"
+      },
+      "status": "idea"
+    },
+    {
+      "id": "seed-5",
+      "ideaId": "idea-3",
+      "type": "story",
+      "platform": "instagram",
+      "date": "2026-12-11",
+      "time": "18:00",
+      "headline": "سؤال النهارده",
+      "caption": "آخر مرة قست فيها ضغطك كانت إمتى؟ جاوب في الاستطلاع.",
+      "hashtags": [
+        "#تحاليل_طبية",
+        "#ضغط_الدم",
+        "#صحة_القلب",
+        "#معمل_تثق_به",
+        "#Trust_Labs"
+      ],
+      "panelService": "اسأل عن باقة الاطمئنان على الضغط",
+      "panelBullets": [
+        "صورة دم كاملة",
+        "باقة الكوليسترول",
+        "وظائف الكلى",
+        "الدهون"
+      ],
+      "image": {
+        "concept": "an Egyptian woman in her 40s looking at a smartwatch with a thoughtful smile",
+        "subject": "woman and smartwatch",
+        "mood": "bright natural window light",
+        "accent": "warm coral"
+      },
+      "status": "idea"
+    },
+    {
+      "id": "seed-6",
+      "ideaId": "idea-3",
+      "type": "post",
+      "platform": "facebook",
+      "date": "2026-12-13",
+      "time": "19:00",
+      "headline": "اطمّن على أبوك",
+      "caption": "الأب والأم يستاهلوا نطمّن عليهم. فحص بسيط يرجّع الهدوء لبيتك.",
+      "hashtags": [
+        "#تحاليل_طبية",
+        "#ضغط_الدم",
+        "#صحة_القلب",
+        "#معمل_تثق_به",
+        "#Trust_Labs"
+      ],
+      "panelService": "اسأل عن باقة تحاليل كبار السن",
+      "panelBullets": [
+        "صورة دم كاملة",
+        "باقة الكوليسترول",
+        "وظائف الكلى",
+        "الدهون"
+      ],
+      "image": {
+        "concept": "a smiling adult Egyptian son and his elderly father sitting together at a sunny balcony table",
+        "subject": "son and father",
+        "mood": "warm golden afternoon light",
+        "accent": "warm orange"
+      },
+      "status": "idea"
+    },
+    {
+      "id": "seed-7",
+      "ideaId": "idea-3",
+      "type": "reel",
+      "platform": "instagram",
+      "date": "2026-12-16",
+      "time": "21:00",
+      "headline": "الكوليسترول والدهون",
+      "caption": "دقيقة تشرحلك ليه الكوليسترول والدهون مهمين لقلبك.",
+      "hashtags": [
+        "#تحاليل_طبية",
+        "#ضغط_الدم",
+        "#صحة_القلب",
+        "#معمل_تثق_به",
+        "#Trust_Labs"
+      ],
+      "panelService": "أسأل عن باقة الكوليسترول والدهون",
+      "panelBullets": [
+        "صورة دم كاملة",
+        "باقة الكوليسترول",
+        "وظائف الكلى",
+        "الدهون"
+      ],
+      "image": {
+        "concept": "a glowing translucent artery cross-section with soft golden droplets, clean medical 3D style",
+        "subject": "the artery",
+        "mood": "cinematic soft blue light",
+        "accent": "amber"
+      },
+      "status": "idea"
+    },
+    {
+      "id": "seed-8",
+      "ideaId": "idea-3",
+      "type": "post",
+      "platform": "instagram",
+      "date": "2026-12-18",
+      "time": "20:00",
+      "headline": "قلبك يستاهل",
+      "caption": "إهمالك بيتكلف أكتر من تحليل. ابدأ بخطوة بسيطة النهارده.",
+      "hashtags": [
+        "#تحاليل_طبية",
+        "#ضغط_الدم",
+        "#صحة_القلب",
+        "#معمل_تثق_به",
+        "#Trust_Labs"
+      ],
+      "panelService": "أسأل عن باقة تحاليل ضغط الدم",
+      "panelBullets": [
+        "صورة دم كاملة",
+        "باقة الكوليسترول",
+        "وظائف الكلى",
+        "الدهون"
+      ],
+      "image": {
+        "concept": "a hand gently holding a glowing small anatomical heart against a soft sky-blue background",
+        "subject": "the hand and the heart",
+        "mood": "soft pastel dreamy light",
+        "accent": "sky blue"
+      },
+      "status": "idea"
+    },
+    {
+      "id": "seed-9",
+      "ideaId": "idea-3",
+      "type": "carousel",
+      "platform": "facebook",
+      "date": "2026-12-21",
+      "time": "19:00",
+      "headline": "تحضير التحاليل",
+      "caption": "قبل تحليل الدهون محتاج صيام. اسحب وشوف التحضير الصح.",
+      "hashtags": [
+        "#تحاليل_طبية",
+        "#ضغط_الدم",
+        "#صحة_القلب",
+        "#معمل_تثق_به",
+        "#Trust_Labs"
+      ],
+      "panelService": "اسأل عن شروط تحضير كل تحليل",
+      "panelBullets": [
+        "صورة دم كاملة",
+        "باقة الكوليسترول",
+        "وظائف الكلى",
+        "الدهون"
+      ],
+      "image": {
+        "concept": "clean illustrated steps showing a glass of water, a clock and a sleeping person on a soft background",
+        "subject": "simple icons for preparation steps",
+        "mood": "clean bright airy light",
+        "accent": "mint green"
+      },
+      "status": "idea"
+    },
+    {
+      "id": "seed-10",
+      "ideaId": "idea-3",
+      "type": "story",
+      "platform": "instagram",
+      "date": "2026-12-26",
+      "time": "18:00",
+      "headline": "الزيارة المنزلية",
+      "caption": "مش فاضي تجيلنا؟ ممرضنا بيجيلك لحد البيت.",
+      "hashtags": [
+        "#تحاليل_طبية",
+        "#ضغط_الدم",
+        "#صحة_القلب",
+        "#معمل_تثق_به",
+        "#Trust_Labs"
+      ],
+      "panelService": "اسأل عن الزيارة المنزلية",
+      "panelBullets": [
+        "صورة دم كاملة",
+        "باقة الكوليسترول",
+        "وظائف الكلى",
+        "الدهون"
+      ],
+      "image": {
+        "concept": "a friendly Egyptian phlebotomist in a green uniform and blue gloves greeting a smiling elderly woman at her home door",
+        "subject": "the phlebotomist and the woman",
+        "mood": "warm natural home light",
+        "accent": "warm orange"
+      },
+      "status": "idea"
+    }
+  ],
+  "ideas": [
+    {
+      "id": "idea-gf",
+      "text": "Green Friday",
+      "createdAt": "2026-11-16"
+    },
+    {
+      "id": "idea-1",
+      "text": "أنقذ قلبك",
+      "createdAt": "2026-11-16"
+    },
+    {
+      "id": "idea-2",
+      "text": "قلبك مش لعبة",
+      "createdAt": "2026-11-16"
+    },
+    {
+      "id": "idea-3",
+      "text": "حملة ضغط الدم",
+      "createdAt": "2026-11-16"
+    }
+  ],
+  "settings": {
+    "platforms": [
+      "facebook",
+      "instagram"
+    ],
+    "timesByPlatform": {
+      "facebook": [
+        "19:00"
+      ],
+      "instagram": [
+        "20:00",
+        "21:00"
+      ]
+    }
+  }
+}
