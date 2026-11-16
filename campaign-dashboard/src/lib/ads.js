@@ -114,3 +114,86 @@ export function seasonFor(date) {
   const md = Number(m[2]) * 100 + Number(m[3])
   return md >= 1120 && md <= 1202 ? 'high' : 'normal'
 }
+
+const median = (arr) => {
+  if (!arr.length) return 0
+  const s = [...arr].sort((a, b) => a - b)
+  const m = Math.floor(s.length / 2)
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
+}
+
+// Competitor response levels (from their posts, not their ad spend, which we cannot see).
+export function computeBenchmarks(competitors) {
+  const fb = competitors.filter((c) => c.fb).map((c) => ({ name: c.name, value: c.fb.avgReactions })).sort((a, b) => b.value - a.value)
+  const top3 = fb.slice(0, 3)
+  return {
+    fbTop3Avg: top3.length ? Math.round(top3.reduce((a, x) => a + x.value, 0) / top3.length) : 0,
+    fbBest: fb[0] ?? null,
+    igLikesMedian: median(competitors.filter((c) => c.ig).map((c) => c.ig.avgLikes)),
+    reelPlaysMedian: median(competitors.filter((c) => c.ig).map((c) => c.ig.reelPlays)),
+  }
+}
+
+const OFFER_WORDS = ['خصم', 'عرض', '%', 'زيارة منزلية', 'مجان', 'باقة', 'احجز']
+const DAYS_BY_TYPE = { reel: 5, post: 5, carousel: 3, story: 2 }
+const clamp = (n, lo, hi) => Math.min(Math.max(n, lo), hi)
+const fmt = (n) => Number(n).toLocaleString('en-US')
+
+// Full automatic ad plan for a post. Mohamed can edit any value afterwards.
+export function recommendAd(post, { category = 'general', benchmarks } = {}) {
+  const b = benchmarks ?? { fbTop3Avg: 150, fbBest: null, igLikesMedian: 0, reelPlaysMedian: 0 }
+  const text = `${post.headline} ${post.caption} ${post.panelService}`
+  const goal = OFFER_WORDS.some((w) => text.includes(w)) ? 'sales' : 'awareness'
+  const audience = suggestAudience(category)
+  const days = DAYS_BY_TYPE[post.type] ?? 5
+  const regions = REGIONS.filter((r) => (goal === 'sales' ? r.tier <= 2 : r.tier === 1)).map((r) => r.id)
+  const reasons = [`الهدف: ${goal === 'sales' ? 'مبيعات (البوست فيه عرض أو دعوة للحجز)' : 'وعي (مفيش عرض واضح)'}.`]
+
+  if (post.type === 'story') {
+    reasons.push('الاستوري وصوله المدفوع قليل ومحدود للمتابعين، فمش بنمول (اختياري لو عايز).')
+    reasons.push('الأرقام قاعدة إرشادية. راجع تكلفة النتيجة في Ads Manager بعد 48 ساعة.')
+    return { ad: { ...emptyAd(), days, regions, ageFrom: audience.ageFrom, ageTo: audience.ageTo, gender: audience.gender }, reasons, budget: null }
+  }
+
+  let factor = 1
+  if (post.platform === 'facebook') {
+    factor = clamp(b.fbTop3Avg / 150, 0.8, 1.3)
+    reasons.push(
+      `على فيسبوك أقوى 3 منافسين متوسطهم ${fmt(b.fbTop3Avg)} تفاعل للبوست${b.fbBest ? ` (الأعلى ${b.fbBest.name}: ${fmt(b.fbBest.value)})` : ''}. كل ما الاستجابة العضوية عندهم أعلى، محتاجين دفعة مدفوعة أكبر، فوزّنت الميزانية ×${Math.round(factor * 100) / 100}.`,
+    )
+  } else if (post.type === 'reel') {
+    reasons.push(`ريلات المنافسين على انستجرام متوسطها ${fmt(Math.round(b.reelPlaysMedian))} مشاهدة (الوسيط)، والريل هو الأقدر على الوصول، فالميزانية من غير تخفيض.`)
+  } else {
+    factor = 0.8
+    reasons.push(`صور وبوستات انستجرام عند المنافسين متوسطها ${Math.round(b.igLikesMedian)} لايك بس (وسيط)، فاستجابتها ضعيفة وخفّضت الميزانية ×0.8.`)
+  }
+  reasons.push('حجم تمويل المنافسين الفعلي مش ظاهر لنا (بنشوف استجابة بوستاتهم بس).')
+
+  const budget = suggestBudget({ postType: post.type, goal, days, regions, season: seasonFor(post.date) })
+  reasons.push(...budget.basis)
+  reasons.push('الأرقام قاعدة إرشادية. راجع تكلفة النتيجة في Ads Manager بعد 48 ساعة.')
+  const total = round50(budget.total * factor)
+  return {
+    ad: { enabled: true, budget: total, days, regions, ageFrom: audience.ageFrom, ageTo: audience.ageTo, gender: audience.gender },
+    reasons,
+    budget: { ...budget, total },
+  }
+}
+
+const PLATFORM_AR = { facebook: 'فيسبوك', instagram: 'انستجرام', tiktok: 'تيك توك' }
+const TYPE_AR = { post: 'بوست', reel: 'ريل', carousel: 'كاروسيل', story: 'استوري' }
+const GENDER_AR = { all: 'الكل', male: 'رجال', female: 'ستات' }
+
+// Plain-text brief to paste next to Meta Ads Manager (the dashboard does not publish ads itself).
+export function buildAdBrief(post, ad) {
+  const head = `${post.headline} — ${TYPE_AR[post.type] ?? post.type} على ${PLATFORM_AR[post.platform] ?? post.platform} (${post.date} ${post.time})`
+  if (!ad?.enabled) return `${head}\nالإعلان: مش ممول.`
+  return [
+    head,
+    `الميزانية الإجمالية: ${ad.budget ?? 'غير محددة'} جنيه لمدة ${ad.days} أيام`,
+    `المناطق: ${ad.regions.join('، ')}`,
+    `السن: ${ad.ageFrom} إلى ${ad.ageTo}`,
+    `الجنس: ${GENDER_AR[ad.gender] ?? ad.gender}`,
+    'الرفع: من Meta Ads Manager (أو Business Suite)، اختار نفس المنشور واستهدف بالإعدادات دي.',
+  ].join('\n')
+}

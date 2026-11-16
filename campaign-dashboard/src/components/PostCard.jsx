@@ -3,8 +3,11 @@ import { buildImagePrompt, validateBullets } from '../lib/promptTemplate.js'
 import { buildFormatPlan } from '../lib/formats.js'
 import { checkPost } from '../lib/strength.js'
 import AdPanel from './AdPanel.jsx'
-import { emptyAd } from '../lib/ads.js'
+import { computeBenchmarks } from '../lib/ads.js'
+import competitorsData from '../data/competitors.json'
 import { detectCategory } from '../lib/templates.js'
+
+const BENCH = computeBenchmarks(competitorsData.competitors)
 
 const TYPE_LABEL = { post: 'بوست', reel: 'ريلز', carousel: 'كاروسيل', story: 'استوري' }
 const PLATFORM_LABEL = { facebook: 'فيسبوك', instagram: 'انستجرام', tiktok: 'تيك توك' }
@@ -110,7 +113,8 @@ export default function PostCard({ post, onChange }) {
       </details>
 
       <AdPanel
-        ad={post.ad ?? emptyAd()}
+        ad={post.ad}
+        benchmarks={BENCH}
         post={post}
         category={detectCategory(`${post.headline} ${post.caption} ${post.panelService}`)}
         onChange={(ad) => onChange({ ad })}

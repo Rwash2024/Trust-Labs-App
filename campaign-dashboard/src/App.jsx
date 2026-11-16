@@ -14,7 +14,11 @@ import DataMenu from './components/DataMenu.jsx'
 import ChatPromptButton from './components/ChatPromptButton.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
-import { fillPost, fillPosts } from './lib/templates.js'
+import { fillPost, fillPosts, detectCategory } from './lib/templates.js'
+import { computeBenchmarks, recommendAd } from './lib/ads.js'
+
+const BENCH = computeBenchmarks(competitorsData.competitors)
+const withAd = (p, ideaText) => (p.ad ? p : { ...p, ad: recommendAd(p, { category: detectCategory(`${ideaText} ${p.headline} ${p.panelService}`), benchmarks: BENCH }).ad })
 
 const MONTH_NAMES = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
 
@@ -68,7 +72,7 @@ export default function App() {
         id: newId(), ideaId, ...s, headline: '', caption: '', hashtags: [],
         panelService: '', panelBullets: ['', '', '', ''], image: { concept: '', subject: '', mood: '', accent: '' }, status: 'idea',
       }))
-    const filled = fillPosts(skeleton, idea)
+    const filled = fillPosts(skeleton, idea).map((p) => withAd(p, idea))
     setDb((d) => ({
       ...d,
       ideas: [...d.ideas, { id: ideaId, text: idea, createdAt: new Date().toISOString().slice(0, 10) }],
@@ -82,7 +86,7 @@ export default function App() {
       const ideaText = (id) => d.ideas.find((i) => i.id === id)?.text ?? ''
       return {
         ...d,
-        posts: d.posts.map((p, i) => (p.date.startsWith(prefix) ? fillPost(p, ideaText(p.ideaId), i) : p)),
+        posts: d.posts.map((p, i) => (p.date.startsWith(prefix) ? withAd(fillPost(p, ideaText(p.ideaId), i), ideaText(p.ideaId)) : p)),
       }
     })
   }

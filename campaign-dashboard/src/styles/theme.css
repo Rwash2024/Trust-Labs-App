@@ -237,7 +237,7 @@ details input { margin-bottom: 6px; direction: ltr; }
 .grid .card, .idea-bank li { animation: fadeUp .4s ease both; }
 .cal-chip:hover { transform: translateY(-2px); }
 .cal-chip { transition: transform .15s ease; }
-.head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.heboost-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .posting { margin-bottom: 14px; }
 .posting h3 { margin: 0 0 4px; }
@@ -259,10 +259,10 @@ details input { margin-bottom: 6px; direction: ltr; }
 .rank-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--c-mint), var(--brand)); transition: width .5s ease; }
 .rank-num { text-align: end; font-weight: 800; color: var(--brand); }
 
-.ad-panel { margin-top: 12px; padding: 10px 14px; border: 1px dashed var(--line); border-radius: 14px; background: var(--bg-soft); }
-.ad-panel.on { border-style: solid; border-color: var(--c-sun); background: color-mix(in srgb, var(--c-sun) 8%, var(--surface)); }
-.ad-toggle { font-weight: 800; }
-.ad-body { display: grid; gap: 12px; margin-top: 10px; }
+.boost-panel { margin-top: 12px; padding: 10px 14px; border: 1px dashed var(--line); border-radius: 14px; background: var(--bg-soft); }
+.boost-panel.on { border-style: solid; border-color: var(--c-sun); background: color-mix(in srgb, var(--c-sun) 8%, var(--surface)); }
+.boost-toggle { font-weight: 800; }
+.boost-body { display: grid; gap: 12px; margin-top: 10px; }
 .lbl { display: block; font-weight: 700; font-size: 14px; margin-bottom: 4px; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); }
 .seg-item { display: inline-flex; align-items: center; padding: 6px 18px; cursor: pointer; font-weight: 700; transition: background .15s ease; }
@@ -277,3 +277,8 @@ details input { margin-bottom: 6px; direction: ltr; }
 .advice { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; font-size: 14px; }
 .advice ul { margin: 6px 0; padding-inline-start: 20px; display: grid; gap: 4px; }
 .advice p { margin: 4px 0; }
+
+.boost-panel.auto { border-style: solid; border-color: var(--line); }
+.boost-panel.auto .row.between { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+.advice-list { margin: 6px 0 0; padding-inline-start: 20px; display: grid; gap: 4px; font-size: 14px; color: var(--ink-soft); }
+.boost-actions { margin-top: 10px; }

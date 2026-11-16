@@ -46,7 +46,12 @@
         "avgReactions": 1090,
         "avgComments": 49.2
       },
-      "facebook": "almokhtabar"
+      "facebook": "almokhtabar",
+      "ig": {
+        "posts": 72,
+        "avgLikes": 53.7,
+        "reelPlays": 30153
+      }
     },
     {
       "name": "NSA",
@@ -93,6 +98,11 @@
         "posts": 6,
         "avgReactions": 4,
         "avgComments": 0.5
+      },
+      "ig": {
+        "posts": 72,
+        "avgLikes": 295.9,
+        "reelPlays": 210829
       }
     },
     {
@@ -140,7 +150,12 @@
         "avgReactions": 43,
         "avgComments": 13.5
       },
-      "facebook": "Royallaboratory"
+      "facebook": "Royallaboratory",
+      "ig": {
+        "posts": 72,
+        "avgLikes": 5.9,
+        "reelPlays": 487
+      }
     },
     {
       "name": "الأنصاري",
@@ -187,7 +202,12 @@
         "avgReactions": 14,
         "avgComments": 1.7
       },
-      "facebook": "Ansarylabseg"
+      "facebook": "Ansarylabseg",
+      "ig": {
+        "posts": 72,
+        "avgLikes": 1,
+        "reelPlays": 124
+      }
     },
     {
       "name": "ألفا",
@@ -251,6 +271,11 @@
         "posts": 6,
         "avgReactions": 38,
         "avgComments": 37.2
+      },
+      "ig": {
+        "posts": 72,
+        "avgLikes": 3.9,
+        "reelPlays": 104586
       }
     },
     {
@@ -298,6 +323,11 @@
         "posts": 6,
         "avgReactions": 125,
         "avgComments": 33.0
+      },
+      "ig": {
+        "posts": 72,
+        "avgLikes": 2.9,
+        "reelPlays": 157
       }
     },
     {
@@ -361,6 +391,11 @@
         "posts": 9,
         "avgReactions": 20,
         "avgComments": 4.4
+      },
+      "ig": {
+        "posts": 72,
+        "avgLikes": 31.5,
+        "reelPlays": 8888
       }
     }
   ],

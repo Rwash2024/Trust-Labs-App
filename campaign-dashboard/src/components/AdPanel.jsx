@@ -1,34 +1,64 @@
-import { REGIONS, validateAd, suggestAudience, suggestBudget, seasonFor } from '../lib/ads.js'
 import { useState } from 'react'
+import CopyButton from './CopyButton.jsx'
+import { REGIONS, validateAd, recommendAd, buildAdBrief } from '../lib/ads.js'
 
 const GENDER_OPTIONS = [['all', 'الكل'], ['male', 'رجال'], ['female', 'ستات']]
+const GENDER_AR = { all: 'الكل', male: 'رجال', female: 'ستات' }
 const GOVERNORATES = [...new Set(REGIONS.map((r) => r.governorate))]
 
-export default function AdPanel({ ad, post, category, season, onChange }) {
+function Summary({ ad }) {
+  if (!ad.enabled) return <p><strong>مش ممول بشكل افتراضي.</strong></p>
+  return (
+    <p>
+      <strong>الميزانية: {ad.budget} جنيه</strong>
+      <span className="muted"> · {ad.days} أيام · السن {ad.ageFrom}–{ad.ageTo} · {GENDER_AR[ad.gender]} · {ad.regions.length} مناطق ({ad.regions.join('، ')})</span>
+    </p>
+  )
+}
+
+export default function AdPanel({ ad, post, category, benchmarks, onChange }) {
   const [advice, setAdvice] = useState(null)
+  const rec = recommendAd(post, { category, benchmarks })
+
+  // No ad chosen yet: show the automatic plan, ready to approve (Mohamed edits afterwards if he wants).
+  if (ad === undefined) {
+    return (
+      <section className="boost-panel auto">
+        <div className="row between">
+          <span className="boost-toggle">إعلان ممول 💸 <small className="muted">· المقترح تلقائيًا</small></span>
+          <span className="row">
+            <CopyButton text={buildAdBrief(post, rec.ad)} label="إعدادات الإعلان" />
+            <button type="button" className="btn accent" onClick={() => onChange(rec.ad)}>اعتمد المقترح وعدّل ✏️</button>
+          </span>
+        </div>
+        <Summary ad={rec.ad} />
+        <details>
+          <summary>ليه كده؟</summary>
+          <ul className="advice-list">{rec.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+        </details>
+      </section>
+    )
+  }
+
   const set = (patch) => onChange({ ...ad, ...patch })
   const check = ad.enabled ? validateAd(ad) : { ok: true }
-  const effectiveSeason = season ?? seasonFor(post.date)
 
   function suggest() {
-    const regions = ad.regions.length ? ad.regions : REGIONS.filter((r) => r.tier === 1).map((r) => r.id)
-    const audience = suggestAudience(category)
-    const budget = suggestBudget({ postType: post.type, goal: 'sales', days: ad.days, regions, season: effectiveSeason })
-    setAdvice({ budget, audience })
-    onChange({ ...ad, regions, budget: budget.total, ageFrom: audience.ageFrom, ageTo: audience.ageTo, gender: audience.gender })
+    setAdvice(rec)
+    onChange({ ...ad, ...rec.ad, enabled: rec.ad.enabled || ad.enabled })
   }
 
   const toggleRegion = (id) => set({ regions: ad.regions.includes(id) ? ad.regions.filter((r) => r !== id) : [...ad.regions, id] })
 
   return (
-    <section className={`ad-panel ${ad.enabled ? 'on' : ''}`}>
-      <label className="check ad-toggle">
+    <section className={`boost-panel ${ad.enabled ? 'on' : ''}`}>
+      <label className="check boost-toggle">
         <input type="checkbox" checked={ad.enabled} onChange={(e) => set({ enabled: e.target.checked })} aria-label="إعلان ممول" />
         إعلان ممول 💸
       </label>
 
       {ad.enabled && (
-        <div className="ad-body fade-up">
+        <div className="boost-body fade-up">
           <div className="row wrap">
             <div>
               <label htmlFor={`b-${post.id}`}>الميزانية (جنيه)</label>
@@ -92,28 +122,32 @@ export default function AdPanel({ ad, post, category, season, onChange }) {
             ))}
           </div>
 
-          <button type="button" className="btn accent" onClick={suggest}>اقترح الميزانية والجمهور ✨</button>
-
           {!check.ok && <p role="alert" className="warn">{check.message}</p>}
+        </div>
+      )}
 
-          {advice && (
-            <div className="advice">
-              <p>
-                <strong>المقترح: {advice.budget.total} جنيه</strong>
-                <span className="muted"> ({advice.budget.perDay} جنيه في اليوم · من {advice.budget.min} لـ {advice.budget.max})</span>
-              </p>
-              <ul>{advice.budget.basis.map((b) => <li key={b}>{b}</li>)}</ul>
-              {advice.budget.split.length > 0 && (
-                <p className="muted">
-                  التوزيع: {advice.budget.split.map((s) => `${s.region} ${s.amount}`).join(' · ')}
-                </p>
-              )}
-              <p className="muted">الجمهور: {advice.audience.why}</p>
-              <details>
-                <summary>إزاي نزوّد أو نوقّف حسب النتيجة</summary>
-                <ul>{advice.budget.rules.map((r) => <li key={r}>{r}</li>)}</ul>
-              </details>
-            </div>
+      <div className="row wrap boost-actions">
+        <button type="button" className="btn accent" onClick={suggest}>اقترح الميزانية والجمهور ✨</button>
+        {ad.enabled && <CopyButton text={buildAdBrief(post, ad)} label="إعدادات الإعلان" />}
+      </div>
+
+      {advice && (
+        <div className="advice">
+          {advice.budget && (
+            <p>
+              <strong>المقترح: {advice.budget.total} جنيه</strong>
+              <span className="muted"> ({Math.round(advice.budget.total / advice.ad.days)} جنيه في اليوم)</span>
+            </p>
+          )}
+          <ul>{advice.reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+          {advice.budget?.split?.length > 0 && (
+            <p className="muted">التوزيع: {advice.budget.split.map((s) => `${s.region} ${s.amount}`).join(' · ')}</p>
+          )}
+          {advice.budget?.rules && (
+            <details>
+              <summary>إزاي نزوّد أو نوقّف حسب النتيجة</summary>
+              <ul>{advice.budget.rules.map((r) => <li key={r}>{r}</li>)}</ul>
+            </details>
           )}
         </div>
       )}

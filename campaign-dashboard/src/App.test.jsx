@@ -12,11 +12,13 @@ test('a new idea creates posts that are already filled in', async () => {
   fireEvent.change(screen.getByLabelText('فكرة الحملة'), { target: { value: 'تحاليل الغدة الدرقية للسيدات' } })
   fireEvent.click(screen.getByRole('button', { name: /جهّز الخطة/ }))
   await waitFor(() => {
-    const mine = loadDb().posts.filter((p) => p.ideaId !== 'idea-1' && p.ideaId !== 'idea-2' && p.ideaId !== 'idea-3')
+    const mine = loadDb().posts.filter((p) => p.ideaId !== 'idea-1' && p.ideaId !== 'idea-2' && p.ideaId !== 'idea-3' && p.ideaId !== 'idea-gf')
     expect(mine.length).toBeGreaterThan(0)
     for (const p of mine) {
       expect(p.headline.length).toBeGreaterThan(0)
       expect(p.panelBullets.every((b) => b.length > 0)).toBe(true)
+      expect(p.ad).toBeTruthy()
+      expect(typeof p.ad.enabled).toBe('boolean')
     }
   })
 })
@@ -28,6 +30,7 @@ test('fill button completes empty posts in the shown month', async () => {
   render(<App />)
   fireEvent.click(screen.getByRole('button', { name: /املأ الفاضي/ }))
   await waitFor(() => expect(loadDb().posts[0].headline.length).toBeGreaterThan(0))
+  expect(loadDb().posts[0].ad).toBeTruthy()
 })
 
 test('document is right-to-left', () => {

@@ -88,11 +88,13 @@ describe('Green Friday campaign', () => {
     expect(genders.has('male')).toBe(true)
   })
 
-  test('budgets match the suggestion formula for each funded post', async () => {
-    const { suggestBudget, seasonFor } = await import('../lib/ads.js')
+  test('budgets match the automatic recommendation for each funded post', async () => {
+    const { recommendAd, computeBenchmarks } = await import('../lib/ads.js')
+    const benchmarks = computeBenchmarks(competitorsData.competitors)
     for (const p of gf.filter((x) => x.ad?.enabled)) {
-      const s = suggestBudget({ postType: p.type, goal: 'sales', days: p.ad.days, regions: p.ad.regions, season: seasonFor(p.date) })
-      expect(p.ad.budget).toBe(s.total)
+      const r = recommendAd(p, { category: 'general', benchmarks })
+      expect(p.ad.budget).toBe(r.ad.budget)
+      expect(p.ad.days).toBe(r.ad.days)
     }
   })
 
@@ -107,4 +109,14 @@ describe('Green Friday campaign', () => {
     const hero = gf.find((p) => p.platform === 'facebook' && p.type === 'post')
     expect(hero.caption).toContain('16183')
   })
+})
+
+test('the seven Instagram competitors carry reel and likes benchmarks', () => {
+  const withIg = competitorsData.competitors.filter((c) => c.ig)
+  expect(withIg).toHaveLength(7)
+  for (const c of withIg) {
+    expect(c.ig.posts).toBeGreaterThanOrEqual(60)
+    expect(c.ig.avgLikes).toBeGreaterThanOrEqual(0)
+    expect(c.ig.reelPlays).toBeGreaterThanOrEqual(0)
+  }
 })
