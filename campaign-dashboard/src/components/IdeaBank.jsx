@@ -1,4 +1,5 @@
 import { readiness } from '../lib/checklist.js'
+import { campaignTotals } from '../lib/results.js'
 
 export default function IdeaBank({ ideas, posts, onReuse, onToggleCheck }) {
   if (!ideas.length) return <p className="muted">لسه مفيش أفكار. اكتب أول فكرة 👆</p>
@@ -6,6 +7,7 @@ export default function IdeaBank({ ideas, posts, onReuse, onToggleCheck }) {
     <ul className="idea-bank">
       {ideas.map((i) => {
         const r = readiness(i, posts)
+        const t = campaignTotals(posts, i.id)
         return (
           <li key={i.id} className="card">
             <div className="row between">
@@ -15,6 +17,12 @@ export default function IdeaBank({ ideas, posts, onReuse, onToggleCheck }) {
               </div>
               <button type="button" className="btn" onClick={() => onReuse(i.text)}>استخدمها تاني</button>
             </div>
+            {t && (
+              <p className="muted">
+                إجمالي النتائج ({t.posts} منشور): مصروف {t.spend.toLocaleString('en-US')} جنيه · {t.bookings} حجز · وصول {t.reach.toLocaleString('en-US')}
+                {t.costPerBooking !== null && ` · تكلفة الحجز ${t.costPerBooking} جنيه`}
+              </p>
+            )}
             <details className="readiness" open={r.done < r.total && r.done > 0}>
               <summary>
                 جاهزية الحملة · <bdi dir="ltr">{r.done} / {r.total}</bdi>

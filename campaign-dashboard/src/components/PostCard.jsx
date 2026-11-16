@@ -3,6 +3,7 @@ import { buildImagePrompt, validateBullets } from '../lib/promptTemplate.js'
 import { buildFormatPlan } from '../lib/formats.js'
 import { checkPost } from '../lib/strength.js'
 import AdPanel from './AdPanel.jsx'
+import ResultPanel from './ResultPanel.jsx'
 import { computeBenchmarks } from '../lib/ads.js'
 import competitorsData from '../data/competitors.json'
 import { detectCategory } from '../lib/templates.js'
@@ -119,6 +120,8 @@ export default function PostCard({ post, onChange }) {
         category={detectCategory(`${post.headline} ${post.caption} ${post.panelService}`)}
         onChange={(ad) => onChange({ ad })}
       />
+
+      <ResultPanel post={post} benchmarks={BENCH} onChange={(patch) => onChange({ result: { ...(post.result ?? {}), ...patch } })} />
 
       <div className="field">
         <div className="row between">

@@ -1,4 +1,5 @@
 import { validateAd } from './ads.js'
+import { validateResult } from './results.js'
 
 const KEY = 'campaign-dashboard-db'
 export const TYPES = ['post', 'reel', 'carousel', 'story']
@@ -26,7 +27,8 @@ function validPost(p) {
     Array.isArray(p.hashtags) && isStr(p.panelService) && Array.isArray(p.panelBullets) &&
     p.image && isStr(p.image.concept) && isStr(p.image.subject) && isStr(p.image.mood) && isStr(p.image.accent) &&
     STATUSES.includes(p.status) &&
-    (p.ad === undefined || validateAd(p.ad).ok)
+    (p.ad === undefined || validateAd(p.ad).ok) &&
+    (p.result === undefined || validateResult(p.result).ok)
   )
 }
 

@@ -28,3 +28,17 @@ test('a campaign with every item done says it is ready', () => {
   render(<IdeaBank ideas={[done]} posts={posts} onReuse={() => {}} onToggleCheck={() => {}} />)
   expect(screen.getByText(/جاهزة للإطلاق/)).toBeTruthy()
 })
+
+test('an idea with published results shows campaign totals; one without shows none', () => {
+  const withResults = [
+    { id: 'p1', ideaId: 'i1', status: 'published', result: { spend: 1000, bookings: 5, reach: 4000 } },
+    { id: 'p2', ideaId: 'i1', status: 'published', result: { spend: 500, bookings: 5, reach: 1000 } },
+  ]
+  const { unmount } = render(<IdeaBank ideas={ideas} posts={withResults} onReuse={() => {}} onToggleCheck={() => {}} />)
+  const t = screen.getByText(/إجمالي النتائج/).textContent
+  expect(t).toMatch(/1,500/)
+  expect(t).toMatch(/150/)
+  unmount()
+  render(<IdeaBank ideas={ideas} posts={posts} onReuse={() => {}} onToggleCheck={() => {}} />)
+  expect(screen.queryByText(/إجمالي النتائج/)).toBeNull()
+})

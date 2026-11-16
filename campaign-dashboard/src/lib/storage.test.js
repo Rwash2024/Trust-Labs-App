@@ -58,3 +58,10 @@ test('an invalid ad block makes the import fail with an Arabic message', () => {
   expect(r.ok).toBe(false)
   expect(r.error).toMatch(/[؀-ۿ]/)
 })
+
+test('a post may carry results, and a negative result makes the import fail', () => {
+  expect(importDb(JSON.stringify({ ...emptyDb(), posts: [{ ...post, result: { reach: 100, engagement: 5, bookings: 1, spend: 50 } }] })).ok).toBe(true)
+  const r = importDb(JSON.stringify({ ...emptyDb(), posts: [{ ...post, result: { reach: -5 } }] }))
+  expect(r.ok).toBe(false)
+  expect(r.error).toMatch(/[؀-ۿ]/)
+})
