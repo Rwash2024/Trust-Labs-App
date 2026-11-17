@@ -150,6 +150,8 @@ const clamp = (n, lo, hi) => Math.min(Math.max(n, lo), hi)
 const fmt = (n) => Number(n).toLocaleString('en-US')
 
 // Full automatic ad plan for a post. Mohamed can edit any value afterwards.
+const HEALTH_POLICY_NOTE = 'سياسة ميتا للإعلانات الصحية: اختار هدف «رسائل» أو «عملاء محتملين» بدل أحداث تحويل حساسة، ومتسمّيش جمهور مخصص بكلمة مرض أو حالة صحية.'
+
 export function recommendAd(post, { category = 'general', benchmarks } = {}) {
   const b = benchmarks ?? { fbTop3Avg: 150, fbBest: null, igLikesMedian: 0, reelPlaysMedian: 0 }
   const text = `${post.headline} ${post.caption} ${post.panelService}`
@@ -161,6 +163,7 @@ export function recommendAd(post, { category = 'general', benchmarks } = {}) {
 
   if (post.type === 'story') {
     reasons.push('الاستوري وصوله المدفوع قليل ومحدود للمتابعين، فمش بنمول (اختياري لو عايز).')
+    reasons.push(HEALTH_POLICY_NOTE)
     reasons.push('الأرقام قاعدة إرشادية. راجع تكلفة النتيجة في Ads Manager بعد 48 ساعة.')
     return { ad: { ...emptyAd(), days, regions, ageFrom: audience.ageFrom, ageTo: audience.ageTo, gender: audience.gender }, reasons, budget: null }
   }
@@ -181,6 +184,7 @@ export function recommendAd(post, { category = 'general', benchmarks } = {}) {
 
   const budget = suggestBudget({ postType: post.type, goal, days, regions, season: seasonFor(post.date) })
   reasons.push(...budget.basis)
+  reasons.push(HEALTH_POLICY_NOTE)
   reasons.push('الأرقام قاعدة إرشادية. راجع تكلفة النتيجة في Ads Manager بعد 48 ساعة.')
   const total = round50(budget.total * factor)
   return {

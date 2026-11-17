@@ -35,7 +35,7 @@ const CATEGORIES = {
       (h, s) => `${h}. احجزي تحليلك النهارده وابدئي بمعلومة. ${s}.`,
       (h, s) => `اسمعي جسمك قبل ما يعلّي صوته، افحصي بدري. ${s}.`,
     ],
-    headlines: ['طاقتك على 5٪؟', 'تعبانة بلا سبب؟', 'اسمعي جسمك', 'الغدة بتتكلم', 'اطمّني النهارده', 'وزنك بيتغير؟', 'افحصي بدري'],
+    headlines: ['طاقتك على 5٪؟', 'تعبانة بلا سبب؟', 'اسمعي جسمك', 'الغدة بتتكلم', 'اطمّني النهارده', 'الوزن والطاقة', 'افحصي بدري'],
     concepts: [
       ['a tired Egyptian woman holding a phone showing a nearly empty battery at 5 percent, warm dim evening light', 'the woman and the low-battery phone', 'warm dim evening light', 'warm coral'],
       ['an Egyptian woman in her 30s touching her neck with a thoughtful look, soft glowing thyroid illustration', 'woman and thyroid glow', 'soft natural window light', 'warm orange'],

@@ -8,6 +8,7 @@ const PERSONAL_MARKERS = ['عندك', 'بتعاني', 'تعاني', 'مصاب', 
 const CONDITION_WORDS = ['سكر', 'ضغط', 'سرطان', 'قلب', 'اكتئاب', 'عقم', 'كوليسترول', 'كبد', 'سمنه', 'غدة']
 const FEAR_WORDS = ['تموت', 'خطر على حياتك', 'مرض خطير', 'قاتل']
 const BEFORE_AFTER = ['قبل وبعد', 'قبل و بعد']
+const SELF_IMAGE = ['وزنك', 'كرشك', 'تخين', 'شكلك تعبان', 'شكلك وحش', 'جسمك وحش', 'انت فاشل']
 export const MAX_AGREED_DISCOUNT = 15
 
 const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩'
@@ -35,6 +36,9 @@ export function checkAdCopy(post) {
   }
   if (has(text, FEAR_WORDS)) {
     issues.push({ id: 'fear', message: 'فيه تخويف من المرض أو الموت. خفّف الصياغة وخليها طمأنة.' })
+  }
+  if (has(text, SELF_IMAGE)) {
+    issues.push({ id: 'selfimage', message: 'الكلام بيخاطب القارئ عن وزنه أو شكله. ميتا بتمنع اللي بيحسّس الناس بصورة سلبية عن نفسهم، اكتبه بصيغة عامة (مثلًا «الوزن والطاقة»).' })
   }
   if (has(text, BEFORE_AFTER)) {
     issues.push({ id: 'beforeafter', message: '«قبل وبعد» في الإعلانات الصحية ممنوعة عند ميتا.' })
