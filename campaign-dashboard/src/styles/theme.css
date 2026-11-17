@@ -297,5 +297,5 @@ details input { margin-bottom: 6px; direction: ltr; }
 .copy-check ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; }
 .copy-check-ok { margin: 10px 0 0; font-size: 14px; }
 .site-footer { margin: 24px 16px 12px; margin-inline-start: calc(var(--side-w) + 32px); padding: 0; color: var(--ink-soft); font-size: 13px; }
-.site-footer .footer-row { display: flex; justify-content: space-between; align-items: center; gap: 8px 16px; flex-wrap: wrap; padding: 18px 0; border-top: 1px solid var(--line); }
+.site-footer .footer-row { display: flex; justify-content: center; align-items: center; gap: 8px 28px; flex-wrap: wrap; padding: 18px 0; border-top: 1px solid var(--line); }
 @media (max-width: 720px) { .site-footer { margin-inline-start: 16px; margin-bottom: 96px; } .site-footer .footer-row { justify-content: center; text-align: center; } }
