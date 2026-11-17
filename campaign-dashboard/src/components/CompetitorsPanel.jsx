@@ -1,4 +1,5 @@
 import { summarizePosting } from '../lib/postingStats.js'
+import { dataFreshness } from '../lib/freshness.js'
 
 const BADGE = {
   ok: { text: 'سليمة', cls: 'ok' },
@@ -51,9 +52,14 @@ function FacebookRanking({ competitors }) {
   )
 }
 
-export default function CompetitorsPanel({ competitors, insights, note }) {
+export default function CompetitorsPanel({ competitors, insights, note, pulledAt, now }) {
+  const fresh = dataFreshness(pulledAt, now)
   return (
     <section className="competitors">
+      <p className="muted">
+        آخر تحديث: <bdi dir="ltr">{pulledAt || 'غير معروف'}</bdi>{fresh.days !== null && ` (من ${fresh.days} يوم)`}
+      </p>
+      {fresh.warning && <p role="alert" className="warn">{fresh.warning}</p>}
       {note && <p className="muted">{note}</p>}
       <div className="insights card">
         <h3>الفراغ وإزاي نكسب 🎯</h3>

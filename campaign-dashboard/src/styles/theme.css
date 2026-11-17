@@ -290,3 +290,7 @@ details input { margin-bottom: 6px; direction: ltr; }
 
 .result-panel { margin-top: 12px; padding: 10px 14px; border: 1px dashed var(--line); border-radius: 14px; background: var(--bg-soft); display: grid; gap: 8px; }
 .result-summary { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; font-size: 14px; }
+
+.copy-check { display: grid; gap: 4px; margin-top: 10px; }
+.copy-check ul { margin: 0; padding-inline-start: 20px; display: grid; gap: 4px; }
+.copy-check-ok { margin: 10px 0 0; font-size: 14px; }

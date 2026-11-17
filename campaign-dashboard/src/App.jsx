@@ -171,7 +171,7 @@ export default function App() {
 
       {tab === 'competitors' && (
         <div className="fade-up">
-          <CompetitorsPanel competitors={competitorsData.competitors} insights={competitorsData.insights} note={competitorsData.note} />
+          <CompetitorsPanel competitors={competitorsData.competitors} insights={competitorsData.insights} note={competitorsData.note} pulledAt={competitorsData.pulledAt} />
         </div>
       )}
 
