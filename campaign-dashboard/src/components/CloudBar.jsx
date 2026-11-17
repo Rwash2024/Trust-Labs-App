@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { cairoStamp as stamp } from '../lib/cairoTime.js'
 
-const stamp = (iso) => (iso ? String(iso).slice(0, 16).replace('T', ' ') : '')
 const json = (db) => JSON.stringify(db)
 
 // Cloud save status and controls. The plan stays usable offline; signing in (admin accounts only) keeps one shared copy in the cloud.
