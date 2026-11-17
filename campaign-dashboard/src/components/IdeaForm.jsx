@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { findSimilarIdeas } from '../lib/similarity.js'
+import { validatePackage, MAX_PACKAGE_NAME } from '../lib/pkg.js'
 
 const MIX_LABELS = { post: 'بوست', reel: 'ريلز', carousel: 'كاروسيل', story: 'استوري' }
 
@@ -12,6 +13,9 @@ export default function IdeaForm({ existingIdeas, onSubmit, initialIdea = '' }) 
   const [idea, setIdea] = useState(initialIdea)
   const [month, setMonth] = useState(currentMonth())
   const [mix, setMix] = useState({ post: 4, reel: 3, carousel: 2, story: 6 })
+  const [pkgName, setPkgName] = useState('')
+  const [pkgPrice, setPkgPrice] = useState('')
+  const [pkgError, setPkgError] = useState('')
   const similar = idea.trim() ? findSimilarIdeas(idea, existingIdeas) : []
 
   return (
@@ -19,13 +23,32 @@ export default function IdeaForm({ existingIdeas, onSubmit, initialIdea = '' }) 
       className="card idea-form"
       onSubmit={(e) => {
         e.preventDefault()
-        if (idea.trim()) onSubmit({ idea: idea.trim(), month, mix })
+        if (!idea.trim()) return
+        const check = validatePackage({ name: pkgName, price: pkgPrice })
+        if (!check.ok) {
+          setPkgError(check.message)
+          return
+        }
+        setPkgError('')
+        onSubmit({ idea: idea.trim(), month, mix, pkg: check.pkg })
       }}
     >
       <h2>فكرة جديدة ✨</h2>
       <label htmlFor="idea">فكرة الحملة</label>
       <input id="idea" value={idea} onChange={(e) => setIdea(e.target.value)} placeholder="مثال: حملة ضغط الدم" />
       {similar.length > 0 && <p className="warn">شبه فكرة سابقة: {similar.join('، ')}</p>}
+
+      <div className="row wrap">
+        <div>
+          <label htmlFor="pkg-name">اسم الباقة (اختياري)</label>
+          <input id="pkg-name" value={pkgName} maxLength={MAX_PACKAGE_NAME + 20} onChange={(e) => setPkgName(e.target.value)} placeholder="مثال: باقة الشتاء" />
+        </div>
+        <div>
+          <label htmlFor="pkg-price">سعر الباقة (جنيه)</label>
+          <input id="pkg-price" type="number" value={pkgPrice} onChange={(e) => setPkgPrice(e.target.value)} placeholder="اختياري" />
+        </div>
+      </div>
+      {pkgError && <p role="alert" className="warn">{pkgError}</p>}
 
       <div className="row wrap">
         <div>

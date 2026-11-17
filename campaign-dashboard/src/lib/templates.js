@@ -68,7 +68,7 @@ const CATEGORIES = {
     ],
   },
   pregnancy: {
-    keywords: ['حمل', 'جنين', 'NIPT', 'ولادة', 'الأمومة', 'أمهات', 'حوامل', 'الحوامل', 'طفل', 'أطفال'],
+    keywords: ['حمل', 'جنين', 'NIPT', 'ولادة', 'الأمومة', 'أمهات', 'حوامل', 'الحوامل'],
     service: 'اسألي عن باقة تحاليل الحمل',
     bullets: ['الكشف الجيني المبكر NIPT', 'صورة دم كاملة', 'فيتامين د', 'الحديد'],
     captions: [
@@ -129,7 +129,7 @@ const CATEGORIES = {
     ],
   },
   vitamins: {
-    keywords: ['فيتامين', 'B12', 'حديد', 'انيميا', 'أنيميا', 'فقر الدم', 'كالسيوم'],
+    keywords: ['فيتامين', 'B12', 'حديد', 'انيميا', 'أنيميا', 'فقر الدم'],
     service: 'اسأل عن باقة الفيتامينات والمعادن',
     bullets: ['فيتامين د', 'فيتامين B12', 'الحديد', 'صورة دم كاملة'],
     captions: [
@@ -208,6 +208,86 @@ const CATEGORIES = {
       ['an Egyptian family blessing a young couple at a bright living room doorway', 'family blessing the couple', 'warm cozy home light', 'warm orange'],
     ],
   },
+  tumors: {
+    keywords: ['أورام', 'ورم', 'سرطان', 'CEA', 'AFP', 'PSA', 'CA 125', 'CA-125', 'CA 19'],
+    service: 'اسأل عن باقة دلالات الأورام',
+    bullets: ['CEA', 'AFP', 'CA 19-9', 'صورة دم كاملة'],
+    captions: [
+      (h, s) => `${h} 💚 المتابعة الدورية بتديك راحة بال، اسأل واحجز. ${s}.`,
+      (h, s) => `الفحص بدري خطوة هادية، افحص واطمّن بخصوصية كاملة. ${s}.`,
+      (h, s) => `${h}. استشر دكتورك واحجز تحليلك. ${s}.`,
+      (h, s) => `معلومة النهارده تفرق بكرة، افحص واطمّن. ${s}.`,
+    ],
+    headlines: ['الكشف المبكر فرق', 'اطمّن بدري', 'متابعة دورية', 'معلومة تطمّنك', 'افحص بدري', 'خطوة هادية', 'صحتك أولًا'],
+    concepts: [
+      ['a calm Egyptian woman and her doctor talking warmly in a bright clinic, soft natural light', 'woman and doctor talking', 'soft warm natural light', 'warm teal'],
+      ['a small magnifying glass over a clean lab tube on a white surface, minimal studio style', 'magnifier over a lab tube', 'clean studio light', 'sky blue'],
+      ['a green leaf growing out of a test tube on a sunny windowsill', 'leaf in a test tube', 'bright morning light', 'fresh green'],
+      ['an Egyptian man in his 50s relaxed, reading in a sunny garden with a cup of tea', 'man reading in a garden', 'golden afternoon light', 'warm orange'],
+      ['a calendar with one circled date next to a stethoscope on a pastel desk, flat lay', 'calendar and stethoscope', 'bright airy light', 'mint green'],
+      ['two hands gently holding each other over a soft sky-blue background', 'two hands holding', 'dreamy soft pastel light', 'sky blue'],
+    ],
+  },
+  kids: {
+    keywords: ['أطفال', 'الأطفال', 'طفل', 'رضيع', 'الرضع'],
+    service: 'اسألي عن باقة تحاليل الأطفال',
+    bullets: ['صورة دم كاملة', 'الحديد وفقر الدم', 'فيتامين د', 'تحليل البول والبراز'],
+    captions: [
+      (h, s) => `${h} 🧸 تحاليل الأطفال بتتعمل بهدوء وراحة، اسألي واحجزي. ${s}.`,
+      (h, s) => `الفحص الدوري بيطمّنك على نمو صغيرك، افحصي واطمّني. ${s}.`,
+      (h, s) => `${h}. احجزي زيارة منزلية والصغير مرتاح في بيته. ${s}.`,
+      (h, s) => `صحة طفلك أولًا، اسألي عن الفحص المناسب لسنه. ${s}.`,
+    ],
+    headlines: ['صحة صغيرك', 'طفلك أولًا', 'اطمّني على صغيرك', 'نمو مطمّن', 'خطوة للصغير', 'افحصي بدري', 'ضحكته أمانة'],
+    concepts: [
+      ['an Egyptian mother smiling and holding her toddler at home while a friendly nurse in a green uniform greets them at the door', 'mother toddler and nurse at the door', 'warm natural home light', 'warm orange'],
+      ['colorful wooden toys and a toy stethoscope on a soft rug in a bright playroom', 'toys and toy stethoscope', 'bright airy light', 'sky blue'],
+      ['a happy Egyptian child laughing in a sunny park with a parent nearby', 'laughing child in the park', 'golden hour light', 'warm orange'],
+      ['a growth chart on a pastel wall with colorful pencils beside it', 'growth chart with pencils', 'soft pastel light', 'mint green'],
+      ['an Egyptian mother and her child reading a picture book together on a cozy sofa', 'mother and child reading', 'warm cozy home light', 'warm coral'],
+      ['a small paper boat floating on a calm pastel blue background', 'paper boat', 'dreamy soft pastel light', 'sky blue'],
+    ],
+  },
+  bones: {
+    keywords: ['عظام', 'هشاشة', 'كالسيوم', 'مفاصل', 'روماتيزم', 'نقرس', 'حمض اليوريك'],
+    service: 'اسأل عن باقة تحاليل العظام والمفاصل',
+    bullets: ['الكالسيوم', 'فيتامين د', 'الفوسفور', 'حمض اليوريك'],
+    captions: [
+      (h, s) => `${h} 🦴 الكالسيوم وفيتامين د من أهم أصدقاء العضم، اسأل واحجز. ${s}.`,
+      (h, s) => `الحركة نعمة، افحص واطمّن على عضمك ومفاصلك. ${s}.`,
+      (h, s) => `${h}. ابدأ بمعلومة واحجز تحليلك النهارده. ${s}.`,
+      (h, s) => `قوة عضمك بتبدأ من فحص بسيط، افحص بدري. ${s}.`,
+    ],
+    headlines: ['عضمك سندك', 'قوة عضمك', 'حركتك نعمة', 'اطمّن على عضمك', 'افحص بدري', 'ابدأ بمعلومة', 'خطوة ثابتة'],
+    concepts: [
+      ['an elderly Egyptian couple walking hand in hand along the Nile corniche at sunrise', 'couple walking at sunrise', 'golden sunrise light', 'warm orange'],
+      ['a soft glowing anatomical hand skeleton illustration under warm light on a clean background', 'glowing hand bones', 'clean warm studio light', 'amber'],
+      ['a glass of milk next to fresh green leaves and a small sun symbol on a bright kitchen table', 'milk leaves and sun', 'bright airy light', 'fresh green'],
+      ['an Egyptian man in his 50s hiking a gentle trail, confident and relaxed', 'man on a trail', 'golden hour light', 'warm teal'],
+      ['an Egyptian woman doing light stretches on a yoga mat by a sunny window', 'woman stretching', 'soft warm natural light', 'mint green'],
+      ['a grandfather lifting his laughing grandchild in a sunny garden', 'grandfather and grandchild', 'golden afternoon light', 'warm orange'],
+    ],
+  },
+  seasonal: {
+    keywords: ['موسم', 'موسمي', 'موسمية', 'عروض', 'أوكازيون', 'رمضان', 'الشتاء', 'شتاء', 'الصيف', 'صيف', 'Black Friday', 'بلاك', 'الجمعة الخضراء', 'Green Friday', 'العودة للمدارس', 'العيد'],
+    service: 'اسأل عن باقات الموسم',
+    bullets: ['باقات الموسم', 'زيارة منزلية', 'نتيجة أونلاين', 'احجز بسهولة'],
+    captions: [
+      (h, s) => `${h} 🎁 باقات الموسم جاهزة لحجزك، اسأل واحجز النهارده. ${s}.`,
+      (h, s) => `الموسم فرصة تطمّن على صحتك وعيلتك، افحص بدري. ${s}.`,
+      (h, s) => `${h}. اسأل عن الباقات المتاحة واحجز لحد البيت. ${s}.`,
+      (h, s) => `مش لازم تستنى، اطمّن في الموسم ده. اتصل 16183. ${s}.`,
+    ],
+    headlines: ['باقات الموسم', 'الموسم بدأ', 'فرصة الاطمئنان', 'صحتك في الموسم', 'احجز بدري', 'خطوة في الموسم', 'اطمّن بدري'],
+    concepts: [
+      ['a festive green and orange ribbon wrapped around a gift box shaped like a lab tube rack on a bright table', 'gift box with ribbon', 'bright festive light', 'fresh green'],
+      ['an Egyptian family around a cozy winter table with hot drinks, warm light and soft knit blankets', 'family at the winter table', 'warm cozy home light', 'warm orange'],
+      ['an Egyptian family on a sunny summer beach, relaxed and smiling', 'family at the beach', 'bright golden light', 'sky blue'],
+      ['a glowing Ramadan lantern next to a stethoscope heart shape on a dark teal background', 'lantern and stethoscope', 'cinematic dark teal light', 'amber'],
+      ['a calendar with highlighted dates and a small gift tag on a pastel desk, flat lay', 'calendar and gift tag', 'bright airy light', 'mint green'],
+      ['a friendly Egyptian phlebotomist at a home door holding a small green gift bag', 'phlebotomist with a gift bag', 'warm natural home light', 'warm orange'],
+    ],
+  },
   general: {
     keywords: [],
     service: 'اسأل عن باقة الاطمئنان الشاملة',
@@ -240,7 +320,7 @@ const STORY_CAPTIONS = [
 ]
 
 // Order matters: the more specific topics are tested first ("تحمل الأكل" contains "حمل", "دهون الكبد" contains "دهون").
-const DETECT_ORDER = ['liver', 'heart', 'thyroid', 'diabetes', 'allergy', 'vitamins', 'hormones', 'sports', 'premarital', 'pregnancy']
+const DETECT_ORDER = ['liver', 'heart', 'thyroid', 'diabetes', 'allergy', 'bones', 'vitamins', 'hormones', 'sports', 'premarital', 'tumors', 'kids', 'pregnancy', 'seasonal']
 
 export function detectCategory(idea) {
   const text = String(idea || '')
@@ -252,18 +332,33 @@ export function detectCategory(idea) {
 
 const empty = (s) => !String(s || '').trim()
 
-export function fillPost(post, idea, index) {
+function storyCaption(h, svc, index) {
+  const n = STORY_CAPTIONS.length
+  const start = ((index % n) + n) % n
+  const variants = STORY_CAPTIONS.map((f) => f(h, svc))
+  const candidates = [...variants.slice(start), ...variants.slice(0, start), `${svc}، واحجز دلوقتي.`, `${svc}.`]
+  return candidates.find((c) => c.length >= 30 && c.length <= 90) ?? variants[start]
+}
+
+function packageLine(pkg) {
+  if (!pkg?.name) return null
+  return pkg.price ? `${pkg.name} بـ ${Number(pkg.price).toLocaleString('en-US')} جنيه` : pkg.name
+}
+
+export function fillPost(post, idea, index, pkg = null) {
   const catName = detectCategory(idea)
   const cat = CATEGORIES[catName]
   const pick = (arr) => arr[((index % arr.length) + arr.length) % arr.length]
   const headline = empty(post.headline) ? pick(cat.headlines) : post.headline
-  const service = empty(post.panelService) ? cat.service : post.panelService
+  const line = packageLine(pkg)
+  const ask = cat.service.startsWith('اسألي') ? 'اسألي' : 'اسأل'
+  const service = empty(post.panelService) ? (line ? `${ask} عن ${line}` : cat.service) : post.panelService
   const [concept, subject, mood, accent] = pick(cat.concepts)
   const tags = [...(hashtagBank[catName] || []).slice(0, 3), ...hashtagBank.general.slice(0, 3)]
   return {
     ...post,
     headline,
-    caption: empty(post.caption) ? pick(post.type === 'story' ? STORY_CAPTIONS : cat.captions)(headline, service) : post.caption,
+    caption: empty(post.caption) ? (post.type === 'story' ? storyCaption(headline, service, index) : pick(cat.captions)(headline, service)) : post.caption,
     panelService: service,
     panelBullets: post.panelBullets.map((b, i) => (empty(b) ? cat.bullets[i] : b)),
     hashtags: post.hashtags.length ? post.hashtags : tags,
@@ -276,6 +371,6 @@ export function fillPost(post, idea, index) {
   }
 }
 
-export function fillPosts(posts, idea) {
-  return posts.map((p, i) => fillPost(p, idea, i))
+export function fillPosts(posts, idea, pkg = null) {
+  return posts.map((p, i) => fillPost(p, idea, i, pkg))
 }

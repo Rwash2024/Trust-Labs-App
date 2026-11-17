@@ -11,13 +11,13 @@ export function bankEngine(db) {
   }
 }
 
-export function buildChatPrompt({ idea, month, mix, competitors, insights }) {
+export function buildChatPrompt({ idea, month, mix, competitors, insights, pkg = null }) {
   const comps = competitors.map((c) => `- ${c.name}${c.sample?.notes ? `: ${c.sample.notes}` : ''}`).join('\n')
   const ins = insights.map((i) => `- ${i}`).join('\n')
   return `أنت كاتب محتوى سوشيال ميديا لمعمل تحاليل مصري اسمه Trust Labs (شعار «معمل تثق به»). النبرة: مصرية بسيطة، خفيفة، إيموجي قليل.
 
 الفكرة / نوع التحليل: ${idea}
-الشهر: ${month}
+${pkg?.name ? `اسم الباقة: ${pkg.name}${pkg.price ? ` · السعر: ${Number(pkg.price).toLocaleString('en-US')} جنيه` : ''}\n` : ''}الشهر: ${month}
 توزيع المنشورات المطلوب: ${JSON.stringify(mix)}
 
 المنافسين (للتميز عنهم):

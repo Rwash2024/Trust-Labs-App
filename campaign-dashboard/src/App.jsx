@@ -58,10 +58,10 @@ export default function App() {
 
   const patchPost = (id, patch) => setDb((d) => ({ ...d, posts: d.posts.map((p) => (p.id === id ? { ...p, ...patch } : p)) }))
 
-  async function onIdea({ idea, month, mix }) {
+  async function onIdea({ idea, month, mix, pkg = null }) {
     const [year, m] = month.split('-').map(Number)
     setView({ year, month: m })
-    setRequest({ idea, month, mix })
+    setRequest({ idea, month, mix, pkg })
     const found = await bankEngine(db).generate({ idea })
     if (found.length) {
       setTab('calendar')
@@ -73,10 +73,10 @@ export default function App() {
         id: newId(), ideaId, ...s, headline: '', caption: '', hashtags: [],
         panelService: '', panelBullets: ['', '', '', ''], image: { concept: '', subject: '', mood: '', accent: '' }, status: 'idea',
       }))
-    const filled = fillPosts(skeleton, idea).map((p) => withAd(p, idea))
+    const filled = fillPosts(skeleton, idea, pkg).map((p) => withAd(p, idea))
     setDb((d) => ({
       ...d,
-      ideas: [...d.ideas, { id: ideaId, text: idea, createdAt: new Date().toISOString().slice(0, 10) }],
+      ideas: [...d.ideas, { id: ideaId, text: idea, createdAt: new Date().toISOString().slice(0, 10), ...(pkg ? { package: pkg } : {}) }],
       posts: [...d.posts, ...filled],
     }))
     setTab('calendar')
@@ -84,10 +84,11 @@ export default function App() {
 
   function fillEmpty() {
     setDb((d) => {
-      const ideaText = (id) => d.ideas.find((i) => i.id === id)?.text ?? ''
+      const ideaOf = (id) => d.ideas.find((i) => i.id === id)
+      const ideaText = (id) => ideaOf(id)?.text ?? ''
       return {
         ...d,
-        posts: d.posts.map((p, i) => (p.date.startsWith(prefix) ? withAd(fillPost(p, ideaText(p.ideaId), i), ideaText(p.ideaId)) : p)),
+        posts: d.posts.map((p, i) => (p.date.startsWith(prefix) ? withAd(fillPost(p, ideaText(p.ideaId), i, ideaOf(p.ideaId)?.package ?? null), ideaText(p.ideaId)) : p)),
       }
     })
   }

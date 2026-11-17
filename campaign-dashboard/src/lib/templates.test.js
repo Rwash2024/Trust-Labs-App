@@ -28,6 +28,13 @@ test.each([
   ['باقة رياضية للجيم', 'sports'],
   ['الأمراض الوراثية', 'general'],
   ['فحص دوري شامل', 'general'],
+  ['دلالات الأورام CEA', 'tumors'],
+  ['تحاليل الأطفال', 'kids'],
+  ['تحليل كالسيوم وصحة العظام', 'bones'],
+  ['عروض رمضان', 'seasonal'],
+  ['Green Friday', 'seasonal'],
+  ['مواعيد النشر', 'general'],
+  ['التعرض للشمس', 'general'],
 ])('detectCategory(%s) = %s', (idea, cat) => {
   expect(detectCategory(idea)).toBe(cat)
 })
@@ -83,7 +90,7 @@ test('unknown ideas fall back to general content and never crash', () => {
 const IDEAS = {
   heart: 'حملة ضغط الدم', thyroid: 'تحاليل الغدة الدرقية', diabetes: 'اليوم العالمي للسكر', pregnancy: 'فحص NIPT للحمل',
   vitamins: 'تحليل فيتامين د', liver: 'وظائف الكبد والكلى', allergy: 'حساسية الأكل Food Print', hormones: 'هرمونات المبايض',
-  sports: 'باقة رياضية للجيم', premarital: 'فحص ما قبل الزواج', general: 'فحص دوري شامل',
+  sports: 'باقة رياضية للجيم', premarital: 'فحص ما قبل الزواج', tumors: 'دلالات الأورام', kids: 'تحاليل الأطفال', bones: 'صحة العظام والمفاصل', seasonal: 'عروض الشتاء', general: 'فحص دوري شامل',
 }
 const TYPES = ['post', 'reel', 'carousel', 'story']
 

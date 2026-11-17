@@ -52,6 +52,16 @@ const AUDIENCES = {
   thyroid: { ageFrom: 25, ageTo: 50, gender: 'female', why: 'اضطرابات الغدة الدرقية أكتر عند الستات في الفئة دي (فرضية نختبرها).' },
   pregnancy: { ageFrom: 22, ageTo: 38, gender: 'female', why: 'الفئة الأكتر احتمالًا للحمل والفحوصات المبكرة.' },
   diabetes: { ageFrom: 35, ageTo: 65, gender: 'all', why: 'الفحص الدوري للسكر يبدأ غالبًا من 35 سنة.' },
+  vitamins: { ageFrom: 22, ageTo: 55, gender: 'female', why: 'الإرهاق ونقص الفيتامينات بيشغلوا الستات أكتر في الفئة دي (فرضية نختبرها).' },
+  liver: { ageFrom: 35, ageTo: 65, gender: 'all', why: 'وظائف الكبد والكلى بتتابع غالبًا بعد 35 سنة.' },
+  allergy: { ageFrom: 25, ageTo: 50, gender: 'all', why: 'ناس بتدوّر على نظام غذائي مناسب لها، والقرار غالبًا شخصي أو عائلي.' },
+  hormones: { ageFrom: 22, ageTo: 40, gender: 'female', why: 'أغلب البحث عن تحاليل الهرمونات من ستات في سن الإنجاب (فرضية نختبرها).' },
+  sports: { ageFrom: 20, ageTo: 40, gender: 'all', why: 'جمهور الجيم واللياقة أصغر سنًا، قسّمه رجال وستات وقارن.' },
+  premarital: { ageFrom: 22, ageTo: 35, gender: 'all', why: 'المقبلين على الزواج، والأهل كمان بيشاركوا في القرار.' },
+  tumors: { ageFrom: 35, ageTo: 65, gender: 'all', why: 'المتابعة الدورية بتزيد بعد 35 سنة، والإعلان لازم يفضل هادي ومن غير تخويف.' },
+  kids: { ageFrom: 25, ageTo: 45, gender: 'female', why: 'الأمهات غالبًا صاحبات قرار فحص الأطفال (فرضية نختبرها).' },
+  bones: { ageFrom: 45, ageTo: 65, gender: 'all', why: 'صحة العظام والمفاصل بتهم أكتر بعد 45 سنة.' },
+  seasonal: { ageFrom: 25, ageTo: 55, gender: 'all', why: 'عروض الموسم جمهورها عام، فابدأ واسع وضيّق حسب النتيجة.' },
   general: { ageFrom: 25, ageTo: 55, gender: 'all', why: 'جمهور عام للفحص الشامل والباقات. جرّب تقسيمه ستات ورجال وقارن.' },
 }
 
