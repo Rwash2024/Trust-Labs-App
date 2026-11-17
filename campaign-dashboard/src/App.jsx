@@ -117,7 +117,7 @@ export default function App() {
       <main className="main">
       <header className="app-header">
         <div>
-          <h1>داشبورد الحملات</h1>
+          <h1>مركز الحملات</h1>
           <p className="muted">اكتب فكرة، وخد خطة الشهر والمحتوى جاهزين للنسخ 🚀</p>
         </div>
         <div className="head-actions">

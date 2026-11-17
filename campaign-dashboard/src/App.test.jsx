@@ -4,7 +4,7 @@ import { loadDb } from './lib/storage.js'
 
 test('renders the dashboard title', () => {
   render(<App />)
-  expect(screen.getByText('داشبورد الحملات')).toBeTruthy()
+  expect(screen.getByText('مركز الحملات', { selector: 'h1' })).toBeTruthy()
 })
 
 test('a new idea creates posts that are already filled in', async () => {

@@ -36,8 +36,8 @@ export default function Sidebar({ tab, onTab, counts }) {
       <div className="side-top">
         <div className="brand-tile" aria-hidden="true">📣</div>
         <div className="side-title">
-          <strong>الحملات</strong>
-          <span>Trust Labs</span>
+          <strong>مركز الحملات</strong>
+          <span>Campaign Hub</span>
         </div>
         <button type="button" className="side-toggle" aria-label={collapsed ? 'فتح الشريط' : 'طي الشريط'} onClick={toggle}>
           {collapsed ? '‹' : '›'}
