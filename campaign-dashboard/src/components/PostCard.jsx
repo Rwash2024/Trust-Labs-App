@@ -5,6 +5,7 @@ import { checkPost } from '../lib/strength.js'
 import AdPanel from './AdPanel.jsx'
 import ResultPanel from './ResultPanel.jsx'
 import AdCopyCheck from './AdCopyCheck.jsx'
+import PostPreview from './PostPreview.jsx'
 import { computeBenchmarks } from '../lib/ads.js'
 import competitorsData from '../data/competitors.json'
 import { detectCategory } from '../lib/templates.js'
@@ -112,6 +113,11 @@ export default function PostCard({ post, onChange }) {
             placeholder={k}
           />
         ))}
+      </details>
+
+      <details className="field preview-box">
+        <summary>معاينة شكل البوست</summary>
+        <PostPreview post={post} />
       </details>
 
       <AdPanel

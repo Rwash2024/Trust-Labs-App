@@ -1,5 +1,8 @@
 import { summarizePosting } from '../lib/postingStats.js'
 import { dataFreshness } from '../lib/freshness.js'
+import CopyButton from './CopyButton.jsx'
+
+const REFRESH_REQUEST = 'حدّث بيانات المنافسين في مركز الحملات (انستجرام وفيسبوك)، وراجع الملاحظات بعد السحب.'
 
 const BADGE = {
   ok: { text: 'سليمة', cls: 'ok' },
@@ -60,6 +63,12 @@ export default function CompetitorsPanel({ competitors, insights, note, pulledAt
         آخر تحديث: <bdi dir="ltr">{pulledAt || 'غير معروف'}</bdi>{fresh.days !== null && ` (من ${fresh.days} يوم)`}
       </p>
       {fresh.warning && <p role="alert" className="warn">{fresh.warning}</p>}
+      {fresh.level !== 'fresh' && (
+        <p className="muted row wrap">
+          للتحديث ابعت الطلب ده لـ Claude: <span className="refresh-request">«{REFRESH_REQUEST}»</span>
+          <CopyButton text={REFRESH_REQUEST} label="طلب التحديث" />
+        </p>
+      )}
       {note && <p className="muted">{note}</p>}
       <div className="insights card">
         <h3>الفراغ وإزاي نكسب 🎯</h3>

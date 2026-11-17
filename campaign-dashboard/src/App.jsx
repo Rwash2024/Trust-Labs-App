@@ -12,11 +12,14 @@ import CompetitorsPanel from './components/CompetitorsPanel.jsx'
 import IdeaBank from './components/IdeaBank.jsx'
 import DataMenu from './components/DataMenu.jsx'
 import ChatPromptButton from './components/ChatPromptButton.jsx'
+import CloudBar from './components/CloudBar.jsx'
+import { cloud } from './lib/cloud.js'
 import Sidebar from './components/Sidebar.jsx'
 import ThemeToggle from './components/ThemeToggle.jsx'
 import { fillPost, fillPosts, detectCategory } from './lib/templates.js'
 import { computeBenchmarks, recommendAd } from './lib/ads.js'
 import { toggleCheck } from './lib/checklist.js'
+import { setApproval } from './lib/approval.js'
 
 const BENCH = computeBenchmarks(competitorsData.competitors)
 const withAd = (p, ideaText) => (p.ad ? p : { ...p, ad: recommendAd(p, { category: detectCategory(`${ideaText} ${p.headline} ${p.panelService}`), benchmarks: BENCH }).ad })
@@ -126,6 +129,8 @@ export default function App() {
         </div>
       </header>
 
+      <CloudBar cloud={cloud} db={db} onReplaceDb={onImport} />
+
       {saveFailed && <p className="warn banner">المتصفح مش سامح بالحفظ. صدّر الملف علشان متضيعش شغلك.</p>}
 
       <IdeaForm key={reuseIdea} initialIdea={reuseIdea} existingIdeas={db.ideas.map((i) => i.text)} onSubmit={onIdea} />
@@ -182,6 +187,7 @@ export default function App() {
             ideas={db.ideas}
             posts={db.posts}
             onReuse={(text) => { setReuseIdea(text); window.scrollTo?.({ top: 0, behavior: 'smooth' }) }}
+            onSetApproval={(ideaId, status, note) => setDb((d) => ({ ...d, ideas: d.ideas.map((i) => (i.id === ideaId ? setApproval(i, status, note) : i)) }))}
             onToggleCheck={(ideaId, itemId) => setDb((d) => ({ ...d, ideas: d.ideas.map((i) => (i.id === ideaId ? toggleCheck(i, itemId) : i)) }))}
           />
         </div>
