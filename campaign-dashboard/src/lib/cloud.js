@@ -10,6 +10,7 @@ const MSG = {
   off: 'الحفظ على السحابة مش متفعّل في النسخة دي.',
   offline: 'مفيش اتصال بالسيرفر، جرّب تاني.',
   badLogin: 'الإيميل أو الباسورد غلط.',
+  tooMany: 'محاولات دخول كتير، استنى دقيقة وجرّب تاني.',
   notAdmin: 'الحساب ده مش أدمن، سجّل بحساب أدمن.',
   forbidden: 'الحساب ده معهوش صلاحية الحفظ على السحابة.',
   server: 'حصلت مشكلة في السيرفر، جرّب تاني.',
@@ -118,6 +119,7 @@ export function createCloud({ url, anonKey, fetchImpl = globalThis.fetch?.bind(g
       if (!enabled) return fail(MSG.off)
       try {
         const { res, data } = await authPost('password', { email, password })
+        if (res.status === 429) return fail(MSG.tooMany)
         if (!res.ok || !data?.access_token) return fail(res.status >= 500 ? MSG.server : MSG.badLogin)
         if (data.user?.app_metadata?.role !== 'admin') {
           clearSession()

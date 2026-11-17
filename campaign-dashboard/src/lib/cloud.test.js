@@ -154,3 +154,11 @@ test('a server error on save is reported without claiming a conflict', async () 
   expect(r.conflict).toBeFalsy()
   expect(r.error).toMatch(/[؀-ۿ]/)
 })
+
+test('too many login attempts (429) is explained, not reported as a wrong password', async () => {
+  const { cloud } = setup(() => json(429, { error_code: 'over_request_rate_limit' }))
+  const r = await cloud.signIn('boss@example.com', 'x')
+  expect(r.ok).toBe(false)
+  expect(r.error).toMatch(/محاولات|استنى/)
+  expect(r.error).not.toMatch(/غلط/)
+})
