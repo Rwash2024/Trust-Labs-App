@@ -187,8 +187,8 @@ export default function App() {
         </div>
       )}
       </main>
-      <footer className="site-footer" dir="ltr">
-        <div className="footer-row">
+      <footer className="site-footer">
+        <div className="footer-row" dir="ltr">
           <span>Designed &amp; Developed by Mohamed Rwash · v1.0</span>
           <span>© {new Date().getFullYear()} Trust Labs. All rights reserved.</span>
         </div>
