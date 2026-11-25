@@ -63,6 +63,7 @@ begin
       select 1 from pg_policies
       where schemaname = 'public' and tablename = t and policyname = 'chemist_blocked'
         and permissive = 'RESTRICTIVE' and cmd = 'ALL' and roles = '{authenticated}'
+        and qual ilike '%not%select%is_chemist()%' and with_check ilike '%not%select%is_chemist()%'
     ), format('public.%s is missing the restrictive chemist_blocked policy', t);
   end loop;
 
@@ -77,10 +78,37 @@ begin
 
   assert current_setting('chemtest.n_bookings')::bigint >= 1, 'fixture booking missing';
 
-  if not exists (select 1 from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'chemist_blocked') then
-    raise notice 'storage.objects has no chemist_blocked policy (migration lacked privilege?) — review storage policies by hand';
-  end if;
+  -- Storage holds patient reports and photos, so the lockout there is required,
+  -- not optional: fail if the migration's storage block hit insufficient_privilege.
+  assert exists (
+    select 1 from pg_policies
+    where schemaname = 'storage' and tablename = 'objects' and policyname = 'chemist_blocked'
+      and permissive = 'RESTRICTIVE' and cmd = 'ALL' and roles = '{authenticated}'
+      and qual ilike '%not%select%is_chemist()%' and with_check ilike '%not%select%is_chemist()%'
+  ), 'storage.objects is missing the restrictive chemist_blocked policy';
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- Storage fixture (as staff: the "staff manage patient reports" policy lets
+-- authenticated write to patient-reports, and this does not depend on whether
+-- postgres bypasses RLS on storage.objects)
+-- ---------------------------------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-0000000000ff","role":"authenticated","app_metadata":{}}';
+
+insert into storage.objects (bucket_id, name)
+values ('patient-reports', 'chemtest/TEST-CHEM-0001.pdf');
+
+-- Checked as staff too (postgres may not bypass RLS on storage.objects): a
+-- non-empty bucket makes the chemist's "0 rows" below meaningful.
+do $$
+begin
+  assert (select count(*) from storage.objects where bucket_id = 'patient-reports') >= 1,
+    'storage fixture in patient-reports missing';
+end $$;
+
+reset role;
 
 -- ---------------------------------------------------------------------------
 -- Chemist A
@@ -107,6 +135,28 @@ begin
   assert (select count(*) from public.chemists) = 1, 'chemist should see exactly one chemists row';
   assert (select id from public.chemists) = 'c4e0a000-0000-4000-8000-00000000000a'::uuid,
     'chemist sees a chemists row that is not their own';
+
+  -- Storage: nothing in the patient buckets, no uploads.
+  assert (select count(*) from storage.objects where bucket_id = 'patient-reports') = 0,
+    'chemist can see patient-reports objects';
+  assert (select count(*) from storage.objects where bucket_id = 'patient-photos') = 0,
+    'chemist can see patient-photos objects';
+
+  begin
+    insert into storage.objects (bucket_id, name)
+    values ('patient-reports', 'chemtest/by-chemist.pdf');
+    raise exception 'TEST FAILED: chemist inserted into storage.objects';
+  exception when insufficient_privilege then
+    null; -- expected: row-level security violation (42501)
+  end;
+
+  -- SECURITY DEFINER RPC granted to authenticated must refuse a chemist.
+  begin
+    perform public.generate_patient_cards(1, 'personal');
+    raise exception 'TEST FAILED: chemist generated patient cards';
+  exception when insufficient_privilege then
+    null; -- expected: 'not allowed' (42501)
+  end;
 
   -- No direct access to pings.
   assert (select count(*) from public.chemist_pings) = 0, 'chemist should not read chemist_pings directly';
@@ -182,6 +232,16 @@ begin
   perform set_config('app.trip_rpc', 'off', true);
   assert (select trip_status from public.bookings where booking_ref = 'TEST-CHEM-0001') = 'assigned',
     'guard bypass via app.trip_rpc did not work';
+
+  -- With the bypass switched off again the guard is back.
+  begin
+    update public.bookings set trip_status = 'on_way' where booking_ref = 'TEST-CHEM-0001';
+    raise exception 'TEST FAILED: guard stayed open after app.trip_rpc = off';
+  exception when others then
+    if sqlerrm not like 'Only an admin account can edit%' then
+      raise;
+    end if;
+  end;
 
   -- Staff cannot write the new tables directly.
   begin

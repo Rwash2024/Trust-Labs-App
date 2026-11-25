@@ -118,15 +118,15 @@ alter table public.chemist_pings enable row level security;
 
 drop policy if exists "staff read chemists" on public.chemists;
 create policy "staff read chemists" on public.chemists
-  for select to authenticated using (public.is_staff());
+  for select to authenticated using ((select public.is_staff()));
 
 drop policy if exists "chemist reads own row" on public.chemists;
 create policy "chemist reads own row" on public.chemists
-  for select to authenticated using (public.is_chemist() and id = auth.uid());
+  for select to authenticated using ((select public.is_chemist()) and id = (select auth.uid()));
 
 drop policy if exists "staff read chemist_pings" on public.chemist_pings;
 create policy "staff read chemist_pings" on public.chemist_pings
-  for select to authenticated using (public.is_staff());
+  for select to authenticated using ((select public.is_staff()));
 
 -- Supabase's default privileges grant everything on new public tables to anon
 -- and authenticated. RLS already denies writes, but TRUNCATE bypasses RLS, so
@@ -143,6 +143,8 @@ revoke insert, update, delete, truncate on public.chemists, public.chemist_pings
 -- the permissive ones, so staff/admin access is unchanged.
 -- Tables created later must add the same policy themselves (or have RLS on
 -- with no policies at all).
+-- The helpers are wrapped in (select ...) so Postgres evaluates them once per
+-- statement (an initplan) instead of once per row.
 
 do $$
 declare
@@ -161,7 +163,7 @@ begin
     execute format('drop policy if exists chemist_blocked on public.%I', t);
     execute format(
       'create policy chemist_blocked on public.%I as restrictive for all to authenticated '
-      || 'using (not public.is_chemist()) with check (not public.is_chemist())',
+      || 'using (not (select public.is_chemist())) with check (not (select public.is_chemist()))',
       t
     );
   end loop;
@@ -184,9 +186,82 @@ do $$
 begin
   drop policy if exists chemist_blocked on storage.objects;
   create policy chemist_blocked on storage.objects as restrictive for all to authenticated
-    using (not public.is_chemist()) with check (not public.is_chemist());
+    using (not (select public.is_chemist())) with check (not (select public.is_chemist()));
 exception when insufficient_privilege then
-  raise notice 'chemist_blocked NOT created on storage.objects (insufficient privilege) — check its authenticated policies by hand';
+  raise warning 'chemist_blocked NOT created on storage.objects (insufficient privilege) — chemists can reach patient-reports/patient-photos; the test script will fail until this is fixed';
+end $$;
+
+-- RLS does not reach SECURITY DEFINER functions: they run as their owner.
+-- generate_patient_cards (patient_cards_family_card_type_migration.sql, the
+-- latest definition) is granted to authenticated with no role check, so a
+-- chemist JWT could mint Trust Card codes. Same function, plus a chemist check.
+create or replace function generate_patient_cards(p_count int, p_type text default 'personal')
+returns setof text
+language plpgsql security definer set search_path = public as $$
+declare
+  v_code text;
+  v_generated int := 0;
+begin
+  if public.is_chemist() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+
+  if p_type not in ('personal', 'family') then
+    raise exception 'p_type must be personal or family';
+  end if;
+
+  while v_generated < p_count loop
+    v_code := array_to_string(
+      array(
+        select substr('0123456789abcdefghijklmnopqrstuvwxyz', floor(random() * 36)::int + 1, 1)
+        from generate_series(1, 6)
+      ),
+      ''
+    );
+
+    begin
+      insert into patient_cards (card_code, card_type) values (v_code, p_type);
+      v_generated := v_generated + 1;
+      return next v_code;
+    exception when unique_violation then
+      null;
+    end;
+  end loop;
+end;
+$$;
+
+revoke execute on function generate_patient_cards(int, text) from public;
+grant execute on function generate_patient_cards(int, text) to authenticated;
+
+-- Other SECURITY DEFINER functions that a logged-in user (so also a chemist)
+-- can call but anon cannot: list them so whoever applies this can check each
+-- one for a role check. Functions anon can call are public by design (their
+-- arguments are the check, e.g. card_code + phone). Excluded: the helpers and
+-- trip RPCs this migration owns, and generate_patient_cards (fixed above).
+do $$
+declare
+  f record;
+begin
+  for f in
+    select p.oid::regprocedure as sig
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.prosecdef
+      and p.prokind = 'f'
+      and p.prorettype <> 'trigger'::regtype
+      and has_function_privilege('authenticated', p.oid, 'execute')
+      and not has_function_privilege('anon', p.oid, 'execute')
+      and p.proname not in (
+        'app_role', 'is_chemist', 'is_staff', 'generate_patient_cards',
+        'staff_create_home_booking', 'list_available_chemists', 'assign_chemist',
+        'chemist_my_visits', 'chemist_start_trip', 'chemist_ping', 'chemist_arrive',
+        'cancel_trip', 'get_trip_by_token', 'find_trip'
+      )
+    order by 1
+  loop
+    raise warning 'SECURITY DEFINER % is callable by authenticated (incl. chemists) — check it has a role check', f.sig;
+  end loop;
 end $$;
 
 -- ---------------------------------------------------------------------------
