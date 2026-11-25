@@ -98,7 +98,9 @@ export default function LiveTrackingTab() {
     const poll = setInterval(load, REFRESH_MS)
     const tick = setInterval(() => setNow(new Date()), REFRESH_MS)
     let timer = null
+    let active = true
     const onChange = () => {
+      if (!active) return
       clearTimeout(timer)
       timer = setTimeout(load, DEBOUNCE_MS)
     }
@@ -109,6 +111,7 @@ export default function LiveTrackingTab() {
       // No realtime: the 30 s poll keeps the board fresh.
     }
     return () => {
+      active = false
       clearInterval(poll)
       clearInterval(tick)
       clearTimeout(timer)
@@ -130,26 +133,31 @@ export default function LiveTrackingTab() {
     [trips, now],
   )
 
-  const markers = useMemo(
+  // Serialise, then parse under the string key: the array identity only
+  // changes when a pin really changes, so the map is not rebuilt every tick.
+  const markerKey = useMemo(
     () =>
-      rows
-        .filter(({ trip }) => trip.trip_status === 'on_way')
-        .map(({ trip, flags }) => {
-          const pos = validPosition(trip)
-          return pos
-            ? {
-                id: trip.id,
-                lat: pos.lat,
-                lng: pos.lng,
-                kind: 'chemist',
-                label: trip.chemist_name || 'كيميائي',
-                tone: flags.includes('stale') ? 'warn' : 'ok',
-              }
-            : null
-        })
-        .filter(Boolean),
+      JSON.stringify(
+        rows
+          .filter(({ trip }) => trip.trip_status === 'on_way')
+          .map(({ trip, flags }) => {
+            const pos = validPosition(trip)
+            return pos
+              ? {
+                  id: trip.id,
+                  lat: pos.lat,
+                  lng: pos.lng,
+                  kind: 'chemist',
+                  label: trip.chemist_name || 'كيميائي',
+                  tone: flags.includes('stale') ? 'warn' : 'ok',
+                }
+              : null
+          })
+          .filter(Boolean),
+      ),
     [rows],
   )
+  const markers = useMemo(() => JSON.parse(markerKey), [markerKey])
 
   const today = cairoDate(now)
   const onWayCount = rows.filter((r) => r.trip.trip_status === 'on_way').length
@@ -169,6 +177,11 @@ export default function LiveTrackingTab() {
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
+  // Announce only when the counts change (not on every 30 s tick).
+  const summary = `${onWayCount} في الطريق، ${attentionCount} محتاج تدخّل، ${arrivedToday} وصلوا النهارده`
+  const [announced, setAnnounced] = useState('')
+  if (!loading && announced !== summary) setAnnounced(summary)
+
   if (loading) return <p className="admin-loading">جاري التحميل...</p>
 
   return (
@@ -187,6 +200,10 @@ export default function LiveTrackingTab() {
           {sendError}
         </p>
       )}
+
+      <p className="live-board__sr" role="status" aria-live="polite" aria-atomic="true">
+        {announced}
+      </p>
 
       <div className="live-board__summary">
         <div className="live-board__counter">
