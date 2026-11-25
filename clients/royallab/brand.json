@@ -1,0 +1,35 @@
+{
+  "name": "رويال لاب",
+  "legalName": "رويال لاب",
+  "appDescription": "رويال لاب — حجز التحاليل والباقات والزيارات المنزلية في أكثر من 70 فرعًا",
+  "seoDescription": "رويال لاب — أكثر من 70 فرعًا في جميع أنحاء الجمهورية. احجز زيارة منزلية أو موعد فرع، وتصفّح الباقات وشروط التحضير، واطّلع على نتائجك أونلاين.",
+  "hotline": "16064",
+  "whatsapp": "201116774349",
+  "resultsUrl": "https://results.royal-lab.net/Login/login/1",
+  "colors": {
+    "primary": "#124A94",
+    "primaryDark": "#0e3b76",
+    "primaryDarker": "#0a2b57",
+    "primaryLight": "#e8eff8",
+    "primaryBright": "#2f66b3",
+    "accent": "#D81F2A",
+    "accentLight": "#fdecee",
+    "themeColor": "#124A94",
+    "shadowRgb": "10, 43, 87"
+  },
+  "social": {
+    "facebook": "https://www.facebook.com/Royallaboratory/",
+    "instagram": "https://www.instagram.com/royallab/"
+  },
+  "features": {
+    "trustCard": false,
+    "trackSample": true,
+    "showPrices": false,
+    "vercelAnalytics": false
+  },
+  "email": "info@royal-lab.com",
+  "address": "76 فرعًا في القاهرة والجيزة والإسكندرية والوجه القبلي والدلتا والساحل",
+  "workingHours": "كل الأيام: 9ص - 11م | الفرع الرئيسي: 24 ساعة",
+  "homeVisitFee": 0,
+  "noindex": true
+}

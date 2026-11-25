@@ -69,9 +69,39 @@ const labs = {
     rec: 'professional',
     recWhy: 'لديكم 12 فرعًا، وهذا يقع ضمن باقة Professional (11–25 فرعًا).',
   },
+  royallab: {
+    name: 'رويال لاب',
+    primary: '#124A94',
+    dark: '#0a2b57',
+    light: '#E8EFF8',
+    branches: '76',
+    since: 'أكثر من 70 فرعًا',
+    hotline: '16064',
+    today: [
+      ['موقع جيد وباقات متنوعة', '33 باقة فحص بأسماء وتفاصيل، وفروع بخريطة، وحجز زيارة منزلية برفع صورة الروشتة.'],
+      ['لا تطبيق على المتاجر', 'لم نجد تطبيقًا للمرضى على Google Play أو App Store.'],
+      ['باقات بدون أسعار منشورة', 'الموقع يعرض التحاليل داخل كل باقة بدون السعر.'],
+      ['76 فرعًا في أنحاء الجمهورية', 'القاهرة والجيزة والإسكندرية والقليوبية والوجه القبلي والدلتا والساحل.'],
+    ],
+    shots: [
+      ['royallab-home', 'الرئيسية'],
+      ['royallab-packages', 'الباقات والتحاليل'],
+      ['royallab-branches', 'الفروع (76 فرعًا)'],
+      ['royallab-about', 'من نحن'],
+    ],
+    shots2: [
+      ['royallab-booking', 'حجز زيارة أو موعد'],
+      ['royallab-results', 'نتائج التحاليل أونلاين'],
+      ['royallab-contact', 'التواصل والمواعيد'],
+    ],
+    shots2Sub: 'الحجز بالسلة، وربط مباشر ببوابة نتائجكم الحالية (results.royal-lab.net)، وتواصل بالخط الساخن 16064 وواتساب.',
+    rec: 'enterprise',
+    recWhy: 'لديكم 76 فرعًا، وهذا أكبر من حدود Starter وProfessional، فالباقة المناسبة Enterprise بسعر مخصص.',
+    enterprise: { sub: '76 فرعًا · تخصيص وتكامل', setup: '250,000', monthly: '25,000' },
+  },
 }
 
-const plans = [
+const basePlans = [
   {
     id: 'starter',
     title: 'Starter',
@@ -117,7 +147,7 @@ const phone = (src, label) => `
   </figure>`
 
 const slides = (L) => {
-  const rec = plans.find((p) => p.id === L.rec)
+  const plans = basePlans.map((p) => (L.enterprise && p.id === 'enterprise' ? { ...p, ...L.enterprise } : p))
   return [
     // 1 cover
     `<section class="slide slide--cover">
@@ -152,6 +182,14 @@ const slides = (L) => {
       <p class="sub">مبنية على بيانات موقعكم العام: الفروع والمحتوى والهوية. الأسعار تظهر «السعر عند الحجز» إلى حين استلام قائمتكم.</p>
       <div class="phones">${L.shots.map(([s, l]) => phone(s, l)).join('')}</div>
     </section>`,
+    // 4b journey screens (only for labs with a second set of shots)
+    ...(L.shots2
+      ? [`<section class="slide slide--screens">
+      <h2>رحلة المريض: الحجز والنتائج والتواصل</h2>
+      <p class="sub">${L.shots2Sub}</p>
+      <div class="phones">${L.shots2.map(([s, l]) => phone(s, l)).join('')}</div>
+    </section>`]
+      : []),
     // 5 admin
     `<section class="slide">
       <h2>أنتم تتحكمون في كل شيء</h2>

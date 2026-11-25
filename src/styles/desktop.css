@@ -1,0 +1,224 @@
+/*
+  Desktop layout (>= 1024px).
+  On phones the app keeps its 480px single-column look; on a computer it uses the whole
+  screen: full-width top navigation, full-bleed hero banners, content centred in a wide
+  column and lists laid out in a multi-column grid.
+  Imported last (see main.jsx) so it wins over the per-page mobile styles.
+*/
+
+/* The brand mark only shows in the desktop top bar. */
+.bottom-nav__brand {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  /* ---------- shell ---------- */
+  #root {
+    max-width: none;
+    background:
+      radial-gradient(900px 520px at 6% -8%, rgba(57, 183, 110, 0.08), transparent 60%),
+      radial-gradient(800px 520px at 100% 30%, rgba(57, 183, 110, 0.06), transparent 55%),
+      var(--surface-page);
+  }
+
+  main {
+    scroll-behavior: smooth;
+  }
+
+  /* Content column width. Each page can narrow it (--page-w) — forms read better narrow. */
+  main > * {
+    --page-w: 1200px;
+    --page-pad: max(32px, calc((100% - var(--page-w)) / 2));
+  }
+
+  .booking,
+  .results,
+  .track,
+  .branches,
+  .complaints,
+  .ratevisit,
+  .terms,
+  .medfile {
+    --page-w: 860px;
+  }
+
+  /* Hero banners stay full-bleed; their content lines up with the centred column. */
+  main > * > [class$='__hero'] {
+    padding-inline: var(--page-pad);
+    padding-top: var(--space-10);
+    padding-bottom: calc(var(--space-16) + var(--space-4));
+  }
+
+  /* Everything below the hero sits in the centred column. */
+  main > * > :not([class$='__hero']) {
+    margin-inline: var(--page-pad);
+    max-width: calc(100% - 2 * var(--page-pad));
+  }
+
+  /* ---------- top navigation (replaces the bottom tab bar) ---------- */
+  .bottom-nav {
+    order: -1;
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    border-radius: 0;
+    background: linear-gradient(90deg, var(--color-primary-darker), var(--color-primary-dark));
+    box-shadow: 0 8px 24px -12px rgba(17, 24, 39, 0.35);
+    padding: var(--space-2) var(--page-pad-nav, max(32px, calc((100% - 1200px) / 2)));
+    justify-content: flex-start;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .bottom-nav__brand {
+    display: block;
+    height: 44px;
+    width: auto;
+    margin-inline-end: var(--space-6);
+    order: -2;
+  }
+
+  .bottom-nav__item {
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-pill);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 15px;
+  }
+
+  /* Home first (rightmost in RTL), then the rest in their usual order. */
+  .bottom-nav__item[href='/'] {
+    order: -1;
+  }
+
+  .bottom-nav__icon,
+  .bottom-nav__item--big .bottom-nav__icon {
+    width: 28px;
+    height: 28px;
+    background: none;
+    box-shadow: none;
+  }
+
+  .bottom-nav__item.active {
+    transform: none;
+    background: #fff;
+    color: var(--color-primary-dark);
+  }
+
+  .bottom-nav__item.active .bottom-nav__icon {
+    background: none;
+    color: var(--color-primary-dark);
+    box-shadow: none;
+  }
+
+  .bottom-nav__item:not(.active):hover,
+  .bottom-nav__item:not(.active):hover .bottom-nav__icon {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+    transform: none;
+  }
+
+  /* ---------- home ---------- */
+  .home__logo {
+    display: none;
+  }
+
+  .home__topbar {
+    justify-content: flex-end;
+  }
+
+  .home__greeting {
+    font-size: 40px;
+    margin-top: var(--space-2);
+  }
+
+  .home__greeting span {
+    font-size: 20px;
+  }
+
+  .home__search {
+    max-width: 640px;
+  }
+
+  .home__section--tight {
+    padding-top: var(--space-16);
+  }
+
+  .home__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-5);
+  }
+
+  .partners-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  /* Carousels show three cards at a time instead of one wide slide. */
+  .banner-card {
+    flex: 0 0 calc((100% - var(--space-3) * 2) / 3);
+  }
+
+  /* ---------- list pages ---------- */
+  .news__list,
+  .contact__list,
+  .prep__list,
+  .trust-card__benefits {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-5);
+    align-items: start;
+  }
+
+  /* A lone message (loading / empty) spans the whole row. */
+  .news__list > :only-child,
+  .prep__list > :only-child {
+    grid-column: 1 / -1;
+  }
+
+  .packages__popular-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    column-gap: var(--space-10);
+  }
+
+  /* ---------- chat assistant: floating window instead of full screen ---------- */
+  .chatw-panel {
+    inset: auto;
+    left: var(--space-6);
+    bottom: var(--space-6);
+    width: 400px;
+    height: min(680px, calc(100svh - 48px));
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+    box-shadow: 0 24px 64px -12px rgba(17, 24, 39, 0.35);
+  }
+
+  /* Closed: slide fully out of view (the panel no longer fills the screen). */
+  .chatw-panel:not(.chatw-panel--open) {
+    transform: translateY(calc(100% + 64px));
+    visibility: hidden;
+  }
+}
+
+/* Very wide screens: let the column breathe a little more. */
+@media (min-width: 1600px) {
+  main > * {
+    --page-w: 1360px;
+  }
+
+  .booking,
+  .results,
+  .track,
+  .complaints,
+  .ratevisit,
+  .terms,
+  .medfile {
+    --page-w: 900px;
+  }
+
+  .news__list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

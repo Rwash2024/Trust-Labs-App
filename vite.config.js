@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
@@ -20,6 +20,16 @@ export default defineConfig(({ mode }) => {
   resolve: { alias: { '@client': clientDir } },
   plugins: [
     react(),
+    {
+      // clients/<name>/theme.css (optional) holds design tweaks that only that lab wants.
+      name: 'client-theme',
+      resolveId: (id) => (id === 'virtual:client-theme' ? '\0virtual:client-theme' : null),
+      load: (id) => {
+        if (id !== '\0virtual:client-theme') return null
+        const css = resolve(clientDir, 'theme.css')
+        return existsSync(css) ? `import ${JSON.stringify(css)}` : ''
+      },
+    },
     {
       name: 'brand-html',
       transformIndexHtml: (html) =>

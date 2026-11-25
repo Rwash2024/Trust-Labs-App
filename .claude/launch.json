@@ -41,6 +41,49 @@
       }
     },
     {
+      "name": "royallab-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5176"
+      ],
+      "port": 5176,
+      "env": {
+        "VITE_CLIENT": "royallab"
+      }
+    },
+    {
+      "name": "couriers-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "D:/trust-labs-couriers",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5190"
+      ],
+      "port": 5190
+    },
+    {
+      "name": "campaign-dashboard",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "campaign-dashboard",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5195"
+      ],
+      "port": 5195
+    },
+    {
       "name": "presentation",
       "runtimeExecutable": "node",
       "runtimeArgs": [
@@ -48,6 +91,42 @@
         "5180"
       ],
       "port": 5180
+    },
+    {
+      "name": "website-mockup",
+      "runtimeExecutable": "C:\\Users\\Marketing\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5190",
+        "--directory",
+        "website-mockup"
+      ],
+      "port": 5190
+    },
+    {
+      "name": "website-live",
+      "runtimeExecutable": "C:\\Users\\Marketing\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5191",
+        "--directory",
+        "website-live"
+      ],
+      "port": 5191
+    },
+    {
+      "name": "website-live-form",
+      "runtimeExecutable": "C:\\Users\\Marketing\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5192",
+        "--directory",
+        "website-live-form"
+      ],
+      "port": 5192
     }
   ]
 }

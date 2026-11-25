@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { HomeIcon, FlaskIcon, PhoneIcon, ShieldIcon, ResultsIcon } from './icons'
 import brand from '../brand'
+import logoWhiteFull from '@client/logo-white-full.png'
 import './BottomNav.css'
 
 // Order matches the RTL visual layout: index 0 renders furthest right.
@@ -16,6 +17,7 @@ const items = [
 export default function BottomNav() {
   return (
     <nav className="bottom-nav">
+      <img className="bottom-nav__brand" src={logoWhiteFull} alt={brand.name} />
       {items.map(({ to, label, Icon, end, big }) => (
         <NavLink
           key={to}

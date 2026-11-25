@@ -2,6 +2,9 @@ import brand from '@client/brand.json'
 
 export default brand
 
+// Optional per-client stylesheet (clients/<name>/theme.css) for design tweaks that only one lab wants.
+import 'virtual:client-theme'
+
 // Pushes the client's palette into the CSS variables declared in styles/colors.css
 // and styles/theme-extra.css, so one brand.json drives the whole design system.
 export function applyBrandTheme() {
@@ -14,6 +17,9 @@ export function applyBrandTheme() {
   root.setProperty('--color-primary-bright', c.primaryBright)
   root.setProperty('--color-primary-light', c.primaryLight)
   root.setProperty('--color-success-bg', c.primaryLight)
+  // Optional second brand color (e.g. a red used for badges and highlights next to a blue primary).
+  if (c.accent) root.setProperty('--color-accent', c.accent)
+  if (c.accentLight) root.setProperty('--color-accent-light', c.accentLight)
   root.setProperty('--gradient-hero', `linear-gradient(135deg, ${c.primaryBright} 0%, ${c.primaryDark} 55%, ${c.primaryDarker} 100%)`)
   root.setProperty('--gradient-chip', `linear-gradient(135deg, ${c.primaryBright} 0%, ${c.primaryDark} 100%)`)
   root.setProperty('--shadow-float-lg', `0 20px 40px -12px rgba(${c.shadowRgb}, 0.35)`)
