@@ -13,7 +13,8 @@
 --      list, and the trip RPCs get a transaction-local bypass (app.trip_rpc).
 --   4. Retention + realtime: pings older than 30 days are deleted nightly;
 --      chemist_pings and bookings are published to supabase_realtime.
---   5. RPCs (appended by the next task).
+--   5. RPCs: staff booking + assignment, the chemist trip flow, the public
+--      token lookup (find_trip, get_trip_by_token) and a cancel trigger.
 --
 -- Roles: app_metadata.role is only settable server-side.
 --   ''      -> staff (call center / branch) — the existing logged-in accounts
@@ -364,3 +365,650 @@ begin
     end if;
   end loop;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- 5. RPCs and the cancel trigger
+-- ---------------------------------------------------------------------------
+-- Every function below is SECURITY DEFINER (runs as its owner, so RLS and the
+-- chemist lockout do not apply inside it) with its own role check:
+--   staff RPCs   -> public.is_staff(), else 42501
+--   chemist RPCs -> public.is_chemist() AND bookings.assigned_chemist_id = auth.uid(), else 42501
+-- Error codes the app can tell apart:
+--   42501 not allowed, P0002 booking not found, 55000 wrong trip state,
+--   22023 bad argument, P0001 + hint 'rate_limited' (find_trip / booking rate limits).
+-- Each RPC that writes bookings sets app.trip_rpc = on (transaction-local)
+-- right before its UPDATE and switches it off right after. The bypass waives
+-- the whole column guard, so each UPDATE names only the trip columns it means
+-- to change.
+-- Supabase's default privileges grant EXECUTE on new public functions to anon
+-- and authenticated directly (not only via PUBLIC), so every function revokes
+-- from all three before granting what the plan's table says.
+-- "Today" is the Cairo calendar date: (now() at time zone 'Africa/Cairo')::date.
+
+-- Helpers (plain functions, not callable through the API) -------------------
+
+-- Any common way of writing an Egyptian mobile -> 01XXXXXXXXX, else null.
+-- Same rules as cleanEgyptPhoneInput + normalizeEgyptPhone in src/lib/phone.js
+-- and src/lib/chemistTracking.js: Arabic-Indic / Persian digits, spaces,
+-- dashes, +20 / 0020 / 20 prefixes. Unlike the JS input cleaner it does not
+-- cut over-long input down to 11 digits, so junk never normalises to a phone.
+create or replace function public.normalize_egypt_phone(p text)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  with d as (
+    select regexp_replace(
+      translate(coalesce(p, ''), '٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹', '01234567890123456789'),
+      '[^0-9]', '', 'g'
+    ) as x
+  ), s as (
+    select case
+      when x like '0020%' then substr(x, 5)
+      when x like '20%' and length(x) > 11 then substr(x, 3)
+      else x
+    end as y
+    from d
+  ), t as (
+    select case when y like '1%' and length(y) = 10 then '0' || y else y end as z
+    from s
+  )
+  select case when z ~ '^01[0125][0-9]{8}$' then z end from t
+$$;
+
+-- bookings.preferred_date is free TEXT (YYYY-MM-DD from the form's date input,
+-- but the chat assistant or old rows may hold anything). Never raises.
+create or replace function public.trip_safe_date(p text)
+returns date
+language plpgsql
+stable
+set search_path = ''
+as $$
+begin
+  if p is null or p !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
+    return null;
+  end if;
+  return p::date;
+exception when others then
+  return null; -- e.g. 2026-02-31
+end;
+$$;
+
+revoke execute on function public.normalize_egypt_phone(text) from public, anon, authenticated;
+revoke execute on function public.trip_safe_date(text) from public, anon, authenticated;
+
+-- find_trip rate-limit state. RLS on with NO policies and no grants: only
+-- find_trip (security definer) reads or writes it. Section 2's lockout loop
+-- ran before this table existed; RLS-on-no-policies is already closed to
+-- chemists (and to every other API role).
+create table if not exists public.trip_lookup_attempts (
+  id bigserial primary key,
+  phone text not null,
+  at timestamptz not null default now()
+);
+create index if not exists trip_lookup_attempts_phone_at_idx on public.trip_lookup_attempts (phone, at desc);
+alter table public.trip_lookup_attempts enable row level security;
+revoke all on public.trip_lookup_attempts from anon, authenticated;
+revoke all on sequence public.trip_lookup_attempts_id_seq from anon, authenticated;
+
+-- Only the last hour matters; clear the rest nightly (next to the pings job).
+select cron.schedule(
+  'trip_lookup_attempts_prune',
+  '5 1 * * *',
+  $$delete from public.trip_lookup_attempts where at < now() - interval '1 day'$$
+);
+
+-- staff_create_home_booking -------------------------------------------------
+-- A call-center agent books a home visit over the phone. The row goes through
+-- the same bookings constraints and triggers as a web booking (phone
+-- plausibility, length caps, payment_status trigger, ERP forward, and the anon
+-- rate limit: 5 bookings per phone per day also applies here, because that
+-- trigger cannot tell a staff insert from an anon one; the agent then sees its
+-- Arabic message).
+create or replace function public.staff_create_home_booking(
+  p_name text,
+  p_phone text,
+  p_address text,
+  p_location_link text,
+  p_date date,
+  p_tests text,
+  p_payment_method text,
+  p_notes text
+)
+returns table (id uuid, booking_ref text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_name text := nullif(btrim(p_name), '');
+  v_phone text := public.normalize_egypt_phone(p_phone);
+  v_address text := nullif(btrim(p_address), '');
+  v_link text := nullif(btrim(p_location_link), '');
+  v_tests jsonb;
+  v_ref text;
+  v_id uuid;
+  v_try int := 0;
+begin
+  if not public.is_staff() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+
+  if v_name is null then
+    raise exception 'name is required' using errcode = '22023';
+  end if;
+  if v_phone is null or not public.is_plausible_phone(v_phone) then
+    raise exception 'invalid Egyptian mobile number' using errcode = '22023';
+  end if;
+  if v_address is null then
+    raise exception 'address is required for a home visit' using errcode = '22023';
+  end if;
+
+  -- Free text from the agent ("CBC, Ferritin" or one per line) -> the same
+  -- jsonb array of names the booking form stores.
+  select coalesce(jsonb_agg(t.item order by t.ord), '[]'::jsonb)
+  into v_tests
+  from (
+    select btrim(x.item) as item, x.ord
+    from regexp_split_to_table(coalesce(p_tests, ''), '[\r\n,،]+') with ordinality as x (item, ord)
+  ) t
+  where t.item <> '';
+
+  -- Form refs are YYYYMMDD + 3 digits; these are YYYYMMDD + 4, so the two
+  -- never collide. Retry on the (unlikely) clash with another staff ref.
+  loop
+    v_try := v_try + 1;
+    v_ref := to_char(now() at time zone 'Africa/Cairo', 'YYYYMMDD')
+             || lpad(floor(random() * 10000)::int::text, 4, '0');
+    begin
+      insert into public.bookings as b (
+        booking_ref, source, mode, status, name, phone, address, location_link,
+        preferred_date, tests, payment_method, notes
+      )
+      values (
+        v_ref, 'call_center', 'home', 'تم التأكيد', v_name, v_phone, v_address, v_link,
+        to_char(p_date, 'YYYY-MM-DD'), v_tests, nullif(btrim(p_payment_method), ''),
+        nullif(btrim(p_notes), '')
+      )
+      returning b.id into v_id;
+      exit;
+    exception when unique_violation then
+      if v_try >= 10 then
+        raise;
+      end if;
+    end;
+  end loop;
+
+  return query select v_id, v_ref;
+end;
+$$;
+
+-- list_available_chemists ---------------------------------------------------
+create or replace function public.list_available_chemists()
+returns table (id uuid, name text, on_trip boolean, today_count int)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_today date := (now() at time zone 'Africa/Cairo')::date;
+begin
+  if not public.is_staff() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+
+  return query
+  select
+    c.id,
+    c.name,
+    exists (
+      select 1 from public.bookings b
+      where b.assigned_chemist_id = c.id and b.trip_status = 'on_way'
+    ),
+    (
+      select count(*)::int from public.bookings b
+      where b.assigned_chemist_id = c.id
+        and b.trip_status is distinct from 'cancelled'
+        and b.status is distinct from 'ملغي'
+        and public.trip_safe_date(b.preferred_date) = v_today
+    )
+  from public.chemists c
+  where c.active
+  order by c.name;
+end;
+$$;
+
+-- assign_chemist ------------------------------------------------------------
+-- Assigning (or re-assigning) puts the trip back to 'assigned' and clears the
+-- trip times. The tracking token survives a re-assignment so a link already
+-- sent to the patient keeps working.
+create or replace function public.assign_chemist(p_booking uuid, p_chemist uuid)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_b public.bookings%rowtype;
+  v_token text;
+begin
+  if not public.is_staff() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+
+  select * into v_b from public.bookings b where b.id = p_booking for update;
+  if not found then
+    raise exception 'booking not found' using errcode = 'P0002';
+  end if;
+  if v_b.mode is distinct from 'home' then
+    raise exception 'not a home visit' using errcode = '55000';
+  end if;
+  if v_b.status = 'ملغي' then
+    raise exception 'booking is cancelled' using errcode = '55000';
+  end if;
+  if v_b.trip_status = 'on_way' then
+    raise exception 'the chemist is already on the way' using errcode = '55000';
+  end if;
+  if not exists (select 1 from public.chemists c where c.id = p_chemist and c.active) then
+    raise exception 'chemist not found or inactive' using errcode = '22023';
+  end if;
+
+  v_token := coalesce(
+    v_b.track_token,
+    replace(translate(encode(extensions.gen_random_bytes(24), 'base64'), '+/', '-_'), '=', '')
+  );
+
+  perform set_config('app.trip_rpc', 'on', true);
+  update public.bookings b
+  set assigned_chemist_id = p_chemist,
+      trip_status = 'assigned',
+      track_token = v_token,
+      trip_started_at = null,
+      trip_arrived_at = null
+  where b.id = p_booking;
+  perform set_config('app.trip_rpc', 'off', true);
+
+  return v_token;
+end;
+$$;
+
+-- chemist_my_visits ---------------------------------------------------------
+-- From yesterday (Cairo) on. Rows whose preferred_date is empty or not a
+-- valid YYYY-MM-DD are kept (listed last) rather than hidden: a chemist must
+-- never lose an assigned visit because the date was typed oddly.
+create or replace function public.chemist_my_visits()
+returns table (
+  id uuid,
+  name text,
+  phone text,
+  address text,
+  location_lat double precision,
+  location_lng double precision,
+  location_link text,
+  tests jsonb,
+  notes text,
+  preferred_date text,
+  trip_status text,
+  track_token text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_today date := (now() at time zone 'Africa/Cairo')::date;
+begin
+  if not public.is_chemist() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+
+  return query
+  select b.id, b.name, b.phone, b.address, b.location_lat, b.location_lng, b.location_link,
+         b.tests, b.notes, b.preferred_date, b.trip_status, b.track_token
+  from public.bookings b
+  where b.assigned_chemist_id = auth.uid()
+    and b.trip_status is distinct from 'cancelled'
+    and b.status is distinct from 'ملغي'
+    and (
+      public.trip_safe_date(b.preferred_date) is null
+      or public.trip_safe_date(b.preferred_date) >= v_today - 1
+    )
+  order by public.trip_safe_date(b.preferred_date) nulls last, b.created_at;
+end;
+$$;
+
+-- chemist_start_trip --------------------------------------------------------
+create or replace function public.chemist_start_trip(p_booking uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_b public.bookings%rowtype;
+begin
+  if not public.is_chemist() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+
+  -- One start at a time per chemist, so two parallel starts cannot both pass
+  -- the "no other trip on the way" check.
+  perform pg_advisory_xact_lock(hashtext('chemist_trip:' || auth.uid()::text));
+
+  select * into v_b from public.bookings b where b.id = p_booking for update;
+  if not found or v_b.assigned_chemist_id is distinct from auth.uid() then
+    raise exception 'not your visit' using errcode = '42501';
+  end if;
+  if v_b.status = 'ملغي' or v_b.trip_status is distinct from 'assigned' then
+    raise exception 'trip cannot start from state %', coalesce(v_b.trip_status, 'none') using errcode = '55000';
+  end if;
+  if exists (
+    select 1 from public.bookings b
+    where b.assigned_chemist_id = auth.uid() and b.trip_status = 'on_way' and b.id <> p_booking
+  ) then
+    raise exception 'another trip is already on the way' using errcode = '55000';
+  end if;
+
+  perform set_config('app.trip_rpc', 'on', true);
+  update public.bookings b
+  set trip_status = 'on_way',
+      trip_started_at = now(),
+      trip_arrived_at = null
+  where b.id = p_booking;
+  perform set_config('app.trip_rpc', 'off', true);
+end;
+$$;
+
+-- chemist_ping --------------------------------------------------------------
+-- Writes chemist_pings only (never bookings). A ping less than 10 s after the
+-- previous one is dropped silently, so a chatty phone cannot flood the table.
+create or replace function public.chemist_ping(p_booking uuid, p_lat double precision, p_lng double precision, p_accuracy real)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_chemist uuid;
+  v_trip text;
+begin
+  if not public.is_chemist() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+
+  -- NaN fails BETWEEN (Postgres sorts NaN above every number), so it is rejected too.
+  if p_lat is null or p_lng is null
+     or not (p_lat between -90 and 90) or not (p_lng between -180 and 180) then
+    raise exception 'invalid coordinates' using errcode = '22023';
+  end if;
+
+  select b.assigned_chemist_id, b.trip_status into v_chemist, v_trip
+  from public.bookings b where b.id = p_booking;
+  if not found or v_chemist is distinct from auth.uid() then
+    raise exception 'not your visit' using errcode = '42501';
+  end if;
+  if v_trip is distinct from 'on_way' then
+    raise exception 'trip is not on the way' using errcode = '55000';
+  end if;
+
+  if exists (
+    select 1 from public.chemist_pings cp
+    where cp.booking_id = p_booking and cp.at > now() - interval '10 seconds'
+  ) then
+    return;
+  end if;
+
+  insert into public.chemist_pings (booking_id, chemist_id, lat, lng, accuracy_m)
+  values (
+    p_booking, v_chemist, p_lat, p_lng,
+    case when p_accuracy >= 0 and p_accuracy <= 100000 then p_accuracy end
+  );
+end;
+$$;
+
+-- chemist_arrive ------------------------------------------------------------
+create or replace function public.chemist_arrive(p_booking uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_b public.bookings%rowtype;
+begin
+  if not public.is_chemist() then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+
+  select * into v_b from public.bookings b where b.id = p_booking for update;
+  if not found or v_b.assigned_chemist_id is distinct from auth.uid() then
+    raise exception 'not your visit' using errcode = '42501';
+  end if;
+  if v_b.trip_status is distinct from 'on_way' then
+    raise exception 'trip is not on the way' using errcode = '55000';
+  end if;
+
+  perform set_config('app.trip_rpc', 'on', true);
+  update public.bookings b
+  set trip_status = 'arrived',
+      trip_arrived_at = now()
+  where b.id = p_booking;
+  perform set_config('app.trip_rpc', 'off', true);
+end;
+$$;
+
+-- cancel_trip ---------------------------------------------------------------
+-- Chemist (owner): undo, always back to 'assigned' (p_final is ignored).
+-- Staff: back to 'assigned', or with p_final = true to 'cancelled' (the visit
+-- drops off the chemist's list and the tracking link stops working).
+-- Neither touches bookings.status; cancelling the booking itself is a status
+-- change, handled by the trigger below.
+create or replace function public.cancel_trip(p_booking uuid, p_final boolean default false)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_b public.bookings%rowtype;
+  v_new text;
+begin
+  if public.is_chemist() then
+    select * into v_b from public.bookings b where b.id = p_booking for update;
+    if not found or v_b.assigned_chemist_id is distinct from auth.uid() then
+      raise exception 'not your visit' using errcode = '42501';
+    end if;
+    if v_b.trip_status is null or v_b.trip_status = 'cancelled' or v_b.status = 'ملغي' then
+      raise exception 'trip cannot be undone from state %', coalesce(v_b.trip_status, 'none') using errcode = '55000';
+    end if;
+    v_new := 'assigned';
+  elsif public.is_staff() then
+    select * into v_b from public.bookings b where b.id = p_booking for update;
+    if not found then
+      raise exception 'booking not found' using errcode = 'P0002';
+    end if;
+    if v_b.assigned_chemist_id is null or v_b.trip_status is null then
+      raise exception 'booking has no trip' using errcode = '55000';
+    end if;
+    v_new := case when coalesce(p_final, false) then 'cancelled' else 'assigned' end;
+  else
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+
+  perform set_config('app.trip_rpc', 'on', true);
+  update public.bookings b
+  set trip_status = v_new,
+      trip_started_at = null,
+      trip_arrived_at = null
+  where b.id = p_booking;
+  perform set_config('app.trip_rpc', 'off', true);
+end;
+$$;
+
+-- get_trip_by_token ---------------------------------------------------------
+-- The public tracking page (/t/<token>). Returns only what the patient needs:
+-- never the patient's phone, address or tests, and never the chemist's phone
+-- or full name. null for an unknown token, a cancelled booking or trip, or
+-- more than 24 h after arrival. "last" (the newest ping) only while on the way.
+create or replace function public.get_trip_by_token(p_token text)
+returns json
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_b public.bookings%rowtype;
+  v_first text;
+  v_last json;
+begin
+  if p_token is null or length(p_token) <> 32 then
+    return null;
+  end if;
+
+  select * into v_b from public.bookings b where b.track_token = p_token;
+  if not found
+     or v_b.status = 'ملغي'
+     or v_b.trip_status is null
+     or v_b.trip_status = 'cancelled'
+     or (v_b.trip_status = 'arrived' and v_b.trip_arrived_at < now() - interval '24 hours') then
+    return null;
+  end if;
+
+  select nullif((regexp_split_to_array(btrim(c.name), '\s+'))[1], '')
+  into v_first
+  from public.chemists c
+  where c.id = v_b.assigned_chemist_id;
+
+  if v_b.trip_status = 'on_way' then
+    select json_build_object('lat', cp.lat, 'lng', cp.lng, 'at', cp.at)
+    into v_last
+    from public.chemist_pings cp
+    where cp.booking_id = v_b.id
+    order by cp.at desc, cp.id desc
+    limit 1;
+  end if;
+
+  return json_build_object(
+    'status', v_b.trip_status,
+    'chemist_first_name', v_first,
+    'started_at', v_b.trip_started_at,
+    'arrived_at', v_b.trip_arrived_at,
+    'preferred_date', v_b.preferred_date,
+    'dest', case
+      when v_b.location_lat is not null and v_b.location_lng is not null
+        then json_build_object('lat', v_b.location_lat, 'lng', v_b.location_lng)
+    end,
+    'last', v_last
+  );
+end;
+$$;
+
+-- find_trip -----------------------------------------------------------------
+-- "Track my chemist" form: phone + booking number -> token (or null). The
+-- token is returned only once a chemist is assigned. 10 lookups per phone per
+-- hour; the 11th raises (P0001, hint rate_limited) until the hour rolls over.
+-- The stored phone goes through the same normalisation, so a booking saved as
+-- 01…, +20… or with spaces still matches.
+create or replace function public.find_trip(p_phone text, p_booking_ref text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_phone text := public.normalize_egypt_phone(p_phone);
+  v_ref text := btrim(translate(coalesce(p_booking_ref, ''), '٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹', '01234567890123456789'));
+  v_n int;
+  v_token text;
+begin
+  if v_phone is null or v_ref = '' or length(v_ref) > 40 then
+    return null;
+  end if;
+
+  perform pg_advisory_xact_lock(hashtext('find_trip:' || v_phone));
+
+  select count(*) into v_n
+  from public.trip_lookup_attempts a
+  where a.phone = v_phone and a.at > now() - interval '1 hour';
+  if v_n >= 10 then
+    raise exception 'محاولات كتير، جرّب تاني بعد ساعة أو كلّم الخط الساخن 16183'
+      using errcode = 'P0001', hint = 'rate_limited';
+  end if;
+
+  insert into public.trip_lookup_attempts (phone) values (v_phone);
+
+  select b.track_token into v_token
+  from public.bookings b
+  where b.booking_ref = v_ref
+    and b.mode = 'home'
+    and b.assigned_chemist_id is not null
+    and public.normalize_egypt_phone(b.phone) = v_phone;
+
+  return v_token;
+end;
+$$;
+
+-- Grants ----------------------------------------------------------------------
+revoke execute on function public.staff_create_home_booking(text, text, text, text, date, text, text, text) from public, anon, authenticated;
+revoke execute on function public.list_available_chemists() from public, anon, authenticated;
+revoke execute on function public.assign_chemist(uuid, uuid) from public, anon, authenticated;
+revoke execute on function public.chemist_my_visits() from public, anon, authenticated;
+revoke execute on function public.chemist_start_trip(uuid) from public, anon, authenticated;
+revoke execute on function public.chemist_ping(uuid, double precision, double precision, real) from public, anon, authenticated;
+revoke execute on function public.chemist_arrive(uuid) from public, anon, authenticated;
+revoke execute on function public.cancel_trip(uuid, boolean) from public, anon, authenticated;
+revoke execute on function public.get_trip_by_token(text) from public, anon, authenticated;
+revoke execute on function public.find_trip(text, text) from public, anon, authenticated;
+
+grant execute on function public.staff_create_home_booking(text, text, text, text, date, text, text, text) to authenticated;
+grant execute on function public.list_available_chemists() to authenticated;
+grant execute on function public.assign_chemist(uuid, uuid) to authenticated;
+grant execute on function public.chemist_my_visits() to authenticated;
+grant execute on function public.chemist_start_trip(uuid) to authenticated;
+grant execute on function public.chemist_ping(uuid, double precision, double precision, real) to authenticated;
+grant execute on function public.chemist_arrive(uuid) to authenticated;
+grant execute on function public.cancel_trip(uuid, boolean) to authenticated;
+grant execute on function public.get_trip_by_token(text) to anon, authenticated;
+grant execute on function public.find_trip(text, text) to anon;
+
+-- bookings_cancel_trip_on_cancel --------------------------------------------
+-- Booking status -> 'ملغي' (by staff or admin) also ends the trip. AFTER, not
+-- BEFORE: triggers of the same timing fire in name order, so a BEFORE trigger
+-- with this name would run before bookings_guard_staff_edits_trigger, and the
+-- guard would then reject the staff status change because trip_status moved.
+-- Here trip_status is changed by a separate UPDATE under the RPC bypass (that
+-- UPDATE does not touch status, so this trigger does not fire again); the
+-- previous app.trip_rpc value is restored afterwards.
+create or replace function public.bookings_cancel_trip_on_cancel()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_prev text := current_setting('app.trip_rpc', true);
+begin
+  perform set_config('app.trip_rpc', 'on', true);
+  update public.bookings b
+  set trip_status = 'cancelled'
+  where b.id = new.id;
+  perform set_config('app.trip_rpc', coalesce(v_prev, ''), true);
+  return null;
+end;
+$$;
+
+revoke execute on function public.bookings_cancel_trip_on_cancel() from public, anon, authenticated;
+
+drop trigger if exists bookings_cancel_trip_on_cancel on public.bookings;
+create trigger bookings_cancel_trip_on_cancel
+  after update of status on public.bookings
+  for each row
+  when (
+    new.status = 'ملغي'
+    and old.status is distinct from 'ملغي'
+    and new.trip_status is not null
+    and new.trip_status <> 'cancelled'
+  )
+  execute function public.bookings_cancel_trip_on_cancel();

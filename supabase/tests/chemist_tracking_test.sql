@@ -296,6 +296,506 @@ begin
     'chemist_pings not in supabase_realtime';
   assert exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'bookings'),
     'bookings not in supabase_realtime';
+end $$;
+
+-- ===========================================================================
+-- Section 5: RPCs and the cancel trigger
+-- ===========================================================================
+-- Bookings used below (all rolled back):
+--   b1  TEST-CHEM-0001 (fixture above), phone 01098347261, no map pin, date = today
+--   b2  TEST-CHEM-0003, phone 01098347266, with a map pin, preferred_date not a date
+--   b3  created by staff_create_home_booking, phone 01098347267
+-- Ids and tokens are handed between the impersonated blocks through
+-- transaction-local settings (chemtest.*).
+-- Everything here runs in one transaction, so now() never moves: the 10 s
+-- ping throttle and the 24 h cut-off are tested by moving timestamps back.
+
+-- Setup (as postgres) -------------------------------------------------------
+
+do $$
+declare
+  v_b1 uuid;
+  v_b2 uuid;
+begin
+  assert public.normalize_egypt_phone('+20 109 834-7261') = '01098347261', 'normalise +20 with spaces/dashes';
+  assert public.normalize_egypt_phone('0020 1098347261') = '01098347261', 'normalise 0020';
+  assert public.normalize_egypt_phone('201098347261') = '01098347261', 'normalise 20 without +';
+  assert public.normalize_egypt_phone('1098347261') = '01098347261', 'normalise missing leading 0';
+  assert public.normalize_egypt_phone('٠١٠٩٨٣٤٧٢٦١') = '01098347261', 'normalise Arabic-Indic digits';
+  assert public.normalize_egypt_phone('010983472619') is null, 'over-long input must not normalise';
+  assert public.normalize_egypt_phone('01398347261') is null, '013 is not a mobile prefix';
+  assert public.trip_safe_date('2026-02-31') is null, 'invalid date must give null, not raise';
+  assert public.trip_safe_date('31/12/2026') is null, 'non-ISO text must give null';
+  assert public.trip_safe_date('2026-12-31') = date '2026-12-31', 'ISO date parses';
+
+  -- Start b1 from a clean trip state (Task 2's guard test left it assigned).
+  perform set_config('app.trip_rpc', 'on', true);
+  update public.bookings
+  set assigned_chemist_id = null, trip_status = null, track_token = null,
+      trip_started_at = null, trip_arrived_at = null,
+      preferred_date = to_char((now() at time zone 'Africa/Cairo')::date, 'YYYY-MM-DD')
+  where booking_ref = 'TEST-CHEM-0001'
+  returning id into v_b1;
+  perform set_config('app.trip_rpc', 'off', true);
+
+  -- The fixture ping is stamped now(); move it back so the 10 s throttle does
+  -- not swallow the first real ping below.
+  update public.chemist_pings set at = now() - interval '1 hour' where booking_id = v_b1;
+
+  insert into public.bookings (booking_ref, mode, name, phone, address, location_lat, location_lng, preferred_date)
+  values ('TEST-CHEM-0003', 'home', 'مريض اختبار ٢', '01098347266', 'عنوان اختبار ٢', 30.0131, 31.2089, '31/12/2026')
+  returning id into v_b2;
+
+  perform set_config('chemtest.b1', v_b1::text, true);
+  perform set_config('chemtest.b2', v_b2::text, true);
+end $$;
+
+-- Anon: before assignment ---------------------------------------------------
+
+set local role anon;
+set local request.jwt.claims = '{"role":"anon"}';
+
+do $$
+begin
+  assert public.find_trip('+201098347261', 'TEST-CHEM-0001') is null, 'find_trip must return null before a chemist is assigned';
+  assert public.get_trip_by_token('no-such-token-no-such-token-0000') is null, 'unknown token must give null';
+  assert public.get_trip_by_token(null) is null, 'null token must give null';
+
+  begin
+    perform public.staff_create_home_booking('x', '01098347268', 'x', null, current_date, null, null, null);
+    raise exception 'TEST FAILED: anon called staff_create_home_booking';
+  exception when insufficient_privilege then
+    null; -- expected: no EXECUTE for anon
+  end;
+  begin
+    perform public.chemist_my_visits();
+    raise exception 'TEST FAILED: anon called chemist_my_visits';
+  exception when insufficient_privilege then
+    null;
+  end;
+end $$;
+
+reset role;
+
+-- Chemist A: staff RPCs are refused -----------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-00000000000a","role":"authenticated","app_metadata":{"role":"chemist"}}';
+
+do $$
+begin
+  begin
+    perform public.staff_create_home_booking('x', '01098347268', 'x', null, current_date, null, null, null);
+    raise exception 'TEST FAILED: chemist called staff_create_home_booking';
+  exception when insufficient_privilege then
+    null; -- expected: not allowed (42501)
+  end;
+  begin
+    perform public.list_available_chemists();
+    raise exception 'TEST FAILED: chemist called list_available_chemists';
+  exception when insufficient_privilege then
+    null;
+  end;
+  begin
+    perform public.assign_chemist(current_setting('chemtest.b1')::uuid, 'c4e0a000-0000-4000-8000-00000000000a');
+    raise exception 'TEST FAILED: chemist called assign_chemist';
+  exception when insufficient_privilege then
+    null;
+  end;
+  begin
+    perform public.find_trip('01098347261', 'TEST-CHEM-0001');
+    raise exception 'TEST FAILED: authenticated called find_trip (anon only)';
+  exception when insufficient_privilege then
+    null;
+  end;
+end $$;
+
+reset role;
+
+-- Staff: create, list, assign -----------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-0000000000ff","role":"authenticated","app_metadata":{}}';
+
+do $$
+declare
+  r record;
+  v_today text := to_char((now() at time zone 'Africa/Cairo')::date, 'YYYY-MM-DD');
+  v_t1 text;
+  v_t2 text;
+  v_t3 text;
+begin
+  -- Call-center booking.
+  select * into r
+  from public.staff_create_home_booking(
+    '  مريض تليفون  ', '+20 10 9834 7267', 'عنوان تليفون', null,
+    (now() at time zone 'Africa/Cairo')::date, E'CBC، Ferritin\nTSH', 'كاش', '  '
+  );
+  assert r.id is not null, 'staff_create_home_booking returned no id';
+  assert r.booking_ref ~ '^[0-9]{12}$', format('booking_ref %s is not YYYYMMDD + 4 digits', r.booking_ref);
+  assert left(r.booking_ref, 8) = to_char(now() at time zone 'Africa/Cairo', 'YYYYMMDD'), 'booking_ref does not start with the Cairo date';
+  assert exists (
+    select 1 from public.bookings b
+    where b.id = r.id and b.booking_ref = r.booking_ref
+      and b.mode = 'home' and b.source = 'call_center' and b.status = 'تم التأكيد'
+      and b.name = 'مريض تليفون' and b.phone = '01098347267' and b.address = 'عنوان تليفون'
+      and b.preferred_date = v_today and b.tests = '["CBC", "Ferritin", "TSH"]'::jsonb
+      and b.payment_method = 'كاش' and b.notes is null
+      and b.assigned_chemist_id is null and b.trip_status is null
+  ), 'staff-created booking has the wrong shape';
+  perform set_config('chemtest.b3', r.id::text, true);
+
+  begin
+    perform public.staff_create_home_booking('x', '01012345678', 'x', null, null, null, null, null);
+    raise exception 'TEST FAILED: placeholder phone accepted';
+  exception when invalid_parameter_value then
+    null; -- expected: is_plausible_phone rejects 01012345678
+  end;
+  begin
+    perform public.staff_create_home_booking('x', '01098347268', '   ', null, null, null, null, null);
+    raise exception 'TEST FAILED: home booking without address accepted';
+  exception when invalid_parameter_value then
+    null;
+  end;
+
+  -- Chemist list: both fixtures, nobody on a trip, nothing today yet.
+  assert (select count(*) from public.list_available_chemists() c
+          where c.id in ('c4e0a000-0000-4000-8000-00000000000a', 'c4e0a000-0000-4000-8000-00000000000b')
+            and not c.on_trip and c.today_count = 0) = 2,
+    'list_available_chemists: fixtures missing, on a trip, or with visits already';
+
+  -- Assign b1 and b2 to chemist A.
+  v_t1 := public.assign_chemist(current_setting('chemtest.b1')::uuid, 'c4e0a000-0000-4000-8000-00000000000a');
+  assert v_t1 ~ '^[A-Za-z0-9_-]{32}$', format('token %s is not 32 url-safe chars', v_t1);
+  assert public.assign_chemist(current_setting('chemtest.b1')::uuid, 'c4e0a000-0000-4000-8000-00000000000a') = v_t1,
+    're-assigning must keep the existing token';
+  assert (select trip_status from public.bookings where id = current_setting('chemtest.b1')::uuid) = 'assigned',
+    'assign_chemist did not set trip_status = assigned';
+
+  v_t2 := public.assign_chemist(current_setting('chemtest.b2')::uuid, 'c4e0a000-0000-4000-8000-00000000000a');
+  assert v_t2 <> v_t1, 'two bookings got the same token';
+
+  -- b3 goes to chemist B (used for the 24 h test).
+  v_t3 := public.assign_chemist(current_setting('chemtest.b3')::uuid, 'c4e0a000-0000-4000-8000-00000000000b');
+
+  -- today_count: b1 is today; b2's date is not a date (counted nowhere, no crash).
+  assert (select c.today_count from public.list_available_chemists() c
+          where c.id = 'c4e0a000-0000-4000-8000-00000000000a') = 1,
+    'today_count for chemist A should be 1';
+
+  begin
+    perform public.assign_chemist(current_setting('chemtest.b1')::uuid, gen_random_uuid());
+    raise exception 'TEST FAILED: assigned an unknown chemist';
+  exception when invalid_parameter_value then
+    null;
+  end;
+
+  perform set_config('chemtest.t1', v_t1, true);
+  perform set_config('chemtest.t2', v_t2, true);
+  perform set_config('chemtest.t3', v_t3, true);
+end $$;
+
+reset role;
+
+-- Anon: after assignment ----------------------------------------------------
+
+set local role anon;
+set local request.jwt.claims = '{"role":"anon"}';
+
+do $$
+declare
+  j jsonb;
+  v_ok boolean;
+  i int;
+begin
+  assert public.find_trip('+201098347261', 'TEST-CHEM-0001') = current_setting('chemtest.t1'),
+    'find_trip(+20…) must return the token after assignment';
+  assert public.find_trip('0020 109 834 7261', ' TEST-CHEM-0001 ') = current_setting('chemtest.t1'),
+    'find_trip(0020 … with spaces) must return the token';
+  assert public.find_trip('01098347262', 'TEST-CHEM-0001') is null, 'find_trip with the wrong phone must return null';
+  assert public.find_trip('01098347261', 'TEST-CHEM-0003') is null, 'find_trip with another booking''s ref must return null';
+
+  -- assigned, no pin: no last, no dest.
+  j := public.get_trip_by_token(current_setting('chemtest.t1'))::jsonb;
+  assert j is not null, 'get_trip_by_token returned null for an assigned trip';
+  assert j ->> 'status' = 'assigned', 'status should be assigned';
+  assert j -> 'last' = 'null'::jsonb, 'last must be null before the trip starts';
+  assert j -> 'dest' = 'null'::jsonb, 'dest must be null when the booking has no pin';
+  assert j ->> 'chemist_first_name' = 'كيميائي', format('chemist_first_name is %s', j ->> 'chemist_first_name');
+  assert j ->> 'preferred_date' = to_char((now() at time zone 'Africa/Cairo')::date, 'YYYY-MM-DD'), 'preferred_date missing';
+  assert j::text !~ '"(phone|address|tests|name)"', format('get_trip_by_token leaks patient/chemist data: %s', j);
+
+  -- b2 has a pin.
+  j := public.get_trip_by_token(current_setting('chemtest.t2'))::jsonb;
+  assert (j -> 'dest' ->> 'lat')::float8 = 30.0131 and (j -> 'dest' ->> 'lng')::float8 = 31.2089,
+    'dest should carry the booking pin';
+
+  -- Rate limit: 10 lookups per phone per hour, the 11th raises.
+  for i in 1..10 loop
+    assert public.find_trip('01098347269', 'NO-SUCH-REF') is null, 'unknown ref must return null';
+  end loop;
+  v_ok := false;
+  begin
+    perform public.find_trip('+20 1098347269', 'NO-SUCH-REF');
+  exception when raise_exception then
+    v_ok := sqlerrm like 'محاولات كتير%';
+  end;
+  assert v_ok, 'find_trip: the 11th lookup in an hour for one phone must be rate-limited';
+end $$;
+
+reset role;
+
+-- Chemist B: someone else's visit -------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-00000000000b","role":"authenticated","app_metadata":{"role":"chemist"}}';
+
+do $$
+begin
+  begin
+    perform public.chemist_start_trip(current_setting('chemtest.b1')::uuid);
+    raise exception 'TEST FAILED: chemist B started chemist A''s trip';
+  exception when insufficient_privilege then
+    null;
+  end;
+  begin
+    perform public.cancel_trip(current_setting('chemtest.b1')::uuid);
+    raise exception 'TEST FAILED: chemist B cancelled chemist A''s trip';
+  exception when insufficient_privilege then
+    null;
+  end;
+  assert not exists (select 1 from public.chemist_my_visits() v where v.id = current_setting('chemtest.b1')::uuid),
+    'chemist B sees chemist A''s visit';
+  assert exists (select 1 from public.chemist_my_visits() v where v.id = current_setting('chemtest.b3')::uuid),
+    'chemist B does not see their own visit';
+end $$;
+
+reset role;
+
+-- Chemist A: the trip -------------------------------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-00000000000a","role":"authenticated","app_metadata":{"role":"chemist"}}';
+
+do $$
+begin
+  -- Own visits: b1 (today) and b2 (unparseable date, kept, listed last).
+  assert (select count(*) from public.chemist_my_visits() v
+          where v.id in (current_setting('chemtest.b1')::uuid, current_setting('chemtest.b2')::uuid)) = 2,
+    'chemist A should see b1 and b2';
+  assert (select v.phone from public.chemist_my_visits() v where v.id = current_setting('chemtest.b1')::uuid) = '01098347261',
+    'chemist_my_visits should carry the patient phone';
+
+  -- Ping before start raises.
+  begin
+    perform public.chemist_ping(current_setting('chemtest.b1')::uuid, 30.05, 31.24, 10);
+    raise exception 'TEST FAILED: ping accepted before the trip started';
+  exception when object_not_in_prerequisite_state then
+    null;
+  end;
+
+  perform public.chemist_start_trip(current_setting('chemtest.b1')::uuid);
+end $$;
+
+-- Chemist B pings A's trip while it is on the way: still refused.
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-00000000000b","role":"authenticated","app_metadata":{"role":"chemist"}}';
+
+do $$
+begin
+  begin
+    perform public.chemist_ping(current_setting('chemtest.b1')::uuid, 30.05, 31.24, 10);
+    raise exception 'TEST FAILED: chemist B pinged chemist A''s trip';
+  exception when insufficient_privilege then
+    null;
+  end;
+end $$;
+
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-00000000000a","role":"authenticated","app_metadata":{"role":"chemist"}}';
+
+do $$
+begin
+  -- A second start while b1 is on the way raises.
+  begin
+    perform public.chemist_start_trip(current_setting('chemtest.b2')::uuid);
+    raise exception 'TEST FAILED: started a second trip while another is on the way';
+  exception when object_not_in_prerequisite_state then
+    null;
+  end;
+
+  begin
+    perform public.chemist_ping(current_setting('chemtest.b1')::uuid, 91, 31.24, 10);
+    raise exception 'TEST FAILED: latitude 91 accepted';
+  exception when invalid_parameter_value then
+    null;
+  end;
+  begin
+    perform public.chemist_ping(current_setting('chemtest.b1')::uuid, 30.05, 'NaN'::float8, 10);
+    raise exception 'TEST FAILED: NaN longitude accepted';
+  exception when invalid_parameter_value then
+    null;
+  end;
+
+  perform public.chemist_ping(current_setting('chemtest.b1')::uuid, 30.05, 31.24, 10);
+  -- Within 10 s of the last one: dropped silently.
+  perform public.chemist_ping(current_setting('chemtest.b1')::uuid, 30.06, 31.25, 10);
+end $$;
+
+reset role;
+
+do $$
+begin
+  assert (select count(*) from public.chemist_pings
+          where booking_id = current_setting('chemtest.b1')::uuid and at = now()) = 1,
+    'expected exactly one new ping (the second must be throttled)';
+  assert (select trip_status from public.bookings where id = current_setting('chemtest.b1')::uuid) = 'on_way'
+     and (select trip_started_at from public.bookings where id = current_setting('chemtest.b1')::uuid) is not null,
+    'chemist_start_trip did not set on_way / trip_started_at';
+end $$;
+
+-- Anon: on the way ----------------------------------------------------------
+
+set local role anon;
+set local request.jwt.claims = '{"role":"anon"}';
+
+do $$
+declare
+  j jsonb;
+begin
+  j := public.get_trip_by_token(current_setting('chemtest.t1'))::jsonb;
+  assert j ->> 'status' = 'on_way', 'status should be on_way';
+  assert (j -> 'last' ->> 'lat')::float8 = 30.05 and (j -> 'last' ->> 'lng')::float8 = 31.24,
+    format('last should be the newest ping (30.05, 31.24), got %s', j -> 'last');
+  assert j -> 'last' ->> 'at' is not null, 'last.at missing';
+  assert j ->> 'started_at' is not null, 'started_at missing';
+  assert j::text !~ '"(phone|address|tests|name)"', format('get_trip_by_token leaks patient/chemist data: %s', j);
+end $$;
+
+reset role;
+
+-- Chemist A: arrive, then b2 start + undo ----------------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-00000000000a","role":"authenticated","app_metadata":{"role":"chemist"}}';
+
+do $$
+begin
+  perform public.chemist_arrive(current_setting('chemtest.b1')::uuid);
+
+  begin
+    perform public.chemist_arrive(current_setting('chemtest.b1')::uuid);
+    raise exception 'TEST FAILED: arrived twice';
+  exception when object_not_in_prerequisite_state then
+    null;
+  end;
+  begin
+    perform public.chemist_ping(current_setting('chemtest.b1')::uuid, 30.05, 31.24, 10);
+    raise exception 'TEST FAILED: ping accepted after arrival';
+  exception when object_not_in_prerequisite_state then
+    null;
+  end;
+
+  -- b1 is no longer on the way, so b2 can start; the chemist's undo puts it back.
+  perform public.chemist_start_trip(current_setting('chemtest.b2')::uuid);
+  perform public.cancel_trip(current_setting('chemtest.b2')::uuid, true); -- p_final ignored for a chemist
+  assert exists (select 1 from public.chemist_my_visits() v
+                 where v.id = current_setting('chemtest.b2')::uuid and v.trip_status = 'assigned'),
+    'chemist cancel_trip should put the trip back to assigned';
+end $$;
+
+reset role;
+
+-- Anon: arrived -------------------------------------------------------------
+
+set local role anon;
+set local request.jwt.claims = '{"role":"anon"}';
+
+do $$
+declare
+  j jsonb;
+begin
+  j := public.get_trip_by_token(current_setting('chemtest.t1'))::jsonb;
+  assert j ->> 'status' = 'arrived', 'status should be arrived';
+  assert j -> 'last' = 'null'::jsonb, 'last must be null after arrival';
+  assert j ->> 'arrived_at' is not null, 'arrived_at missing';
+  assert j::text !~ '"(phone|address|tests|name)"', format('get_trip_by_token leaks patient/chemist data: %s', j);
+end $$;
+
+reset role;
+
+-- Staff: final cancel, booking cancel (trigger) ----------------------------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-0000000000ff","role":"authenticated","app_metadata":{}}';
+
+do $$
+begin
+  -- Staff final cancel of b2's trip: link dead.
+  perform public.cancel_trip(current_setting('chemtest.b2')::uuid, true);
+  assert (select trip_status from public.bookings where id = current_setting('chemtest.b2')::uuid) = 'cancelled',
+    'staff cancel_trip(p_final) should set cancelled';
+  assert public.get_trip_by_token(current_setting('chemtest.t2')) is null, 'cancelled trip must give null';
+
+  -- Staff cancels booking b1 (a plain status change, through the guard):
+  -- the trigger ends the trip and the link goes dead.
+  update public.bookings set status = 'ملغي' where id = current_setting('chemtest.b1')::uuid;
+  assert (select trip_status from public.bookings where id = current_setting('chemtest.b1')::uuid) = 'cancelled',
+    'bookings_cancel_trip_on_cancel did not set trip_status = cancelled';
+  assert public.get_trip_by_token(current_setting('chemtest.t1')) is null, 'ملغي booking must give null';
+  assert coalesce(current_setting('app.trip_rpc', true), '') <> 'on', 'cancel trigger left app.trip_rpc on';
+
+  begin
+    perform public.assign_chemist(current_setting('chemtest.b1')::uuid, 'c4e0a000-0000-4000-8000-00000000000a');
+    raise exception 'TEST FAILED: assigned a chemist to a ملغي booking';
+  exception when object_not_in_prerequisite_state then
+    null;
+  end;
+end $$;
+
+reset role;
+
+-- 24 h after arrival the link stops working (as postgres, then anon) ------
+
+do $$
+begin
+  perform set_config('app.trip_rpc', 'on', true);
+  update public.bookings
+  set trip_status = 'arrived', trip_started_at = now() - interval '26 hours', trip_arrived_at = now() - interval '25 hours'
+  where id = current_setting('chemtest.b3')::uuid;
+  perform set_config('app.trip_rpc', 'off', true);
+end $$;
+
+set local role anon;
+set local request.jwt.claims = '{"role":"anon"}';
+
+do $$
+begin
+  assert public.get_trip_by_token(current_setting('chemtest.t3')) is null, 'trip arrived > 24 h ago must give null';
+end $$;
+
+reset role;
+
+-- Structural: grants and the lookup table (as postgres) ----------------------
+
+do $$
+begin
+  assert not has_function_privilege('anon', 'public.staff_create_home_booking(text, text, text, text, date, text, text, text)', 'execute'), 'anon can execute staff_create_home_booking';
+  assert not has_function_privilege('anon', 'public.assign_chemist(uuid, uuid)', 'execute'), 'anon can execute assign_chemist';
+  assert not has_function_privilege('anon', 'public.chemist_ping(uuid, double precision, double precision, real)', 'execute'), 'anon can execute chemist_ping';
+  assert not has_function_privilege('anon', 'public.cancel_trip(uuid, boolean)', 'execute'), 'anon can execute cancel_trip';
+  assert has_function_privilege('anon', 'public.get_trip_by_token(text)', 'execute'), 'anon cannot execute get_trip_by_token';
+  assert has_function_privilege('anon', 'public.find_trip(text, text)', 'execute'), 'anon cannot execute find_trip';
+  assert not has_function_privilege('authenticated', 'public.find_trip(text, text)', 'execute'), 'authenticated can execute find_trip';
+  assert not has_function_privilege('anon', 'public.normalize_egypt_phone(text)', 'execute'), 'anon can execute normalize_egypt_phone';
+
+  assert (select relrowsecurity from pg_class where oid = 'public.trip_lookup_attempts'::regclass), 'trip_lookup_attempts has RLS off';
+  assert not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'trip_lookup_attempts'),
+    'trip_lookup_attempts must have no policies';
+  assert not has_table_privilege('anon', 'public.trip_lookup_attempts', 'select,insert,update,delete,truncate'), 'anon has privileges on trip_lookup_attempts';
+  assert not has_table_privilege('authenticated', 'public.trip_lookup_attempts', 'select,insert,update,delete,truncate'), 'authenticated has privileges on trip_lookup_attempts';
+
+  assert exists (select 1 from pg_trigger where tgrelid = 'public.bookings'::regclass and tgname = 'bookings_cancel_trip_on_cancel' and not tgisinternal),
+    'trigger bookings_cancel_trip_on_cancel missing';
+  assert exists (select 1 from cron.job where jobname = 'trip_lookup_attempts_prune'), 'cron job trip_lookup_attempts_prune missing';
 
   raise notice 'chemist_tracking tests: all passed';
 end $$;
