@@ -8,6 +8,7 @@
     "build": "vite build",
     "brand-assets": "node scripts/gen-pwa-icons.cjs && node scripts/gen-og-image.cjs",
     "lint": "oxlint",
+    "test": "node --test",
     "preview": "vite preview"
   },
   "dependencies": {
