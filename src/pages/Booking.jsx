@@ -132,7 +132,14 @@ export default function Booking() {
     data.append('dob', form.dob)
     data.append('bookingType', bookingType)
     if (mode === 'home') data.append('address', form.address)
-    if (mapsLink) data.append('location', coords ? `${mapsLink} (دقة ~${coords.accuracy} م)` : mapsLink)
+    // No URLs in the Formspree email: a home-visit test booking carrying a maps link
+    // landed in Formspree's Spam tab, and links are a common spam signal. Staff open the
+    // pin from the admin bookings table instead; GPS coordinates also paste into Maps.
+    if (coords) {
+      data.append('location', `${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)} (دقة ~${coords.accuracy} م)`)
+    } else if (locationLink) {
+      data.append('location', 'لينك لوكيشن مرفق — افتحه من لوحة التحكم')
+    }
     if (mode === 'branch') data.append('branch', form.branchName)
     data.append('date', form.date)
     data.append('notes', bookingNotes)
