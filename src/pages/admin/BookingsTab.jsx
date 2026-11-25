@@ -12,6 +12,14 @@ const PAYMENT_STATUSES = {
   voided: 'تم الإلغاء',
 }
 
+// A GPS fix wins over a pasted link; the link is already validated as https maps.
+function bookingMapsUrl(b) {
+  if (b.location_lat != null && b.location_lng != null) {
+    return `https://www.google.com/maps?q=${b.location_lat},${b.location_lng}`
+  }
+  return b.location_link || null
+}
+
 export default function BookingsTab() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -89,6 +97,15 @@ export default function BookingsTab() {
               <td>{i.dob || '—'}</td>
               <td style={{ maxWidth: 220, whiteSpace: 'pre-wrap' }}>
                 {i.mode === 'home' ? i.address : i.branch_name || '—'}
+                {i.mode === 'home' && bookingMapsUrl(i) && (
+                  <>
+                    <br />
+                    <a href={bookingMapsUrl(i)} target="_blank" rel="noopener noreferrer">
+                      📍 افتح على الخريطة
+                      {i.location_accuracy_m != null && ` (±${i.location_accuracy_m} م)`}
+                    </a>
+                  </>
+                )}
               </td>
               <td>{i.preferred_date || '—'}</td>
               <td style={{ maxWidth: 220 }}>{(i.tests || []).join('، ') || '—'}</td>

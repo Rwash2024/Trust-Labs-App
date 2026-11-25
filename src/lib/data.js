@@ -225,9 +225,11 @@ export async function recordBooking({
   patientType,
   cardIssuer,
   launchOfferApplied,
+  location,
+  locationLink,
 }) {
   if (!supabase) return
-  const { error } = await supabase.from('bookings').insert({
+  const row = {
     booking_ref: bookingRef,
     source: 'booking_form',
     mode,
@@ -246,7 +248,22 @@ export async function recordBooking({
     patient_type: patientType || null,
     card_issuer: cardIssuer?.trim() || null,
     launch_offer_applied: !!launchOfferApplied,
-  })
+  }
+  const locationCols = {}
+  if (location) {
+    locationCols.location_lat = location.lat
+    locationCols.location_lng = location.lng
+    locationCols.location_accuracy_m = location.accuracy
+  }
+  if (locationLink) locationCols.location_link = locationLink
+
+  let { error } = await supabase.from('bookings').insert({ ...row, ...locationCols })
+  // booking_location_migration.sql not run yet: PostgREST rejects the unknown
+  // columns. Keep the booking rather than lose it over the optional pin.
+  if (error && Object.keys(locationCols).length && (error.code === 'PGRST204' || error.code === '42703')) {
+    console.warn('bookings location columns missing; saving booking without the pin')
+    ;({ error } = await supabase.from('bookings').insert(row))
+  }
   if (error) throw error
 }
 

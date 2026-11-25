@@ -12,6 +12,8 @@ import { cleanEgyptPhoneInput, egyptPhoneError } from '../lib/phone'
 import './Booking.css'
 import { recaptcha } from '../lib/recaptcha'
 import RecaptchaNotice from '../components/RecaptchaNotice'
+import LocationPicker from '../components/LocationPicker'
+import { mapsUrlFor, locationLinkError } from '../lib/location'
 
 const FORMSPREE_ID = import.meta.env.VITE_FORMSPREE_ID
 const FORMSPREE_ENDPOINT = FORMSPREE_ID ? `https://formspree.io/f/${FORMSPREE_ID}` : null
@@ -48,6 +50,7 @@ export default function Booking() {
   const [cardIssuer, setCardIssuer] = useState('')
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [receipt, setReceipt] = useState(null)
+  const [location, setLocation] = useState({ where: null, coords: null, link: '' })
 
   useEffect(() => {
     trackEvent(AnalyticsEvents.BOOKING_STARTED)
@@ -90,6 +93,10 @@ export default function Booking() {
       setStatus('invalid-phone')
       return
     }
+    if (mode === 'home' && location.where === 'other' && locationLinkError(location.link)) {
+      setStatus('invalid-location')
+      return
+    }
     if (!agreedToTerms) {
       setStatus('terms-required')
       return
@@ -105,6 +112,10 @@ export default function Booking() {
     const branchLabel = mode === 'branch' ? form.branchName : 'زيارة منزلية'
     const patientType = hasCard ? (cardType === 'insurance' ? 'لديه كارنيه تأمين طبي' : 'لديه كارنيه نادي') : 'Normal'
     const bookingRef = generateBookingRef()
+    // Only for a home visit: a GPS fix (here) or a pasted maps link (elsewhere).
+    const coords = mode === 'home' && location.where === 'here' ? location.coords : null
+    const locationLink = mode === 'home' && location.where === 'other' ? location.link.trim() : ''
+    const mapsLink = coords ? mapsUrlFor(coords.lat, coords.lng) : locationLink
 
     // Claimed atomically server-side — only ever true for a home visit that
     // actually got one of the first 100 seats (checked/reserved just now).
@@ -121,6 +132,7 @@ export default function Booking() {
     data.append('dob', form.dob)
     data.append('bookingType', bookingType)
     if (mode === 'home') data.append('address', form.address)
+    if (mapsLink) data.append('location', coords ? `${mapsLink} (دقة ~${coords.accuracy} م)` : mapsLink)
     if (mode === 'branch') data.append('branch', form.branchName)
     data.append('date', form.date)
     data.append('notes', bookingNotes)
@@ -155,6 +167,8 @@ export default function Booking() {
       patientType,
       cardIssuer: hasCard ? cardIssuer : '',
       launchOfferApplied: offerApplied,
+      location: coords,
+      locationLink,
     })
       .then(() => true)
       .catch((err) => {
@@ -192,6 +206,7 @@ export default function Booking() {
         dob: form.dob,
         phone: form.phone,
         address: mode === 'home' ? form.address : null,
+        mapsLink,
         date: form.date,
         packages: selectedPackages.map((p) => p.name),
         patientType,
@@ -261,6 +276,12 @@ export default function Booking() {
             <div className="booking__receipt-row">
               <span>العنوان</span>
               <span>{receipt.address}</span>
+            </div>
+          )}
+          {receipt.mapsLink && (
+            <div className="booking__receipt-row">
+              <span>اللوكيشن</span>
+              <a href={receipt.mapsLink} target="_blank" rel="noopener noreferrer">مضاف ✓ افتحه على الخريطة</a>
             </div>
           )}
 
@@ -539,6 +560,7 @@ export default function Booking() {
           </label>
 
           {mode === 'home' ? (
+            <>
             <label className="booking__field">
               <span>العنوان بالتفصيل</span>
               <textarea
@@ -549,6 +571,8 @@ export default function Booking() {
                 placeholder="المحافظة، الحي، الشارع، رقم العقار..."
               />
             </label>
+            <LocationPicker value={location} onChange={setLocation} />
+            </>
           ) : (
             <label className="booking__field">
               <span>اختار الفرع</span>
@@ -574,6 +598,10 @@ export default function Booking() {
             <span>ملاحظات (اختياري)</span>
             <textarea rows={2} value={form.notes} onChange={updateField('notes')} placeholder="أي تفاصيل إضافية" />
           </label>
+
+          {status === 'invalid-location' && (
+            <p className="booking__error">لينك اللوكيشن مش صحيح. صلّحه أو امسحه وكمّل بالعنوان المكتوب.</p>
+          )}
 
           {status === 'invalid-phone' && (
             <p className="booking__error">من فضلك اكتب رقم موبايل مصري صحيح قبل تأكيد الحجز.</p>
