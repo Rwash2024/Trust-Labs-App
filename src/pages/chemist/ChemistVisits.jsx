@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { arrive, startTrip } from '../../lib/chemistApi'
+import { startTrip } from '../../lib/chemistApi'
 import { normalizeEgyptPhone } from '../../lib/chemistTracking'
 import { visitAction, testsCount, mapsUrl, dayLabel } from '../../lib/chemistView'
 import { IconCar, IconCheck, IconClock, IconMap, IconPhone, IconRefresh, IconTests, IconWarning } from './ChemistIcons'
@@ -77,7 +77,7 @@ export function VisitDetails({ visit, now = new Date() }) {
   )
 }
 
-function VisitCard({ visit, onStarted, onArrived }) {
+function VisitCard({ visit, onStarted, onOpenTrip }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const action = visitAction(visit)
@@ -98,11 +98,6 @@ function VisitCard({ visit, onStarted, onArrived }) {
       await startTrip(visit.id)
       await onStarted(visit.id)
     })
-  const handleArrive = () =>
-    run(async () => {
-      await arrive(visit.id)
-      await onArrived()
-    })
 
   return (
     <li className="chemist__card">
@@ -120,16 +115,16 @@ function VisitCard({ visit, onStarted, onArrived }) {
         </button>
       )}
       {action === 'arrive' && (
-        <button type="button" className="chemist__btn chemist__btn--primary" onClick={handleArrive} disabled={busy}>
-          <IconCheck />
-          {busy ? 'لحظة...' : 'وصلت'}
+        <button type="button" className="chemist__btn chemist__btn--primary" onClick={() => onOpenTrip(visit.id)}>
+          <IconCar />
+          كمّل الرحلة
         </button>
       )}
     </li>
   )
 }
 
-export default function ChemistVisits({ visits, loading, error, onReload, onStarted }) {
+export default function ChemistVisits({ visits, loading, error, notice, onReload, onStarted, onOpenTrip }) {
   return (
     <div className="chemist__body">
       <div className="chemist__toolbar">
@@ -139,6 +134,13 @@ export default function ChemistVisits({ visits, loading, error, onReload, onStar
           <span>تحديث</span>
         </button>
       </div>
+
+      {notice && (
+        <p className="chemist__alert chemist__alert--warn" role="alert">
+          <IconWarning />
+          <span>{notice}</span>
+        </p>
+      )}
 
       {error && (
         <p className="chemist__alert chemist__alert--warn" role="alert">
@@ -158,7 +160,7 @@ export default function ChemistVisits({ visits, loading, error, onReload, onStar
       {visits && visits.length > 0 && (
         <ul className="chemist__list">
           {visits.map((v) => (
-            <VisitCard key={v.id} visit={v} onStarted={onStarted} onArrived={onReload} />
+            <VisitCard key={v.id} visit={v} onStarted={onStarted} onOpenTrip={onOpenTrip} />
           ))}
         </ul>
       )}

@@ -8,6 +8,7 @@ import { IconLogout } from './ChemistIcons'
 import './chemist.css'
 
 const NOT_CHEMIST = 'الحساب ده مش حساب كيميائي'
+const TRIP_ENDED = 'الرحلة دي اتلغت أو خلصت'
 
 // /chemist: login -> visits list -> trip screen (one screen at a time, no sub-routes).
 export default function ChemistApp() {
@@ -71,7 +72,14 @@ function ChemistHome({ signOut }) {
   const [error, setError] = useState('')
   const [loadingList, setLoadingList] = useState(true)
   const [tripId, setTripId] = useState(null)
+  const [notice, setNotice] = useState('')
   const resumeChecked = useRef(false)
+  // The trip a pending check is about; cleared when the chemist ends it here,
+  // so a late check result can't show the "cancelled" notice by mistake.
+  const activeTrip = useRef(null)
+  useEffect(() => {
+    activeTrip.current = tripId
+  }, [tripId])
 
   // Callbacks only (never called synchronously from an effect).
   const fetchVisits = useCallback(
@@ -107,7 +115,27 @@ function ChemistHome({ signOut }) {
     fetchVisits()
   }, [fetchVisits])
 
-  const tripVisit = tripId ? visits?.find((v) => v.id === tripId) : null
+  // Re-check the open trip (after a failed ping, and every 60 s). If staff
+  // cancelled it or it is no longer on the way, leave the trip screen; that
+  // unmounts ChemistTrip, which stops the location source.
+  const checkTrip = useCallback((id) => {
+    myVisits().then(
+      (rows) => {
+        if (activeTrip.current !== id) return
+        setVisits(rows)
+        const v = rows.find((r) => r.id === id)
+        if (!v || v.trip_status !== 'on_way') {
+          setTripId(null)
+          setNotice(TRIP_ENDED)
+        }
+      },
+      () => {}, // offline: stay on the trip screen; its warning already shows
+    )
+  }, [])
+
+  // The trip screen only renders for a visit that is really on the way.
+  const found = tripId ? visits?.find((v) => v.id === tripId) : null
+  const tripVisit = found?.trip_status === 'on_way' ? found : null
 
   const header = (
     <header className="chemist__header">
@@ -126,7 +154,9 @@ function ChemistHome({ signOut }) {
         <ChemistTrip
           key={tripVisit.id}
           visit={tripVisit}
+          onCheck={checkTrip}
           onDone={() => {
+            activeTrip.current = null
             setTripId(null)
             load()
           }}
@@ -142,8 +172,14 @@ function ChemistHome({ signOut }) {
         visits={visits}
         loading={loadingList}
         error={error}
+        notice={notice}
         onReload={load}
+        onOpenTrip={(id) => {
+          setNotice('')
+          setTripId(id)
+        }}
         onStarted={async (id) => {
+          setNotice('')
           const rows = await load()
           if (rows?.some((v) => v.id === id && v.trip_status === 'on_way')) setTripId(id)
         }}

@@ -7,6 +7,12 @@
   color: var(--text-body);
   background: var(--surface-sunken);
   min-height: 100%;
+  /* Darker than --color-error / --color-warning (#EF4444 / #F59E0B fail 4.5:1
+     as text on white), so the chemist page keeps its own text shades. */
+  --chemist-danger: #B42318;
+  --chemist-warn-text: #8A4B00;
+  --chemist-warn-border: #F5C77A;
+  --chemist-danger-border: #F3B4AE;
 }
 
 .chemist__header {
@@ -116,11 +122,11 @@
 
 .chemist__btn--danger {
   background: transparent;
-  color: #B42318;
-  border-color: #F3B4AE;
+  color: var(--chemist-danger, #B42318);
+  border-color: var(--chemist-danger-border, #F3B4AE);
 }
 .chemist__btn--danger-solid {
-  background: #B42318;
+  background: var(--chemist-danger, #B42318);
   color: var(--text-inverse);
 }
 
@@ -179,11 +185,11 @@
   color: var(--text-heading);
 }
 .chemist__field input[aria-invalid='true'] {
-  border-color: #B42318;
+  border-color: var(--chemist-danger, #B42318);
 }
 .chemist__field-error {
   margin: 0;
-  color: #B42318;
+  color: var(--chemist-danger, #B42318);
   font-size: 16px;
   font-weight: var(--font-weight-bold);
 }
@@ -204,8 +210,8 @@
 }
 .chemist__alert--warn {
   background: var(--color-warning-bg);
-  color: #8A4B00;
-  border: 1px solid #F5C77A;
+  color: var(--chemist-warn-text, #8A4B00);
+  border: 1px solid var(--chemist-warn-border, #F5C77A);
 }
 
 .chemist__banner {
@@ -354,4 +360,16 @@
   font-size: 22px;
   font-weight: var(--font-weight-extrabold);
   color: var(--text-heading);
+}
+
+.chemist__ok {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--color-primary-darker);
+  font-weight: var(--font-weight-bold);
 }

@@ -9,8 +9,13 @@ export function visitAction(visit) {
   return 'none'
 }
 
-// Warning for the trip screen. `startedAt` (optional) is when the location
-// source started, so "nothing sent yet" only warns after the same 2 minutes.
+// Warning for the trip screen.
+// - lastError: the last sendPing failed -> warn now.
+// - gpsError (a GPS read error, code 2) is accepted but never warns by itself:
+//   only the "nothing sent for >2 min" rule applies. GPS timeouts (code 3)
+//   are not reported at all.
+// - startedAt (optional): when the location source started, so "nothing sent
+//   yet" only warns after the same 2 minutes.
 export function tripScreenWarning({ permission, lastSentAt, lastError, startedAt } = {}, now) {
   if (permission === 'denied') return 'no_permission'
   if (lastError) return 'not_sending'

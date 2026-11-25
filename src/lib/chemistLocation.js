@@ -121,7 +121,7 @@ function createBrowserSource({ onFix, onError }) {
     start() {
       if (running) return
       running = true
-      lastEmitAt = 0
+      // lastEmitAt is kept across stop/start so a restart can't send early.
       if (!navigator.geolocation) {
         safe(onError, { code: 2, message: 'geolocation unavailable' })
       } else {

@@ -63,3 +63,22 @@ test('dayLabel: today / tomorrow / other (Cairo calendar)', async () => {
   assert.equal(dayLabel('2026-12-01', now), '2026-12-01')
   assert.equal(dayLabel(null, now), '')
 })
+
+test('tripScreenWarning: a GPS read error alone does not warn while sends are recent', () => {
+  assert.equal(
+    tripScreenWarning({ permission: 'granted', lastSentAt: ago(30), lastError: null, gpsError: 'unavailable' }, NOW),
+    null,
+  )
+})
+test('tripScreenWarning: GPS error + nothing sent for >2 min -> not_sending', () => {
+  assert.equal(
+    tripScreenWarning({ permission: 'granted', lastSentAt: ago(150), lastError: null, gpsError: 'unavailable' }, NOW),
+    'not_sending',
+  )
+})
+test('tripScreenWarning: GPS error before any send, trip just started -> null', () => {
+  assert.equal(
+    tripScreenWarning({ permission: 'prompt', lastSentAt: null, lastError: null, gpsError: 'x', startedAt: ago(40) }, NOW),
+    null,
+  )
+})

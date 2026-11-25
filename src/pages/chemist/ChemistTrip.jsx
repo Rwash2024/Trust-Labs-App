@@ -41,10 +41,11 @@ function useGeoPermission() {
   return [permission, setPermission]
 }
 
-export default function ChemistTrip({ visit, onDone }) {
+export default function ChemistTrip({ visit, onCheck, onDone }) {
   const [permission, setPermission] = useGeoPermission()
   const [lastSentAt, setLastSentAt] = useState(null)
-  const [lastError, setLastError] = useState(null)
+  const [lastError, setLastError] = useState(null) // the last sendPing failed
+  const [gpsError, setGpsError] = useState(null) // GPS read error (code 2), cleared on the next fix
   const [startedAt] = useState(() => new Date().toISOString())
   const [now, setNow] = useState(() => new Date())
   const [sourceKind] = useState(locationSourceKind)
@@ -52,27 +53,59 @@ export default function ChemistTrip({ visit, onDone }) {
   const [actionError, setActionError] = useState('')
   const [confirmCancel, setConfirmCancel] = useState(false)
   const sourceRef = useRef(null)
+  const onCheckRef = useRef(onCheck)
+  useEffect(() => {
+    onCheckRef.current = onCheck
+  }, [onCheck])
 
   // Location source lives exactly as long as this screen: it stops on
   // arrive / cancel / logout (all unmount the screen) and on unmount.
   useEffect(() => {
     let alive = true
+    let inFlight = false
+    let queued = null // newest fix that arrived while a ping was pending
+    let checkedThisBurst = false // one trip re-check per run of failures
+
+    const send = (fix) => {
+      if (inFlight) {
+        queued = fix
+        return
+      }
+      inFlight = true
+      sendPing(visit.id, fix)
+        .then(() => {
+          if (!alive) return
+          checkedThisBurst = false
+          setLastSentAt(new Date().toISOString())
+          setLastError(null)
+        })
+        .catch((e) => {
+          if (!alive) return
+          setLastError(e.message || 'error')
+          if (!checkedThisBurst) {
+            checkedThisBurst = true
+            onCheckRef.current?.(visit.id)
+          }
+        })
+        .finally(() => {
+          inFlight = false
+          if (alive && queued) {
+            const next = queued
+            queued = null
+            send(next)
+          }
+        })
+    }
+
     const source = createLocationSource({
       onFix: (fix) => {
         setPermission('granted')
-        sendPing(visit.id, fix)
-          .then(() => {
-            if (!alive) return
-            setLastSentAt(new Date().toISOString())
-            setLastError(null)
-          })
-          .catch((e) => {
-            if (alive) setLastError(e.message || 'error')
-          })
+        setGpsError(null)
+        send(fix)
       },
       onError: (err) => {
         if (err.code === 1) setPermission('denied')
-        else setLastError(err.message || 'gps')
+        else if (err.code !== 3) setGpsError(err.message || 'gps') // code 3 = timeout: normal when standing still
       },
     })
     sourceRef.current = source
@@ -99,7 +132,13 @@ export default function ChemistTrip({ visit, onDone }) {
     return () => clearInterval(t)
   }, [])
 
-  const warning = tripScreenWarning({ permission, lastSentAt, lastError, startedAt }, now)
+  // Light periodic check that the trip is still on the way.
+  useEffect(() => {
+    const t = setInterval(() => onCheckRef.current?.(visit.id), 60000)
+    return () => clearInterval(t)
+  }, [visit.id])
+
+  const warning = tripScreenWarning({ permission, lastSentAt, lastError, gpsError, startedAt }, now)
 
   const finish = async (fn) => {
     setBusy(true)
@@ -123,18 +162,16 @@ export default function ChemistTrip({ visit, onDone }) {
         <IconSignal size={26} />
         <div>
           <p className="chemist__banner-title">جاري مشاركة موقعك مع العميل</p>
-          <p className="chemist__banner-sub" role="status">
-            {lastSentAt ? sinceText(lastSentAt, now) : 'بنحدد موقعك...'}
-          </p>
+          {/* Ticks every second, so it stays out of the live region below. */}
+          <p className="chemist__banner-sub">{lastSentAt ? sinceText(lastSentAt, now) : 'بنحدد موقعك...'}</p>
         </div>
       </div>
 
-      {warning && (
-        <p className="chemist__alert chemist__alert--warn" role="alert">
-          <IconWarning />
-          <span>{WARNINGS[warning]}</span>
-        </p>
-      )}
+      {/* Coarse status only: screen readers hear changes, not every tick. */}
+      <p className={warning ? 'chemist__alert chemist__alert--warn' : 'chemist__ok'} role="status">
+        {warning ? <IconWarning /> : <IconCheck />}
+        <span>{warning ? WARNINGS[warning] : lastSentAt ? 'الموقع بيتبعت' : 'بنحدد موقعك...'}</span>
+      </p>
 
       {sourceKind === 'browser' && <p className="chemist__hint">سيب الصفحة دي مفتوحة والشاشة منوّرة</p>}
 
