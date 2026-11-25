@@ -97,6 +97,7 @@ export default function App() {
       ) : isTrack ? (
         <Routes>
           <Route path="/t/:token" element={<TrackVisit />} />
+          <Route path="*" element={<TrackVisit />} />
         </Routes>
       ) : isInternational ? (
         <Routes>

@@ -16,8 +16,18 @@ function ensureInit() {
   initialized = true
 }
 
+// /t/<token> pages carry a secret: switch GA off while on them (also stops
+// automatic history-change page_views), back on everywhere else.
+function syncGaDisable(path) {
+  if (!GA_ID || typeof window === 'undefined') return false
+  const onTrack = String(path).startsWith('/t/')
+  window[`ga-disable-${GA_ID}`] = onTrack
+  return onTrack
+}
+
 export function trackPageview(path) {
   if (!GA_ID) return
+  if (syncGaDisable(path)) return
   ensureInit()
   window.gtag('event', 'page_view', {
     page_path: redactTrackUrl(path),
@@ -28,6 +38,7 @@ export function trackPageview(path) {
 
 export function trackEvent(name, params = {}) {
   if (!GA_ID) return
+  if (syncGaDisable(window.location.pathname)) return
   ensureInit()
   window.gtag('event', name, params)
 }

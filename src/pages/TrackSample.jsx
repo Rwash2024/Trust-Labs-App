@@ -61,7 +61,7 @@ function VisitLookup() {
     setState({ status: 'loading', message: '' })
     try {
       const token = await findTrip(phone.trim(), ref.trim())
-      if (token) navigate(`/t/${token}`)
+      if (token) navigate('/t/' + encodeURIComponent(token))
       else setState({ status: 'none', message: '' })
     } catch (err) {
       setState({ status: 'error', message: err.message })

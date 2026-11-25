@@ -55,7 +55,7 @@
 .tv__line {
   margin: 0;
   color: var(--text-muted);
-  font-size: 17px;
+  font-size: 18px;
 }
 
 .tv__note {
@@ -64,12 +64,12 @@
   border-radius: var(--radius-md);
   background: var(--surface-sunken);
   color: var(--text-body);
-  font-size: 16px;
+  font-size: 18px;
 }
 .tv__note--warn {
   background: var(--color-warning-bg);
-  color: #8A4B00;
-  border: 1px solid #F5C77A;
+  color: var(--chemist-warn-text, #8A4B00);
+  border: 1px solid var(--chemist-warn-border, #F5C77A);
 }
 
 .tv__map {
@@ -165,4 +165,13 @@
 .tv__call:focus-visible {
   outline: 3px solid var(--color-info);
   outline-offset: 2px;
+}
+
+.tv__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
