@@ -34,6 +34,16 @@ export async function listAvailableChemists() {
   return (await rpc('list_available_chemists')) ?? []
 }
 
+// Staff direct select (RLS limits it to staff). Includes inactive chemists.
+export async function listChemists() {
+  const { data, error } = await requireClient()
+    .from('chemists')
+    .select('id,name,phone,active,created_at')
+    .order('created_at', { ascending: true })
+  if (error) throw toError(error)
+  return data ?? []
+}
+
 export function assignChemist(bookingId, chemistId) {
   return rpc('assign_chemist', { p_booking: bookingId, p_chemist: chemistId })
 }

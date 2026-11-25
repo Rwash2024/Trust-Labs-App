@@ -483,3 +483,153 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Live tracking board + chemists admin ---- */
+.live-board__summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.live-board__counter {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-body);
+  font-size: 14px;
+}
+
+.live-board__counter strong {
+  font-size: 28px;
+  line-height: 1.1;
+  color: var(--text-heading);
+}
+
+.live-board__counter--warn {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.live-board__counter--warn strong {
+  color: var(--color-warning);
+}
+
+.live-board__map {
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.live-board__empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: var(--space-4);
+}
+
+.live-board__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.live-board__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.live-board__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.live-board__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.live-board__name {
+  font-size: 16px;
+  color: var(--text-heading);
+}
+
+.live-board__meta {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.live-board__btn,
+.chemists-tab__btn {
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.live-board__btn {
+  flex-shrink: 0;
+}
+
+.chemists-tab__field,
+.chemists-tab__reset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.chemists-tab__field label,
+.chemists-tab__reset label {
+  font-size: 14px;
+}
+
+.chemists-tab__password {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.chemists-tab__password input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+}
+
+.chemists-tab__field input[aria-invalid='true'],
+.chemists-tab__password input[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+
+.chemists-tab__error {
+  color: var(--color-error);
+  font-size: 14px;
+}
+
+.chemists-tab__form {
+  max-width: 460px;
+}
+
+.chemists-tab__scroll {
+  overflow-x: auto;
+}
+
+@media (max-width: 640px) {
+  .live-board__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .live-board__counter strong {
+    font-size: 24px;
+  }
+}

@@ -14,6 +14,8 @@ import NewsTab from './NewsTab'
 import PartnersTab from './PartnersTab'
 import ComplaintsTab from './ComplaintsTab'
 import BookingsTab from './BookingsTab'
+import LiveTrackingTab from './LiveTrackingTab'
+import ChemistsTab from './ChemistsTab'
 import VisitRatingsTab from './VisitRatingsTab'
 import TrustCardTab from './TrustCardTab'
 import ReportsTab from './ReportsTab'
@@ -24,6 +26,8 @@ const trustOnly = ['trust-card', 'complaints', 'ratings']
 const allTabs = [
   { key: 'overview', label: 'نظرة عامة', icon: 'home' },
   { key: 'bookings', label: 'الحجوزات', icon: 'calendar' },
+  { key: 'live', label: 'التتبع المباشر', icon: 'route' },
+  { key: 'chemists', label: 'الكيميائيين', icon: 'users' },
   { key: 'packages', label: 'الباقات', icon: 'box' },
   { key: 'tests', label: 'التحاليل', icon: 'flask' },
   { key: 'branches', label: 'الفروع', icon: 'pin' },
@@ -64,6 +68,8 @@ export default function AdminDashboard() {
         {activeTab === 'trust-card' && <TrustCardTab />}
         {activeTab === 'samples' && <SampleTrackingTab canManage />}
         {activeTab === 'bookings' && <BookingsTab />}
+        {activeTab === 'live' && <LiveTrackingTab />}
+        {activeTab === 'chemists' && <ChemistsTab />}
         {activeTab === 'complaints' && <ComplaintsTab />}
         {activeTab === 'ratings' && <VisitRatingsTab />}
         {activeTab === 'reports' && <ReportsTab />}
