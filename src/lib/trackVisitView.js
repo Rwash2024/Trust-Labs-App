@@ -57,7 +57,7 @@ export function viewModel(trip, now) {
 
 // Never let the secret token reach analytics.
 export function redactTrackUrl(url) {
-  return String(url).replace(/\/t\/[^/?#]+.*$/, '/t/[token]')
+  return String(url).replace(/\/t\/[^/?#]+.*$/i, '/t/[token]')
 }
 
 // '2026-11-25' -> «الأربعاء 25 نوفمبر»; '' when missing/invalid.

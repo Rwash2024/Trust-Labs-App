@@ -83,7 +83,7 @@ export default function App() {
   const isKiosk = !!brand.features?.trustCard && location.pathname === '/offer-counter'
   const isInternational = !!brand.features?.international && location.pathname.startsWith('/international')
   const isChemist = location.pathname.startsWith('/chemist')
-  const isTrack = location.pathname.startsWith('/t/')
+  const isTrack = /^\/t\//i.test(location.pathname)
   const [showSplash, setShowSplash] = useState(!isAdmin && !isKiosk && !isInternational && !isChemist && !isTrack && hasSplash)
 
   return (

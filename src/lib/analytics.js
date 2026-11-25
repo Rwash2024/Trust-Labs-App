@@ -20,7 +20,7 @@ function ensureInit() {
 // automatic history-change page_views), back on everywhere else.
 function syncGaDisable(path) {
   if (!GA_ID || typeof window === 'undefined') return false
-  const onTrack = String(path).startsWith('/t/')
+  const onTrack = /^\/t\//i.test(String(path))
   window[`ga-disable-${GA_ID}`] = onTrack
   return onTrack
 }

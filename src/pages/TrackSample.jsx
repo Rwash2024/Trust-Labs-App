@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import brand from '../brand'
 import { fetchSampleStatusByPhone } from '../lib/data'
 import { findTrip } from '../lib/chemistApi'
@@ -48,7 +47,6 @@ function ResultCard({ item }) {
 }
 
 function VisitLookup() {
-  const navigate = useNavigate()
   const [phone, setPhone] = useState('')
   const [ref, setRef] = useState('')
   const [state, setState] = useState({ status: 'idle', message: '' }) // idle | loading | error | none
@@ -61,7 +59,9 @@ function VisitLookup() {
     setState({ status: 'loading', message: '' })
     try {
       const token = await findTrip(phone.trim(), ref.trim())
-      if (token) navigate('/t/' + encodeURIComponent(token))
+      // Full page load, not navigate(): a client-side pushState would fire GA's
+      // history-change hit with the token before the ga-disable flag flips.
+      if (token) window.location.assign('/t/' + encodeURIComponent(token))
       else setState({ status: 'none', message: '' })
     } catch (err) {
       setState({ status: 'error', message: err.message })
