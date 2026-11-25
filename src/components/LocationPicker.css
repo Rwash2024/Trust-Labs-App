@@ -1,0 +1,108 @@
+.locpick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+}
+
+.locpick__head {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.locpick__head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.locpick__icon {
+  color: var(--border-focus);
+  flex-shrink: 0;
+}
+
+.locpick__title {
+  font-size: var(--text-small-size);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-heading);
+}
+
+.locpick__title em {
+  font-style: normal;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-body);
+}
+
+.locpick__sub,
+.locpick__hint,
+.locpick__accuracy {
+  font-size: 12px;
+  font-weight: var(--font-weight-regular);
+  color: var(--text-body);
+}
+
+.locpick__question {
+  font-size: var(--text-small-size);
+  color: var(--text-heading);
+}
+
+.locpick__locate {
+  font-family: var(--font-family);
+  font-size: var(--text-body-size);
+  font-weight: var(--font-weight-bold);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-focus);
+  background: transparent;
+  color: var(--border-focus);
+  cursor: pointer;
+}
+
+.locpick__locate:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.locpick__done {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--text-small-size);
+}
+
+.locpick__done-icon {
+  display: inline-flex;
+  color: #1a9e5c;
+}
+
+.locpick__done-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 160px;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-heading);
+}
+
+.locpick__done a {
+  color: var(--border-focus);
+  font-weight: var(--font-weight-bold);
+}
+
+.locpick__reset {
+  font-family: var(--font-family);
+  background: none;
+  border: none;
+  color: var(--text-body);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.locpick__link input {
+  background: var(--surface-card, #fff);
+}
