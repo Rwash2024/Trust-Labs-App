@@ -20,8 +20,8 @@ export function AdminAuthProvider({ children }) {
 
   const signIn = async (email, password) => {
     if (!supabase) return { error: 'Supabase غير متصل' }
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error: error?.message }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    return { error: error?.message, role: data?.session?.user?.app_metadata?.role ?? null }
   }
 
   const signOut = async () => {
@@ -29,10 +29,11 @@ export function AdminAuthProvider({ children }) {
     await supabase.auth.signOut()
   }
 
-  const isAdmin = session?.user?.app_metadata?.role === 'admin'
+  const role = session?.user?.app_metadata?.role ?? null
+  const isAdmin = role === 'admin'
 
   return (
-    <AdminAuthContext.Provider value={{ session, loading: session === undefined, isAdmin, signIn, signOut }}>
+    <AdminAuthContext.Provider value={{ session, loading: session === undefined, role, isAdmin, signIn, signOut }}>
       {children}
     </AdminAuthContext.Provider>
   )

@@ -21,7 +21,7 @@ const stroke = { fill: 'none', strokeLinecap: 'round' }
 const OPENING_MS = 1800
 
 export default function AdminLogin() {
-  const { session, isAdmin, signIn } = useAdminAuth()
+  const { session, role, isAdmin, signIn } = useAdminAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -33,6 +33,8 @@ export default function AdminLogin() {
   // A visitor who is already signed in when the page loads is redirected straight away.
   const holdRedirect = useRef(false)
 
+  // Chemists never see the dashboard: send them to their own page straight away.
+  if (session && role === 'chemist') return <Navigate to="/chemist" replace />
   if (session && !holdRedirect.current) return <Navigate to={isAdmin ? '/admin' : '/admin/samples'} replace />
 
   const handleSubmit = async (e) => {

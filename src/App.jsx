@@ -40,6 +40,7 @@ import OfferCounter from './pages/OfferCounter'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import BranchSamplesDashboard from './pages/admin/BranchSamplesDashboard'
+import ChemistApp from './pages/chemist/ChemistApp'
 
 function PatientApp() {
   return (
@@ -79,14 +80,17 @@ export default function App() {
   const isAdmin = location.pathname.startsWith('/admin')
   const isKiosk = !!brand.features?.trustCard && location.pathname === '/offer-counter'
   const isInternational = !!brand.features?.international && location.pathname.startsWith('/international')
-  const [showSplash, setShowSplash] = useState(!isAdmin && !isKiosk && !isInternational && hasSplash)
+  const isChemist = location.pathname.startsWith('/chemist')
+  const [showSplash, setShowSplash] = useState(!isAdmin && !isKiosk && !isInternational && !isChemist && hasSplash)
 
   return (
     <AdminAuthProvider>
       <RouteTracker />
-      {showSplash && !isAdmin && !isKiosk && !isInternational && <Splash onFinish={() => setShowSplash(false)} />}
+      {showSplash && !isAdmin && !isKiosk && !isInternational && !isChemist && <Splash onFinish={() => setShowSplash(false)} />}
       {isKiosk ? (
         <OfferCounter />
+      ) : isChemist ? (
+        <ChemistApp />
       ) : isInternational ? (
         <Routes>
           <Route path="/international" element={<International />} />
