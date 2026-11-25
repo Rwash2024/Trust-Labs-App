@@ -74,3 +74,18 @@ export function validateChemistInput(body: unknown): ValidationResult {
       return fail('إجراء غير معروف')
   }
 }
+
+// Maps an auth.admin.createUser / updateUserById error to an HTTP response.
+// Branches on the error code, not on status: GoTrue answers 422 for several
+// different problems (duplicate email, weak password, ...).
+export function mapAuthAdminError(err: { code?: string; message?: string } | null | undefined): { status: number; error: string } {
+  const code = err?.code ?? ''
+  const msg = `${err?.message ?? ''}`.toLowerCase()
+  if (code === 'email_exists' || code === 'user_already_exists' || msg.includes('already')) {
+    return { status: 409, error: 'رقم الموبايل ده مسجل قبل كده' }
+  }
+  if (code === 'weak_password') {
+    return { status: 400, error: 'الباسورد ضعيف، استخدم 8 حروف وأرقام على الأقل ومتكررش رقم بسيط' }
+  }
+  return { status: 500, error: 'حصل خطأ غير متوقع، حاول تاني' }
+}

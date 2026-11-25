@@ -1,7 +1,7 @@
 // Run with:  node --experimental-strip-types --test supabase/functions/manage-chemist/validate.test.ts
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { validateChemistInput, normalizeEgyptPhone } from './validate.ts'
+import { validateChemistInput, normalizeEgyptPhone, mapAuthAdminError } from './validate.ts'
 
 const UUID = '123e4567-e89b-42d3-a456-426614174000'
 
@@ -59,4 +59,15 @@ test('unknown action / non-object body rejected', () => {
   assert.equal(validateChemistInput({ action: 'delete' }).ok, false)
   assert.equal(validateChemistInput(null).ok, false)
   assert.equal(validateChemistInput('x').ok, false)
+})
+
+test('mapAuthAdminError: duplicate, weak password, other', () => {
+  assert.deepEqual(mapAuthAdminError({ code: 'email_exists' }), { status: 409, error: 'رقم الموبايل ده مسجل قبل كده' })
+  assert.equal(mapAuthAdminError({ code: 'user_already_exists' }).status, 409)
+  assert.equal(mapAuthAdminError({ message: 'User already registered' }).status, 409)
+  const weak = mapAuthAdminError({ code: 'weak_password', message: 'Password should contain...' })
+  assert.equal(weak.status, 400)
+  assert.match(weak.error, /الباسورد ضعيف/)
+  assert.equal(mapAuthAdminError({ code: 'unexpected_failure', message: 'boom' }).status, 500)
+  assert.equal(mapAuthAdminError(null).status, 500)
 })

@@ -20,7 +20,6 @@
 --     raises a warning with the count it finds.
 --   * Not undone on purpose:
 --       - the pg_cron extension (may have existed before; harmless if idle);
---       - bookings in the supabase_realtime publication (see section 2);
 --       - bookings_guard_staff_edits_trigger itself: it existed before the
 --         migration with the same definition, only its function changed and
 --         is restored below;
@@ -68,13 +67,16 @@ end $$;
 -- ---------------------------------------------------------------------------
 -- 2. Realtime publication
 -- ---------------------------------------------------------------------------
--- Only chemist_pings is removed. The migration added bookings only if it was
--- not already published, and there is no record of which case happened, so
--- bookings is left in the publication (it may have been there before for the
--- staff dashboard). If you know it was NOT published before the migration:
---   alter publication supabase_realtime drop table public.bookings;
+-- A live pre-check showed bookings was NOT in the publication before the
+-- migration added it, so both chemist_pings and bookings are removed.
 do $$
 begin
+  if exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'bookings'
+  ) then
+    alter publication supabase_realtime drop table public.bookings;
+  end if;
   if exists (
     select 1 from pg_publication_tables
     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'chemist_pings'

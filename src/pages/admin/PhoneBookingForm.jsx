@@ -89,6 +89,13 @@ export default function PhoneBookingForm({ onCreated }) {
     }
   }
 
+  const handleEscape = () => {
+    const blank = emptyForm()
+    const dirty = Object.keys(blank).some((k) => String(form[k]).trim() !== String(blank[k]).trim())
+    if (dirty && !window.confirm('تقفل الفورم؟ البيانات اللي كتبتها هتضيع')) return
+    close()
+  }
+
   if (!open) {
     return (
       <button type="button" className="admin-btn admin-btn--primary phone-booking__open" onClick={() => setOpen(true)}>
@@ -117,7 +124,7 @@ export default function PhoneBookingForm({ onCreated }) {
 
   return (
     <form className="admin-form phone-booking" onSubmit={handleSubmit}
-      onKeyDown={(e) => e.key === 'Escape' && !busy && close()}
+      onKeyDown={(e) => e.key === 'Escape' && !busy && handleEscape()}
       noValidate
     >
       <h3>زيارة منزلية بالتليفون</h3>

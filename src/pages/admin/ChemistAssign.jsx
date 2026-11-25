@@ -66,6 +66,11 @@ export default function ChemistAssign({ booking, chemists, onChanged }) {
   const handleAssign = (e) => {
     const chemistId = e.target.value
     if (!chemistId || chemistId === booking.assigned_chemist_id) return
+    // Re-assigning after arrival/cancel issues a new token: the old link dies.
+    // The select is controlled, so cancelling leaves it on the current chemist.
+    if (['arrived', 'cancelled'].includes(booking.trip_status)) {
+      if (!window.confirm('تغيير الكيميائي هيعمل لينك تتبع جديد، واللينك القديم هيقف. متأكد؟')) return
+    }
     run(() => assignChemist(booking.id, chemistId))
   }
 

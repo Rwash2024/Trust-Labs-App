@@ -10,7 +10,7 @@
 // Secrets: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY — provided automatically.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
-import { chemistEmailFromPhone, validateChemistInput } from './validate.ts'
+import { chemistEmailFromPhone, mapAuthAdminError, validateChemistInput } from './validate.ts'
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -67,10 +67,8 @@ Deno.serve(async (req) => {
         app_metadata: { role: 'chemist' },
       })
       if (createErr || !created?.user) {
-        const msg = `${createErr?.message ?? ''}`.toLowerCase()
-        if (createErr?.status === 422 || msg.includes('already') || msg.includes('registered')) {
-          return json({ error: 'رقم الموبايل ده مسجل قبل كده' }, 409)
-        }
+        const mapped = mapAuthAdminError(createErr)
+        if (mapped.status !== 500) return json({ error: mapped.error }, mapped.status)
         throw createErr ?? new Error('createUser returned no user')
       }
 
@@ -95,7 +93,11 @@ Deno.serve(async (req) => {
 
     if (input.action === 'reset_password') {
       const { error } = await db.auth.admin.updateUserById(input.chemist_id, { password: input.password })
-      if (error) throw error
+      if (error) {
+        const mapped = mapAuthAdminError(error)
+        if (mapped.status === 400) return json({ error: mapped.error }, 400)
+        throw error
+      }
       return json({ ok: true })
     }
 

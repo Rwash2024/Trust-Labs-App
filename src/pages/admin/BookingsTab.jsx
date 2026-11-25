@@ -34,7 +34,10 @@ export default function BookingsTab() {
   // table and the phone-booking form stay mounted.
   const load = () => {
     adminListBookings()
-      .then(setItems)
+      .then((rows) => {
+        setItems(rows)
+        setError('')
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
     // A failing chemist list must not hide the bookings; the select just stays empty.
@@ -132,7 +135,15 @@ export default function BookingsTab() {
               </td>
               <td style={{ maxWidth: 200, whiteSpace: 'pre-wrap' }}>{i.notes || '—'}</td>
               <td>{new Date(i.created_at).toLocaleString('ar-EG')}</td>
-              <td>{i.synced_to_erp ? '✅' : '⏳'}</td>
+              <td>
+                {i.source === 'call_center' ? (
+                  <span title="حجوزات الكول سنتر مش بتتبعت للـ ERP">—</span>
+                ) : i.synced_to_erp ? (
+                  '✅'
+                ) : (
+                  '⏳'
+                )}
+              </td>
               <td>
                 <select
                   className="admin-select"
