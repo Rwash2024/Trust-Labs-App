@@ -402,12 +402,10 @@ begin
   exception when insufficient_privilege then
     null;
   end;
-  begin
-    perform public.find_trip('01098347261', 'TEST-CHEM-0001');
-    raise exception 'TEST FAILED: authenticated called find_trip (anon only)';
-  exception when insufficient_privilege then
-    null;
-  end;
+  -- find_trip is open to authenticated too (a logged-in browser on the public
+  -- form); it returns only a token, and none exists before assignment.
+  assert public.find_trip('01098347261', 'TEST-CHEM-0001') is null,
+    'find_trip as authenticated should work and return null before assignment';
 end $$;
 
 reset role;
@@ -424,6 +422,7 @@ declare
   v_t1 text;
   v_t2 text;
   v_t3 text;
+  i int;
 begin
   -- Call-center booking.
   select * into r
@@ -444,6 +443,16 @@ begin
       and b.assigned_chemist_id is null and b.trip_status is null
   ), 'staff-created booking has the wrong shape';
   perform set_config('chemtest.b3', r.id::text, true);
+
+  -- Staff are exempt from the anon limit (5 bookings per phone per day):
+  -- five more for the same phone make six, and all go through.
+  for i in 1..5 loop
+    perform public.staff_create_home_booking(
+      'مريض تليفون', '01098347267', 'عنوان تليفون', null, null, null, null, null
+    );
+  end loop;
+  assert (select count(*) from public.bookings b where b.phone = '01098347267' and b.source = 'call_center') = 6,
+    'staff should not be stopped by the per-phone booking rate limit';
 
   begin
     perform public.staff_create_home_booking('x', '01012345678', 'x', null, null, null, null, null);
@@ -774,6 +783,109 @@ end $$;
 
 reset role;
 
+-- Staff: re-assigning a cancelled / arrived trip issues a NEW token ---------
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-0000000000ff","role":"authenticated","app_metadata":{}}';
+
+do $$
+declare
+  v_new text;
+begin
+  -- b2: trip cancelled by staff above.
+  v_new := public.assign_chemist(current_setting('chemtest.b2')::uuid, 'c4e0a000-0000-4000-8000-00000000000a');
+  assert v_new ~ '^[A-Za-z0-9_-]{32}$' and v_new <> current_setting('chemtest.t2'),
+    're-assigning a cancelled trip must issue a new token';
+  assert public.get_trip_by_token(current_setting('chemtest.t2')) is null, 'old token of a cancelled trip came back to life';
+  assert public.get_trip_by_token(v_new)::jsonb ->> 'status' = 'assigned', 'new token should show the assigned trip';
+
+  -- b3: arrived 25 h ago.
+  v_new := public.assign_chemist(current_setting('chemtest.b3')::uuid, 'c4e0a000-0000-4000-8000-00000000000b');
+  assert v_new <> current_setting('chemtest.t3'), 're-assigning an arrived trip must issue a new token';
+  assert public.get_trip_by_token(current_setting('chemtest.t3')) is null, 'old token of an arrived trip came back to life';
+end $$;
+
+reset role;
+
+-- Anon INSERT cannot pre-set trip columns or pose as the call center -------
+
+set local role anon;
+set local request.jwt.claims = '{"role":"anon"}';
+
+do $$
+begin
+  insert into public.bookings (booking_ref, mode, name, phone, address,
+                               assigned_chemist_id, track_token, trip_status, trip_started_at, trip_arrived_at)
+  values ('TEST-CHEM-0004', 'home', 'مريض اختبار ٤', '01098347270', 'عنوان اختبار ٤',
+          'c4e0a000-0000-4000-8000-00000000000a', 'anon-token-anon-token-anon-token', 'on_way', now(), now());
+
+  begin
+    insert into public.bookings (booking_ref, source, mode, name, phone, address)
+    values ('TEST-CHEM-0005', 'call_center', 'home', 'x', '01098347271', 'x');
+    raise exception 'TEST FAILED: anon inserted a call_center booking';
+  exception when insufficient_privilege then
+    null; -- expected: bookings_guard_insert_trip_fields (42501)
+  end;
+end $$;
+
+reset role;
+
+do $$
+begin
+  assert exists (
+    select 1 from public.bookings
+    where booking_ref = 'TEST-CHEM-0004'
+      and assigned_chemist_id is null and track_token is null and trip_status is null
+      and trip_started_at is null and trip_arrived_at is null
+  ), 'anon insert kept trip columns it must not set';
+  assert public.get_trip_by_token('anon-token-anon-token-anon-token') is null, 'anon-chosen token works';
+  assert not exists (select 1 from public.bookings where booking_ref = 'TEST-CHEM-0005'), 'call_center row from anon exists';
+end $$;
+
+-- Deactivated chemist: every chemist RPC refuses ----------------------------
+
+update public.chemists set active = false where id = 'c4e0a000-0000-4000-8000-00000000000b';
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"c4e0a000-0000-4000-8000-00000000000b","role":"authenticated","app_metadata":{"role":"chemist"}}';
+
+do $$
+begin
+  begin
+    perform public.chemist_my_visits();
+    raise exception 'TEST FAILED: inactive chemist listed visits';
+  exception when insufficient_privilege then
+    null;
+  end;
+  begin
+    -- b3 is assigned to B (re-assigned above), so this would start if B were active.
+    perform public.chemist_start_trip(current_setting('chemtest.b3')::uuid);
+    raise exception 'TEST FAILED: inactive chemist started a trip';
+  exception when insufficient_privilege then
+    null;
+  end;
+  begin
+    perform public.chemist_ping(current_setting('chemtest.b3')::uuid, 30.05, 31.24, 10);
+    raise exception 'TEST FAILED: inactive chemist pinged';
+  exception when insufficient_privilege then
+    null;
+  end;
+  begin
+    perform public.chemist_arrive(current_setting('chemtest.b3')::uuid);
+    raise exception 'TEST FAILED: inactive chemist arrived';
+  exception when insufficient_privilege then
+    null;
+  end;
+  begin
+    perform public.cancel_trip(current_setting('chemtest.b3')::uuid);
+    raise exception 'TEST FAILED: inactive chemist cancelled a trip';
+  exception when insufficient_privilege then
+    null;
+  end;
+end $$;
+
+reset role;
+
 -- Structural: grants and the lookup table (as postgres) ----------------------
 
 do $$
@@ -784,7 +896,9 @@ begin
   assert not has_function_privilege('anon', 'public.cancel_trip(uuid, boolean)', 'execute'), 'anon can execute cancel_trip';
   assert has_function_privilege('anon', 'public.get_trip_by_token(text)', 'execute'), 'anon cannot execute get_trip_by_token';
   assert has_function_privilege('anon', 'public.find_trip(text, text)', 'execute'), 'anon cannot execute find_trip';
-  assert not has_function_privilege('authenticated', 'public.find_trip(text, text)', 'execute'), 'authenticated can execute find_trip';
+  assert has_function_privilege('authenticated', 'public.find_trip(text, text)', 'execute'), 'authenticated cannot execute find_trip';
+  assert not has_function_privilege('anon', 'public.generate_patient_cards(int, text)', 'execute'), 'anon can execute generate_patient_cards';
+  assert has_function_privilege('authenticated', 'public.generate_patient_cards(int, text)', 'execute'), 'authenticated lost generate_patient_cards';
   assert not has_function_privilege('anon', 'public.normalize_egypt_phone(text)', 'execute'), 'anon can execute normalize_egypt_phone';
 
   assert (select relrowsecurity from pg_class where oid = 'public.trip_lookup_attempts'::regclass), 'trip_lookup_attempts has RLS off';
@@ -795,6 +909,8 @@ begin
 
   assert exists (select 1 from pg_trigger where tgrelid = 'public.bookings'::regclass and tgname = 'bookings_cancel_trip_on_cancel' and not tgisinternal),
     'trigger bookings_cancel_trip_on_cancel missing';
+  assert exists (select 1 from pg_trigger where tgrelid = 'public.bookings'::regclass and tgname = 'bookings_guard_insert_trip_fields' and not tgisinternal),
+    'trigger bookings_guard_insert_trip_fields missing';
   assert exists (select 1 from cron.job where jobname = 'trip_lookup_attempts_prune'), 'cron job trip_lookup_attempts_prune missing';
 
   raise notice 'chemist_tracking tests: all passed';

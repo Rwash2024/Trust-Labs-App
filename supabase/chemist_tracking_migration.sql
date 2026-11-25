@@ -14,7 +14,9 @@
 --   4. Retention + realtime: pings older than 30 days are deleted nightly;
 --      chemist_pings and bookings are published to supabase_realtime.
 --   5. RPCs: staff booking + assignment, the chemist trip flow, the public
---      token lookup (find_trip, get_trip_by_token) and a cancel trigger.
+--      token lookup (find_trip, get_trip_by_token), a cancel trigger, an
+--      INSERT guard on the trip columns, and a staff exemption in the
+--      shared insert rate limit (enforce_insert_rate_limit).
 --
 -- Roles: app_metadata.role is only settable server-side.
 --   ''      -> staff (call center / branch) — the existing logged-in accounts
@@ -195,7 +197,10 @@ end $$;
 -- RLS does not reach SECURITY DEFINER functions: they run as their owner.
 -- generate_patient_cards (patient_cards_family_card_type_migration.sql, the
 -- latest definition) is granted to authenticated with no role check, so a
--- chemist JWT could mint Trust Card codes. Same function, plus a chemist check.
+-- chemist JWT could mint Trust Card codes. Same function, plus a staff check
+-- (refuses anon, chemists and any other role). Supabase's default privileges
+-- also gave anon a direct EXECUTE grant, which create or replace keeps, so it
+-- is revoked from anon explicitly below.
 create or replace function generate_patient_cards(p_count int, p_type text default 'personal')
 returns setof text
 language plpgsql security definer set search_path = public as $$
@@ -203,7 +208,7 @@ declare
   v_code text;
   v_generated int := 0;
 begin
-  if public.is_chemist() then
+  if not public.is_staff() then
     raise exception 'not allowed' using errcode = '42501';
   end if;
 
@@ -231,8 +236,8 @@ begin
 end;
 $$;
 
-revoke execute on function generate_patient_cards(int, text) from public;
-grant execute on function generate_patient_cards(int, text) to authenticated;
+revoke execute on function public.generate_patient_cards(int, text) from public, anon;
+grant execute on function public.generate_patient_cards(int, text) to authenticated;
 
 -- Other SECURITY DEFINER functions that a logged-in user (so also a chemist)
 -- can call but anon cannot: list them so whoever applies this can check each
@@ -459,13 +464,103 @@ select cron.schedule(
   $$delete from public.trip_lookup_attempts where at < now() - interval '1 day'$$
 );
 
+-- bookings_guard_insert_trip_fields ------------------------------------------
+-- Anyone can INSERT into bookings ("public insert bookings", with check
+-- (true)), and the staff edit guard is BEFORE UPDATE only, so without this an
+-- anon insert could arrive already assigned / on the way / with a chosen
+-- token, or pretend to be a call-center booking. Staff (and the trip RPC
+-- bypass) are exempt; everyone else gets the trip columns blanked and
+-- source 'call_center' refused.
+create or replace function public.bookings_guard_insert_trip_fields()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if current_setting('app.trip_rpc', true) = 'on' or public.is_staff() then
+    return new;
+  end if;
+
+  if new.source = 'call_center' then
+    raise exception 'not allowed' using errcode = '42501';
+  end if;
+
+  new.assigned_chemist_id := null;
+  new.track_token := null;
+  new.trip_status := null;
+  new.trip_started_at := null;
+  new.trip_arrived_at := null;
+  return new;
+end;
+$$;
+
+revoke execute on function public.bookings_guard_insert_trip_fields() from public, anon, authenticated;
+
+drop trigger if exists bookings_guard_insert_trip_fields on public.bookings;
+create trigger bookings_guard_insert_trip_fields
+  before insert on public.bookings
+  for each row execute function public.bookings_guard_insert_trip_fields();
+
+-- enforce_insert_rate_limit: staff exemption ----------------------------------
+-- Same function as spam_protection_migration.sql (copied unchanged), plus an
+-- early return for staff and for the trip RPC bypass, so a call-center agent
+-- booking a 6th visit for one phone in a day is not stopped by the anon limit.
+-- The function is shared by every rate-limited table, so staff inserts into
+-- complaints / visit_ratings / trust_card_requests / qr_scans are exempt too.
+-- If spam_protection_migration.sql is ever re-run, re-run this file after it.
+create or replace function public.enforce_insert_rate_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  key_col text := tg_argv[0];
+  per_key_max int := tg_argv[1]::int;
+  per_key_minutes int := tg_argv[2]::int;
+  global_max int := tg_argv[3]::int;
+  global_minutes int := tg_argv[4]::int;
+  key_val text;
+  n int;
+begin
+  if public.is_staff() or current_setting('app.trip_rpc', true) = 'on' then
+    return new;
+  end if;
+
+  if key_col <> '' then
+    key_val := to_jsonb(new) ->> key_col;
+    if key_val is not null and key_val <> '' then
+      execute format(
+        'select count(*) from %I.%I where %I::text = $1 and created_at > now() - make_interval(mins => $2)',
+        tg_table_schema, tg_table_name, key_col
+      ) into n using key_val, per_key_minutes;
+      if n >= per_key_max then
+        raise exception 'تم تجاوز الحد المسموح للإرسال، حاول بعد قليل أو كلّم الخط الساخن 16183'
+          using errcode = 'P0001', hint = 'rate_limited';
+      end if;
+    end if;
+  end if;
+
+  execute format(
+    'select count(*) from %I.%I where created_at > now() - make_interval(mins => $1)',
+    tg_table_schema, tg_table_name
+  ) into n using global_minutes;
+  if n >= global_max then
+    raise exception 'الخدمة مشغولة حاليًا، حاول بعد شوية أو كلّم الخط الساخن 16183'
+      using errcode = 'P0001', hint = 'rate_limited_global';
+  end if;
+
+  return new;
+end;
+$$;
+
 -- staff_create_home_booking -------------------------------------------------
 -- A call-center agent books a home visit over the phone. The row goes through
 -- the same bookings constraints and triggers as a web booking (phone
--- plausibility, length caps, payment_status trigger, ERP forward, and the anon
--- rate limit: 5 bookings per phone per day also applies here, because that
--- trigger cannot tell a staff insert from an anon one; the agent then sees its
--- Arabic message).
+-- plausibility, length caps, payment_status trigger, ERP forward). It runs as
+-- staff, so the insert guard above lets source 'call_center' through and the
+-- anon rate limit skips it.
 create or replace function public.staff_create_home_booking(
   p_name text,
   p_phone text,
@@ -581,8 +676,8 @@ $$;
 
 -- assign_chemist ------------------------------------------------------------
 -- Assigning (or re-assigning) puts the trip back to 'assigned' and clears the
--- trip times. The tracking token survives a re-assignment so a link already
--- sent to the patient keeps working.
+-- trip times. While the trip is still 'assigned' the tracking token survives
+-- a re-assignment, so a link already sent to the patient keeps working.
 create or replace function public.assign_chemist(p_booking uuid, p_chemist uuid)
 returns text
 language plpgsql
@@ -614,10 +709,14 @@ begin
     raise exception 'chemist not found or inactive' using errcode = '22023';
   end if;
 
-  v_token := coalesce(
-    v_b.track_token,
-    replace(translate(encode(extensions.gen_random_bytes(24), 'base64'), '+/', '-_'), '=', '')
-  );
+  -- A finished ('arrived') or called-off ('cancelled') trip gets a NEW token,
+  -- so links sent for the old trip stay dead.
+  v_token := case
+    when v_b.track_token is not null and v_b.trip_status is distinct from 'arrived'
+         and v_b.trip_status is distinct from 'cancelled'
+      then v_b.track_token
+    else replace(translate(encode(extensions.gen_random_bytes(24), 'base64'), '+/', '-_'), '=', '')
+  end;
 
   perform set_config('app.trip_rpc', 'on', true);
   update public.bookings b
@@ -659,7 +758,8 @@ as $$
 declare
   v_today date := (now() at time zone 'Africa/Cairo')::date;
 begin
-  if not public.is_chemist() then
+  if not public.is_chemist()
+     or not exists (select 1 from public.chemists c where c.id = auth.uid() and c.active) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
 
@@ -688,7 +788,8 @@ as $$
 declare
   v_b public.bookings%rowtype;
 begin
-  if not public.is_chemist() then
+  if not public.is_chemist()
+     or not exists (select 1 from public.chemists c where c.id = auth.uid() and c.active) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
 
@@ -733,7 +834,8 @@ declare
   v_chemist uuid;
   v_trip text;
 begin
-  if not public.is_chemist() then
+  if not public.is_chemist()
+     or not exists (select 1 from public.chemists c where c.id = auth.uid() and c.active) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
 
@@ -743,8 +845,11 @@ begin
     raise exception 'invalid coordinates' using errcode = '22023';
   end if;
 
+  -- Row lock: serialises pings with each other and with arrive/cancel, so the
+  -- on_way check and the 10 s throttle below hold under concurrency.
   select b.assigned_chemist_id, b.trip_status into v_chemist, v_trip
-  from public.bookings b where b.id = p_booking;
+  from public.bookings b where b.id = p_booking
+  for update;
   if not found or v_chemist is distinct from auth.uid() then
     raise exception 'not your visit' using errcode = '42501';
   end if;
@@ -777,7 +882,8 @@ as $$
 declare
   v_b public.bookings%rowtype;
 begin
-  if not public.is_chemist() then
+  if not public.is_chemist()
+     or not exists (select 1 from public.chemists c where c.id = auth.uid() and c.active) then
     raise exception 'not allowed' using errcode = '42501';
   end if;
 
@@ -815,6 +921,9 @@ declare
   v_new text;
 begin
   if public.is_chemist() then
+    if not exists (select 1 from public.chemists c where c.id = auth.uid() and c.active) then
+      raise exception 'not allowed' using errcode = '42501';
+    end if;
     select * into v_b from public.bookings b where b.id = p_booking for update;
     if not found or v_b.assigned_chemist_id is distinct from auth.uid() then
       raise exception 'not your visit' using errcode = '42501';
@@ -971,7 +1080,9 @@ grant execute on function public.chemist_ping(uuid, double precision, double pre
 grant execute on function public.chemist_arrive(uuid) to authenticated;
 grant execute on function public.cancel_trip(uuid, boolean) to authenticated;
 grant execute on function public.get_trip_by_token(text) to anon, authenticated;
-grant execute on function public.find_trip(text, text) to anon;
+-- authenticated too: a staff member logged in on the same browser sends their
+-- JWT from the public "track my chemist" form. find_trip returns only a token.
+grant execute on function public.find_trip(text, text) to anon, authenticated;
 
 -- bookings_cancel_trip_on_cancel --------------------------------------------
 -- Booking status -> 'ملغي' (by staff or admin) also ends the trip. AFTER, not
