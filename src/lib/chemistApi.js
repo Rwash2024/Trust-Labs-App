@@ -100,8 +100,6 @@ export async function manageChemist(body) {
 }
 
 // ---- Live trips (staff, direct selects under RLS) ----
-const PING_WINDOW_MS = 24 * 60 * 60 * 1000
-
 function cairoToday(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(now)
 }
@@ -120,17 +118,21 @@ export async function listLiveTrips() {
   if (error) throw toError(error)
   if (!rows?.length) return []
 
-  const since = new Date(Date.now() - PING_WINDOW_MS).toISOString()
-  const { data: pings, error: pingError } = await client
-    .from('chemist_pings')
-    .select('booking_id, lat, lng, at')
-    .in('booking_id', rows.map((r) => r.id))
-    .gte('at', since)
-    .order('at', { ascending: false })
-  if (pingError) throw toError(pingError)
-
-  const latest = new Map()
-  for (const p of pings ?? []) if (!latest.has(p.booking_id)) latest.set(p.booking_id, p)
+  // One newest-ping query per booking: a single IN query would hit the
+  // 1000-row cap and cut off exactly the stalled chemist's older last ping.
+  const results = await Promise.all(
+    rows.map((r) =>
+      client
+        .from('chemist_pings')
+        .select('lat, lng, at')
+        .eq('booking_id', r.id)
+        .order('at', { ascending: false })
+        .limit(1),
+    ),
+  )
+  const failed = results.find((res) => res.error)
+  if (failed) throw toError(failed.error)
+  const latest = new Map(rows.map((r, i) => [r.id, results[i].data?.[0]]))
 
   return rows.map((r) => {
     const ping = latest.get(r.id)

@@ -2,7 +2,7 @@
   width: 100%;
   border-radius: 16px;
   overflow: hidden;
-  background: #e9edf0;
+  background: var(--color-light-gray, #e9edf0);
 }
 
 .track-map-pin {

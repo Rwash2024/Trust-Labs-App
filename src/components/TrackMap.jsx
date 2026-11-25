@@ -1,9 +1,9 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './TrackMap.css'
 
 // Leaflet is loaded on demand so it ships as its own chunk.
 const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-const ATTRIBUTION = '© OpenStreetMap'
+const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 const CAIRO = [30.05, 31.25]
 const EMPTY = []
 const HOME_COLOR = '#D85A30'
@@ -48,6 +48,7 @@ export default function TrackMap({ markers = EMPTY, height = 260 }) {
   const state = useRef({ L: null, map: null, layer: null })
   const markersRef = useRef(markers)
   const lastKey = useRef(null)
+  const [failed, setFailed] = useState(false)
 
   const draw = () => {
     const { L, map, layer } = state.current
@@ -64,7 +65,13 @@ export default function TrackMap({ markers = EMPTY, height = 260 }) {
     }
     // Refit only when the set of markers changes, not on every GPS ping.
     const key = pts.map((m) => String(m.id)).sort().join('|')
-    if (key === lastKey.current) return
+    if (key === lastKey.current) {
+      // Same markers: no refit, but keep a moving chemist in view.
+      const bounds = map.getBounds()
+      const out = pts.find((m) => m.kind === 'chemist' && !bounds.contains([m.lat, m.lng]))
+      if (out) map.panTo([out.lat, out.lng])
+      return
+    }
     const el = box.current
     if (!el || !(el.clientWidth > 0) || !(el.clientHeight > 0)) return
     lastKey.current = key
@@ -87,7 +94,13 @@ export default function TrackMap({ markers = EMPTY, height = 260 }) {
     let cancelled = false
     let ro = null
     ;(async () => {
-      const [{ default: L }] = await Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')])
+      let L
+      try {
+        ;[{ default: L }] = await Promise.all([import('leaflet'), import('leaflet/dist/leaflet.css')])
+      } catch {
+        if (!cancelled) setFailed(true)
+        return
+      }
       if (cancelled || !box.current) return
       const map = L.map(box.current, { zoomControl: true, attributionControl: true })
       L.tileLayer(TILES, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(map)
@@ -112,5 +125,13 @@ export default function TrackMap({ markers = EMPTY, height = 260 }) {
     }
   }, [])
 
-  return <div ref={box} dir="ltr" className="track-map" style={{ height }} />
+  return (
+    <div ref={box} dir="ltr" className="track-map" style={{ height }}>
+      {failed && (
+        <p dir="rtl" style={{ margin: 0, padding: 16, textAlign: 'center', color: 'var(--color-gray, #6B7280)' }}>
+          الخريطة مش راضية تحمّل، اتأكد من النت
+        </p>
+      )}
+    </div>
+  )
 }
