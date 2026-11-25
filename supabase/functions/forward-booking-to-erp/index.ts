@@ -60,6 +60,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ skipped: true }), { headers: { ...CORS_HEADERS, 'content-type': 'application/json' } })
     }
 
+    // Bookings the call-center staff enter themselves are already known to the
+    // ERP side — never forward them.
+    if (record.source === 'call_center') {
+      return new Response(JSON.stringify({ skipped: 'call_center' }), { headers: { ...CORS_HEADERS, 'content-type': 'application/json' } })
+    }
+
     const body = {
       customer_name: record.name,
       service_type: SERVICE_TYPE[record.mode] || record.mode,
