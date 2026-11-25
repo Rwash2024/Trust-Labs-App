@@ -46,7 +46,7 @@ export default function ChemistAssign({ booking, chemists, onChanged }) {
   const trip = TRIP[tripKey] || TRIP.assigned
   const onWay = booking.trip_status === 'on_way'
   const chosen = chemists.find((c) => c.id === booking.assigned_chemist_id)
-  const hasLink = !!(booking.assigned_chemist_id && booking.track_token)
+  const hasLink = !!(booking.assigned_chemist_id && booking.track_token) && booking.trip_status !== 'cancelled'
   const link = hasLink ? trackUrl(window.location.origin, booking.track_token) : ''
   const selectId = `chemist-${booking.id}`
 
@@ -125,6 +125,8 @@ export default function ChemistAssign({ booking, chemists, onChanged }) {
           </option>
         ))}
       </select>
+
+      {chemists.length === 0 && <span className="chemist-assign__hint">مفيش كيميائيين متاحين</span>}
 
       {hasLink && (
         <div className="chemist-assign__actions">

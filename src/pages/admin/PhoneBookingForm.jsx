@@ -1,12 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { staffCreateHomeBooking } from '../../lib/chemistApi'
 import { cleanEgyptPhoneInput, egyptPhoneError } from '../../lib/phone'
 
 // Stored as Arabic text like the booking form does ('كاش'). Not 'فيزا (أونلاين)':
-// that prefix makes the DB trigger mark the booking as awaiting online payment.
+// any 'فيزا%' value makes the DB trigger mark the booking as awaiting online payment.
 const PAYMENT_OPTIONS = [
   { value: 'كاش', label: 'كاش' },
-  { value: 'فيزا عند الزيارة', label: 'فيزا عند الزيارة' },
+  { value: 'بطاقة عند الزيارة', label: 'بطاقة عند الزيارة' },
 ]
 
 const cairoToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date())
@@ -43,6 +43,10 @@ export default function PhoneBookingForm({ onCreated }) {
   const [busy, setBusy] = useState(false)
   const [created, setCreated] = useState(null)
 
+  useEffect(() => {
+    if (open) document.getElementById('pb-name')?.focus()
+  }, [open])
+
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }))
 
   const close = () => {
@@ -58,7 +62,11 @@ export default function PhoneBookingForm({ onCreated }) {
     const found = validate(form)
     setErrors(found)
     setSubmitError('')
-    if (Object.keys(found).length) return
+    const firstBad = Object.keys(found)[0]
+    if (firstBad) {
+      document.getElementById(`pb-${firstBad}`)?.focus()
+      return
+    }
     setBusy(true)
     try {
       const row = await staffCreateHomeBooking({
@@ -108,7 +116,10 @@ export default function PhoneBookingForm({ onCreated }) {
   })
 
   return (
-    <form className="admin-form phone-booking" onSubmit={handleSubmit} noValidate>
+    <form className="admin-form phone-booking" onSubmit={handleSubmit}
+      onKeyDown={(e) => e.key === 'Escape' && !busy && close()}
+      noValidate
+    >
       <h3>زيارة منزلية بالتليفون</h3>
 
       {created !== null && (

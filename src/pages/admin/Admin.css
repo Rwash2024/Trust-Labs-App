@@ -404,6 +404,11 @@
   gap: var(--space-2);
 }
 
+.chemist-assign__hint {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
 .chemist-assign__error,
 .phone-booking__error {
   color: var(--color-error);
@@ -433,7 +438,7 @@
 
 .trip-badge--live {
   background: var(--color-primary);
-  color: #fff;
+  color: var(--color-white, #fff);
 }
 
 .trip-badge--warn {

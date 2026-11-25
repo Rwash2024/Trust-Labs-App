@@ -30,8 +30,9 @@ export default function BookingsTab() {
   const [filter, setFilter] = useState('all')
   const [chemists, setChemists] = useState([])
 
+  // Only the first load shows the loading state; later reloads are silent so the
+  // table and the phone-booking form stay mounted.
   const load = () => {
-    setLoading(true)
     adminListBookings()
       .then(setItems)
       .catch((e) => setError(e.message))
