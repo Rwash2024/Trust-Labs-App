@@ -1,3 +1,5 @@
+import { redactTrackUrl } from './trackVisitView.js'
+
 const GA_ID = import.meta.env.VITE_GA_ID
 
 let initialized = false
@@ -18,8 +20,8 @@ export function trackPageview(path) {
   if (!GA_ID) return
   ensureInit()
   window.gtag('event', 'page_view', {
-    page_path: path,
-    page_location: window.location.href,
+    page_path: redactTrackUrl(path),
+    page_location: redactTrackUrl(window.location.href),
     page_title: document.title,
   })
 }
