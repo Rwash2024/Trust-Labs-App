@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
 import { adminListBookings, adminUpdateBookingStatus } from '../../lib/admin'
+import { listAvailableChemists } from '../../lib/chemistApi'
+import ChemistAssign from './ChemistAssign'
+import PhoneBookingForm from './PhoneBookingForm'
 
 const STATUSES = ['جديد', 'تم التأكيد', 'تم السحب', 'ملغي']
 const MODES = { home: 'زيارة منزلية', branch: 'فرع' }
-const SOURCES = { booking_form: 'صفحة الحجز', chat_assistant: 'المساعد الذكي' }
+const SOURCES = { booking_form: 'صفحة الحجز', chat_assistant: 'المساعد الذكي', call_center: 'الكول سنتر' }
 const PAYMENT_STATUSES = {
   pending: 'بانتظار الدفع',
   paid: 'تم الدفع ✅',
@@ -25,13 +28,22 @@ export default function BookingsTab() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState('all')
+  const [chemists, setChemists] = useState([])
 
+  // Only the first load shows the loading state; later reloads are silent so the
+  // table and the phone-booking form stay mounted.
   const load = () => {
-    setLoading(true)
     adminListBookings()
-      .then(setItems)
+      .then((rows) => {
+        setItems(rows)
+        setError('')
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
+    // A failing chemist list must not hide the bookings; the select just stays empty.
+    listAvailableChemists()
+      .then(setChemists)
+      .catch(() => setChemists([]))
   }
 
   useEffect(load, [])
@@ -64,6 +76,8 @@ export default function BookingsTab() {
         </select>
       </div>
 
+      <PhoneBookingForm onCreated={load} />
+
       {error && <p className="admin-error">{error}</p>}
 
       <table className="admin-table">
@@ -84,6 +98,7 @@ export default function BookingsTab() {
             <th>التاريخ</th>
             <th>وصل لـ Trust Lab Ops؟</th>
             <th>الحالة</th>
+            <th>الكيميائي</th>
           </tr>
         </thead>
         <tbody>
@@ -120,7 +135,15 @@ export default function BookingsTab() {
               </td>
               <td style={{ maxWidth: 200, whiteSpace: 'pre-wrap' }}>{i.notes || '—'}</td>
               <td>{new Date(i.created_at).toLocaleString('ar-EG')}</td>
-              <td>{i.synced_to_erp ? '✅' : '⏳'}</td>
+              <td>
+                {i.source === 'call_center' ? (
+                  <span title="حجوزات الكول سنتر مش بتتبعت للـ ERP">—</span>
+                ) : i.synced_to_erp ? (
+                  '✅'
+                ) : (
+                  '⏳'
+                )}
+              </td>
               <td>
                 <select
                   className="admin-select"
@@ -133,6 +156,13 @@ export default function BookingsTab() {
                     </option>
                   ))}
                 </select>
+              </td>
+              <td>
+                {i.mode === 'home' && i.status !== 'ملغي' ? (
+                  <ChemistAssign booking={i} chemists={chemists} onChanged={load} />
+                ) : (
+                  '—'
+                )}
               </td>
             </tr>
           ))}

@@ -1,0 +1,193 @@
+/* Customer tracking page (/t/:token): phone-first, large type, 48px+ targets. */
+.tv {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 100%;
+  padding: var(--space-4);
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--text-body);
+  background: var(--surface-sunken);
+}
+
+.tv__card {
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card-rest);
+}
+
+.tv__loading {
+  margin: var(--space-8) 0 var(--space-4);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.tv__headline {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.4;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-heading);
+}
+.tv__headline--arrived,
+.tv__headline--on_way {
+  color: var(--color-primary-darker);
+}
+
+.tv__eta {
+  display: inline-block;
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-darker);
+  color: var(--text-inverse);
+  font-size: 20px;
+  font-weight: var(--font-weight-bold);
+}
+
+.tv__updated,
+.tv__line {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
+.tv__note {
+  margin: 0;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-body);
+  font-size: 18px;
+}
+.tv__note--warn {
+  background: var(--color-warning-bg);
+  color: var(--chemist-warn-text, #8A4B00);
+  border: 1px solid var(--chemist-warn-border, #F5C77A);
+}
+
+.tv__map {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+}
+.tv__map-fallback {
+  height: 260px;
+  background: var(--surface-sunken);
+}
+
+.tv__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.tv__step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 44px;
+  color: var(--text-muted);
+}
+.tv__dot {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  color: var(--text-inverse);
+  font-size: 16px;
+  font-weight: var(--font-weight-bold);
+}
+.tv__step.is-done {
+  color: var(--text-heading);
+}
+.tv__step.is-done .tv__dot {
+  background: var(--color-primary-darker);
+  border-color: var(--color-primary-darker);
+}
+.tv__step.is-current {
+  font-weight: var(--font-weight-extrabold);
+}
+.tv__step.is-current .tv__dot {
+  box-shadow: 0 0 0 3px var(--surface-card), 0 0 0 5px var(--color-primary);
+}
+
+.tv__info {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-default);
+}
+.tv__info-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.tv__info-row dt {
+  color: var(--text-muted);
+}
+.tv__info-row dd {
+  margin: 0;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-heading);
+}
+.tv__info-row {
+  align-items: center;
+}
+.tv__chemist {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.tv__chemist-photo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-primary);
+  background: var(--border-default);
+}
+
+.tv__call {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-darker);
+  color: var(--text-inverse);
+  font-size: 20px;
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+.tv__call:active {
+  background: var(--color-primary-dark);
+}
+.tv__call:focus-visible {
+  outline: 3px solid var(--color-info);
+  outline-offset: 2px;
+}
+
+.tv__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

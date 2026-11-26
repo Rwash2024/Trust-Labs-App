@@ -40,6 +40,9 @@ import OfferCounter from './pages/OfferCounter'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import BranchSamplesDashboard from './pages/admin/BranchSamplesDashboard'
+import ChemistApp from './pages/chemist/ChemistApp'
+import TrackVisit from './pages/TrackVisit'
+import { redactTrackUrl } from './lib/trackVisitView'
 
 function PatientApp() {
   return (
@@ -79,14 +82,23 @@ export default function App() {
   const isAdmin = location.pathname.startsWith('/admin')
   const isKiosk = !!brand.features?.trustCard && location.pathname === '/offer-counter'
   const isInternational = !!brand.features?.international && location.pathname.startsWith('/international')
-  const [showSplash, setShowSplash] = useState(!isAdmin && !isKiosk && !isInternational && hasSplash)
+  const isChemist = location.pathname.startsWith('/chemist')
+  const isTrack = /^\/t\//i.test(location.pathname)
+  const [showSplash, setShowSplash] = useState(!isAdmin && !isKiosk && !isInternational && !isChemist && !isTrack && hasSplash)
 
   return (
     <AdminAuthProvider>
       <RouteTracker />
-      {showSplash && !isAdmin && !isKiosk && !isInternational && <Splash onFinish={() => setShowSplash(false)} />}
+      {showSplash && !isAdmin && !isKiosk && !isInternational && !isChemist && !isTrack && <Splash onFinish={() => setShowSplash(false)} />}
       {isKiosk ? (
         <OfferCounter />
+      ) : isChemist ? (
+        <ChemistApp />
+      ) : isTrack ? (
+        <Routes>
+          <Route path="/t/:token" element={<TrackVisit />} />
+          <Route path="*" element={<TrackVisit />} />
+        </Routes>
       ) : isInternational ? (
         <Routes>
           <Route path="/international" element={<International />} />
@@ -125,7 +137,7 @@ export default function App() {
       ) : (
         <PatientApp />
       )}
-      {brand.features?.vercelAnalytics !== false && <Analytics />}
+      {brand.features?.vercelAnalytics !== false && <Analytics beforeSend={(event) => ({ ...event, url: redactTrackUrl(event.url) })} />}
     </AdminAuthProvider>
   )
 }

@@ -22,6 +22,10 @@
     <meta name="twitter:description" content="%BRAND_SEO_DESC%" />
     <meta name="twitter:image" content="/og-image.png" />
     <!-- Google Analytics 4 (Measurement ID injected from VITE_GA_ID at build time) -->
+    <script>
+      // Never let GA see the secret tracking token (/t/<token>).
+      if (/^\/t\//i.test(location.pathname)) window['ga-disable-%VITE_GA_ID%'] = true
+    </script>
     <script async src="https://www.googletagmanager.com/gtag/js?id=%VITE_GA_ID%"></script>
   </head>
   <body>

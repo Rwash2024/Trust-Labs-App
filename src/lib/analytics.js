@@ -1,3 +1,5 @@
+import { redactTrackUrl } from './trackVisitView.js'
+
 const GA_ID = import.meta.env.VITE_GA_ID
 
 let initialized = false
@@ -14,18 +16,29 @@ function ensureInit() {
   initialized = true
 }
 
+// /t/<token> pages carry a secret: switch GA off while on them (also stops
+// automatic history-change page_views), back on everywhere else.
+function syncGaDisable(path) {
+  if (!GA_ID || typeof window === 'undefined') return false
+  const onTrack = /^\/t\//i.test(String(path))
+  window[`ga-disable-${GA_ID}`] = onTrack
+  return onTrack
+}
+
 export function trackPageview(path) {
   if (!GA_ID) return
+  if (syncGaDisable(path)) return
   ensureInit()
   window.gtag('event', 'page_view', {
-    page_path: path,
-    page_location: window.location.href,
+    page_path: redactTrackUrl(path),
+    page_location: redactTrackUrl(window.location.href),
     page_title: document.title,
   })
 }
 
 export function trackEvent(name, params = {}) {
   if (!GA_ID) return
+  if (syncGaDisable(window.location.pathname)) return
   ensureInit()
   window.gtag('event', name, params)
 }

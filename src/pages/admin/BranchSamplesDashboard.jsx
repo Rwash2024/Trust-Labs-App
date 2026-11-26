@@ -6,6 +6,7 @@ import SampleTrackingTab from './SampleTrackingTab'
 import ComplaintsTab from './ComplaintsTab'
 import TrustCardRequests from './TrustCardRequests'
 import BookingsTab from './BookingsTab'
+import LiveTrackingTab from './LiveTrackingTab'
 import './Admin.css'
 
 export default function BranchSamplesDashboard() {
@@ -20,6 +21,7 @@ export default function BranchSamplesDashboard() {
   // trust_card_requests_staff_access_migration.sql).
   const tabs = [
     { key: 'bookings', label: 'الحجوزات', icon: 'calendar' },
+    { key: 'live', label: 'التتبع المباشر', icon: 'route' },
     { key: 'samples', label: 'تتبع العينات', icon: 'drop' },
     { key: 'complaints', label: 'شكاوى واقتراحات', icon: 'message' },
     { key: 'cards', label: 'طلبات الكارت', icon: 'card' },
@@ -35,6 +37,7 @@ export default function BranchSamplesDashboard() {
 
       <main className="admin-content" key={activeTab}>
         {activeTab === 'bookings' && <BookingsTab />}
+        {activeTab === 'live' && <LiveTrackingTab />}
         {activeTab === 'samples' && <SampleTrackingTab />}
         {activeTab === 'complaints' && <ComplaintsTab canDelete={false} />}
         {activeTab === 'cards' && <TrustCardRequests canDelete={false} />}

@@ -1,0 +1,375 @@
+/* Chemist page (/chemist): mobile-first, big type, big touch targets. */
+.chemist {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--text-body);
+  background: var(--surface-sunken);
+  min-height: 100%;
+  /* Darker than --color-error / --color-warning (#EF4444 / #F59E0B fail 4.5:1
+     as text on white), so the chemist page keeps its own text shades. */
+  --chemist-danger: #B42318;
+  --chemist-warn-text: #8A4B00;
+  --chemist-warn-border: #F5C77A;
+  --chemist-danger-border: #F3B4AE;
+}
+
+.chemist__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--gradient-hero, var(--color-primary-darker));
+  color: var(--text-inverse);
+}
+.chemist__header .chemist__title {
+  color: var(--text-inverse);
+}
+
+.chemist__title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-heading);
+}
+
+.chemist__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  padding-bottom: var(--space-10);
+}
+
+.chemist__muted {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.chemist__loading,
+.chemist__empty {
+  margin: var(--space-8) var(--space-4);
+  text-align: center;
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+.chemist__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* ---- Buttons ---- */
+.chemist__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  font: inherit;
+  font-size: 17px;
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.chemist__btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.chemist__btn:focus-visible,
+.chemist__icon-btn:focus-visible,
+.chemist__field input:focus-visible {
+  outline: 3px solid var(--color-info);
+  outline-offset: 2px;
+}
+
+.chemist__btn--primary {
+  background: var(--color-primary-darker);
+  color: var(--text-inverse);
+}
+.chemist__btn--primary:not(:disabled):active {
+  background: var(--color-primary-dark);
+}
+.chemist__btn--big {
+  min-height: 52px;
+  font-size: 20px;
+}
+
+.chemist__btn--secondary {
+  background: var(--surface-card);
+  color: var(--color-primary-darker);
+  border-color: var(--color-primary-darker);
+}
+
+.chemist__btn--ghost {
+  background: transparent;
+  color: var(--text-heading);
+  border-color: var(--border-strong);
+}
+
+.chemist__btn--danger {
+  background: transparent;
+  color: var(--chemist-danger, #B42318);
+  border-color: var(--chemist-danger-border, #F3B4AE);
+}
+.chemist__btn--danger-solid {
+  background: var(--chemist-danger, #B42318);
+  color: var(--text-inverse);
+}
+
+.chemist__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 48px;
+  min-width: 48px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+}
+.chemist__toolbar .chemist__icon-btn {
+  color: var(--color-primary-darker);
+}
+
+/* ---- Login ---- */
+.chemist__login {
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+  padding-top: var(--space-10);
+}
+.chemist__login-head {
+  text-align: center;
+}
+.chemist__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.chemist__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.chemist__field label {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-heading);
+}
+.chemist__field input {
+  min-height: 52px;
+  padding: 0 var(--space-4);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  font: inherit;
+  font-size: 18px;
+  color: var(--text-heading);
+}
+.chemist__field input[aria-invalid='true'] {
+  border-color: var(--chemist-danger, #B42318);
+}
+.chemist__field-error {
+  margin: 0;
+  color: var(--chemist-danger, #B42318);
+  font-size: 16px;
+  font-weight: var(--font-weight-bold);
+}
+
+/* ---- Alerts / banners ---- */
+.chemist__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-bold);
+}
+.chemist__alert svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.chemist__alert--warn {
+  background: var(--color-warning-bg);
+  color: var(--chemist-warn-text, #8A4B00);
+  border: 1px solid var(--chemist-warn-border, #F5C77A);
+}
+
+.chemist__banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-light);
+  color: var(--color-primary-darker);
+  border: 1px solid var(--color-primary);
+}
+.chemist__banner svg {
+  flex-shrink: 0;
+}
+.chemist__banner-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--font-weight-extrabold);
+}
+.chemist__banner-sub {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-heading);
+}
+
+.chemist__hint {
+  margin: 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+/* ---- Visit cards ---- */
+.chemist__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.chemist__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-sm);
+}
+.chemist__card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.chemist__name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-heading);
+}
+.chemist__address {
+  margin: 0;
+  color: var(--text-body);
+}
+.chemist__meta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  color: var(--text-heading);
+}
+.chemist__meta li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.chemist__meta svg {
+  color: var(--text-muted);
+}
+.chemist__notes {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+  color: var(--text-heading);
+}
+.chemist__links {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.chemist__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  padding: 2px var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+}
+.chemist__status--ok {
+  background: var(--color-primary-light);
+  color: var(--color-primary-darker);
+}
+.chemist__status--idle {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+/* ---- Confirm dialog ---- */
+.chemist__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-4);
+  background: rgba(17, 24, 39, 0.5);
+}
+.chemist__dialog {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-lg);
+}
+.chemist__dialog p {
+  margin: 0;
+}
+.chemist__dialog-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: var(--font-weight-extrabold);
+  color: var(--text-heading);
+}
+
+.chemist__ok {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--color-primary-darker);
+  font-weight: var(--font-weight-bold);
+}

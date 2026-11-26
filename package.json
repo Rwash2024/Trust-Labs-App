@@ -8,12 +8,14 @@
     "build": "vite build",
     "brand-assets": "node scripts/gen-pwa-icons.cjs && node scripts/gen-og-image.cjs",
     "lint": "oxlint",
+    "test": "node --test",
     "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",
     "@vercel/analytics": "^2.0.1",
     "exceljs": "^4.4.0",
+    "leaflet": "1.9.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.2"

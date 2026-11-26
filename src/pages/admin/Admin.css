@@ -373,3 +373,318 @@
   font-size: 11px;
   font-weight: var(--font-weight-bold);
 }
+
+/* ---- Chemist assignment + phone bookings ---- */
+.chemist-assign {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 190px;
+}
+
+.chemist-assign__label {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.chemist-assign__select,
+.chemist-assign__btn {
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.chemist-assign__select {
+  max-width: 220px;
+}
+
+.chemist-assign__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chemist-assign__hint {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.chemist-assign__error,
+.phone-booking__error {
+  color: var(--color-error);
+  font-size: 14px;
+}
+
+.trip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+}
+
+.trip-badge--idle {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+}
+
+.trip-badge--ok,
+.trip-badge--done {
+  background: var(--color-primary-light);
+  color: var(--color-primary-darker);
+}
+
+.trip-badge--live {
+  background: var(--color-primary);
+  color: var(--color-white, #fff);
+}
+
+.trip-badge--warn {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-dark, #854f0b);
+}
+
+.phone-booking__open,
+.phone-booking__btn {
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.phone-booking__open {
+  margin-bottom: var(--space-4);
+}
+
+.phone-booking__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.phone-booking__field label {
+  font-size: 14px;
+}
+
+.phone-booking__field input[aria-invalid='true'],
+.phone-booking__field textarea[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+
+.phone-booking__success {
+  background: var(--color-primary-light);
+  color: var(--color-primary-darker);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 640px) {
+  .phone-booking .admin-form__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---- Live tracking board + chemists admin ---- */
+.live-board__summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.live-board__counter {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  color: var(--text-body);
+  font-size: 14px;
+}
+
+.live-board__counter strong {
+  font-size: 28px;
+  line-height: 1.1;
+  color: var(--text-heading);
+}
+
+.live-board__counter--warn {
+  background: var(--color-warning-bg);
+  color: var(--color-warning-dark, #854f0b);
+}
+
+.live-board__counter--warn strong {
+  color: var(--color-warning-dark, #854f0b);
+}
+
+.live-board__map {
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.live-board__empty {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: var(--space-4);
+}
+
+.live-board__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.live-board__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card, #fff);
+}
+
+.live-board__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.live-board__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.live-board__name {
+  font-size: 16px;
+  color: var(--text-heading);
+}
+
+.live-board__meta {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.live-board__btn,
+.chemists-tab__btn {
+  min-height: 44px;
+  font-size: 14px;
+}
+
+.live-board__btn {
+  flex-shrink: 0;
+}
+
+.chemists-tab__field,
+.chemists-tab__reset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.chemists-tab__field label,
+.chemists-tab__reset label {
+  font-size: 14px;
+}
+
+.chemists-tab__password {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.chemists-tab__password input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+}
+
+.chemists-tab__field input[aria-invalid='true'],
+.chemists-tab__password input[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+
+.chemists-tab__error {
+  color: var(--color-error);
+  font-size: 14px;
+}
+
+.chemists-tab__form {
+  max-width: 460px;
+}
+
+.chemists-tab__scroll {
+  overflow-x: auto;
+}
+
+.chemists-tab__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 14%, #fff);
+  color: var(--color-primary);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.chemists-tab__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chemists-tab__who {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+
+.chemists-tab__photo-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.chemists-tab__photo-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.chemists-tab__photo-label {
+  font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .live-board__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .live-board__counter strong {
+    font-size: 24px;
+  }
+}
+
+.live-board__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
