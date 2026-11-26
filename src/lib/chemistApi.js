@@ -34,11 +34,13 @@ export async function listAvailableChemists() {
   return (await rpc('list_available_chemists')) ?? []
 }
 
-// Staff direct select (RLS limits it to staff). Includes inactive chemists.
+// Staff direct select (RLS limits it to staff). Includes inactive chemists,
+// not archived (deleted-with-history) ones.
 export async function listChemists() {
   const { data, error } = await requireClient()
     .from('chemists')
-    .select('id,name,phone,active,created_at')
+    .select('id,name,phone,active,photo_path,created_at')
+    .is('archived_at', null)
     .order('created_at', { ascending: true })
   if (error) throw toError(error)
   return data ?? []
@@ -90,6 +92,12 @@ export function getTripByToken(token) {
 
 export function findTrip(phone, ref) {
   return rpc('find_trip', { p_phone: phone, p_booking_ref: ref })
+}
+
+// Public URL of a chemist photo (bucket chemist-photos is public-read by URL).
+export function chemistPhotoUrl(path) {
+  if (!path || !supabase) return null
+  return supabase.storage.from('chemist-photos').getPublicUrl(path).data?.publicUrl ?? null
 }
 
 // ---- Admin: chemist accounts (edge function) ----

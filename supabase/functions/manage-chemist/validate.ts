@@ -29,10 +29,40 @@ export function chemistEmailFromPhone(phone: string): string {
   return `${phone}@chemist.local`
 }
 
+// Phone kept on an archived chemist's row: frees the unique number for a new
+// account while staying readable in the database.
+export function archivedPhone(phone: string, chemistId: string): string {
+  return `archived-${chemistId.slice(0, 8)}-${phone}`
+}
+
+// The client resizes to a ~480px JPEG (well under 200 KB); 1 MB is the bucket cap.
+export const MAX_PHOTO_BYTES = 1024 * 1024
+const BASE64_REGEX = /^[A-Za-z0-9+/]+={0,2}$/
+
+export function decodeJpegBase64(input: unknown): { ok: true; bytes: Uint8Array } | { ok: false; error: string } {
+  const notJpeg = { ok: false as const, error: 'الصورة لازم تكون JPG' }
+  if (typeof input !== 'string') return notJpeg
+  const b64 = input.replace(/^data:image\/jpeg;base64,/, '')
+  if (!b64) return notJpeg
+  // 4 base64 chars -> 3 bytes; reject before decoding anything huge.
+  if ((b64.length * 3) / 4 > MAX_PHOTO_BYTES + 3) return { ok: false, error: 'الصورة كبيرة، اختار صورة أصغر' }
+  if (b64.length % 4 !== 0 || !BASE64_REGEX.test(b64)) return notJpeg
+  const bin = atob(b64)
+  if (bin.length > MAX_PHOTO_BYTES) return { ok: false, error: 'الصورة كبيرة، اختار صورة أصغر' }
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) return notJpeg
+  return { ok: true, bytes }
+}
+
 export type ChemistInput =
   | { action: 'create'; name: string; phone: string; password: string }
   | { action: 'reset_password'; chemist_id: string; password: string }
   | { action: 'set_active'; chemist_id: string; active: boolean }
+  | { action: 'update'; chemist_id: string; name: string; phone: string }
+  | { action: 'set_photo'; chemist_id: string; image: Uint8Array }
+  | { action: 'remove_photo'; chemist_id: string }
+  | { action: 'delete'; chemist_id: string }
 
 export type ValidationResult = { ok: true; value: ChemistInput } | { ok: false; error: string }
 
@@ -47,28 +77,58 @@ export function validateChemistInput(body: unknown): ValidationResult {
   const checkId = (): string | null =>
     typeof b.chemist_id === 'string' && UUID_REGEX.test(b.chemist_id) ? b.chemist_id : null
 
+  const checkName = (): string | null => {
+    const name = typeof b.name === 'string' ? b.name.trim() : ''
+    return name.length >= 2 && name.length <= 60 ? name : null
+  }
+  const BAD_NAME = 'الاسم لازم يكون من 2 إلى 60 حرف'
+  const BAD_PHONE = 'رقم الموبايل غير صحيح'
+  const BAD_ID = 'معرّف الكيميائي غير صحيح'
+
   switch (b.action) {
     case 'create': {
-      const name = typeof b.name === 'string' ? b.name.trim() : ''
-      if (name.length < 2 || name.length > 60) return fail('الاسم لازم يكون من 2 إلى 60 حرف')
+      const name = checkName()
+      if (!name) return fail(BAD_NAME)
       const phone = normalizeEgyptPhone(b.phone)
-      if (!phone) return fail('رقم الموبايل غير صحيح')
+      if (!phone) return fail(BAD_PHONE)
       const password = checkPassword()
       if (!password) return fail('كلمة السر لازم تكون 8 أحرف على الأقل')
       return { ok: true, value: { action: 'create', name, phone, password } }
     }
     case 'reset_password': {
       const chemist_id = checkId()
-      if (!chemist_id) return fail('معرّف الكيميائي غير صحيح')
+      if (!chemist_id) return fail(BAD_ID)
       const password = checkPassword()
       if (!password) return fail('كلمة السر لازم تكون 8 أحرف على الأقل')
       return { ok: true, value: { action: 'reset_password', chemist_id, password } }
     }
     case 'set_active': {
       const chemist_id = checkId()
-      if (!chemist_id) return fail('معرّف الكيميائي غير صحيح')
+      if (!chemist_id) return fail(BAD_ID)
       if (typeof b.active !== 'boolean') return fail('قيمة التفعيل غير صحيحة')
       return { ok: true, value: { action: 'set_active', chemist_id, active: b.active } }
+    }
+    case 'update': {
+      const chemist_id = checkId()
+      if (!chemist_id) return fail(BAD_ID)
+      const name = checkName()
+      if (!name) return fail(BAD_NAME)
+      const phone = normalizeEgyptPhone(b.phone)
+      if (!phone) return fail(BAD_PHONE)
+      return { ok: true, value: { action: 'update', chemist_id, name, phone } }
+    }
+    case 'set_photo': {
+      const chemist_id = checkId()
+      if (!chemist_id) return fail(BAD_ID)
+      const decoded = decodeJpegBase64(b.image)
+      if (!decoded.ok) return fail(decoded.error)
+      return { ok: true, value: { action: 'set_photo', chemist_id, image: decoded.bytes } }
+    }
+    case 'remove_photo':
+    case 'delete': {
+      const chemist_id = checkId()
+      if (!chemist_id) return fail(BAD_ID)
+      return { ok: true, value: { action: b.action, chemist_id } }
     }
     default:
       return fail('إجراء غير معروف')

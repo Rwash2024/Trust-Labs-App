@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getTripByToken } from '../lib/chemistApi'
+import { chemistPhotoUrl, getTripByToken } from '../lib/chemistApi'
 import { viewModel, formatVisitDate, STALE_NOTE } from '../lib/trackVisitView'
 import { CheckIcon } from '../components/icons'
 import './TrackVisit.css'
@@ -92,6 +92,7 @@ function TrackVisitInner({ token }) {
   const loading = trip === undefined
   const invalid = vm?.kind === 'invalid'
   const date = trip ? formatVisitDate(trip.preferred_date) : ''
+  const photoUrl = trip ? chemistPhotoUrl(trip.chemist_photo) : null
   const retryLine = 'مش قادرين نحدّث دلوقتي، هنحاول تاني'
 
   return (
@@ -142,7 +143,10 @@ function TrackVisitInner({ token }) {
             {trip.chemist_first_name && (
               <div className="tv__info-row">
                 <dt>الكيميائي</dt>
-                <dd>{trip.chemist_first_name}</dd>
+                <dd className="tv__chemist">
+                  {photoUrl && <img className="tv__chemist-photo" src={photoUrl} alt={`صورة الكيميائي ${trip.chemist_first_name}`} width={56} height={56} />}
+                  {trip.chemist_first_name}
+                </dd>
               </div>
             )}
             {date && (

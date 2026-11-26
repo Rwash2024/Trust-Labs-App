@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { listAvailableChemists, listChemists, manageChemist } from '../../lib/chemistApi'
+import { chemistPhotoUrl, listAvailableChemists, listChemists, manageChemist } from '../../lib/chemistApi'
 import { cleanEgyptPhoneInput, egyptPhoneError } from '../../lib/phone'
+import { fileToSquareJpeg } from '../../lib/photoResize'
 
 const MIN_PASSWORD = 8
 const EMPTY_FORM = { name: '', phone: '', password: '' }
+// photo: { base64, previewUrl } = new pick, 'remove' = clear it, null = unchanged
+const NO_PHOTO_CHANGE = null
 
 function passwordError(value) {
   if (!value) return 'اكتب الباسورد'
@@ -32,6 +35,15 @@ function PasswordInput({ id, value, onChange, invalid, describedBy }) {
   )
 }
 
+function Avatar({ name, src, size = 40 }) {
+  const initial = (name || '').trim().charAt(0) || '؟'
+  return (
+    <span className="chemists-tab__avatar" style={{ width: size, height: size, fontSize: size * 0.42 }} aria-hidden="true">
+      {src ? <img src={src} alt="" loading="lazy" /> : initial}
+    </span>
+  )
+}
+
 export default function ChemistsTab() {
   const [chemists, setChemists] = useState([])
   const [counts, setCounts] = useState({})
@@ -40,10 +52,16 @@ export default function ChemistsTab() {
   const [notice, setNotice] = useState('')
   const [rowBusy, setRowBusy] = useState('')
 
-  const [formOpen, setFormOpen] = useState(false)
+  // formMode: null (closed) | 'create' | 'edit'
+  const [formMode, setFormMode] = useState(null)
+  const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
+  const [photo, setPhoto] = useState(NO_PHOTO_CHANGE)
+  const [photoBusy, setPhotoBusy] = useState(false)
   const [errors, setErrors] = useState({})
-  const [creating, setCreating] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const formRef = useRef(null)
+  const fileRef = useRef(null)
 
   const [resetFor, setResetFor] = useState(null)
   const [resetPassword, setResetPassword] = useState('')
@@ -77,7 +95,41 @@ export default function ChemistsTab() {
     }
   }, [load])
 
+  useEffect(() => {
+    if (formMode) {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document.getElementById('ch-name')?.focus({ preventScroll: true })
+    }
+  }, [formMode, editing])
+
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }))
+
+  const openCreate = () => {
+    setFormMode('create')
+    setEditing(null)
+    setForm(EMPTY_FORM)
+    setPhoto(NO_PHOTO_CHANGE)
+    setErrors({})
+    setNotice('')
+  }
+
+  const openEdit = (c) => {
+    setFormMode('edit')
+    setEditing(c)
+    setForm({ name: c.name, phone: c.phone, password: '' })
+    setPhoto(NO_PHOTO_CHANGE)
+    setErrors({})
+    setNotice('')
+    setResetFor(null)
+  }
+
+  const closeForm = () => {
+    setFormMode(null)
+    setEditing(null)
+    setForm(EMPTY_FORM)
+    setPhoto(NO_PHOTO_CHANGE)
+    setErrors({})
+  }
 
   const validate = (f) => {
     const found = {}
@@ -85,12 +137,29 @@ export default function ChemistsTab() {
     if (name.length < 2 || name.length > 60) found.name = 'الاسم لازم يكون من 2 لـ 60 حرف'
     const phone = egyptPhoneError(f.phone)
     if (phone) found.phone = phone
-    const pw = passwordError(f.password)
-    if (pw) found.password = pw
+    if (formMode === 'create') {
+      const pw = passwordError(f.password)
+      if (pw) found.password = pw
+    }
     return found
   }
 
-  const handleCreate = async (e) => {
+  const handlePhotoPick = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setPhotoBusy(true)
+    setErrors((er) => ({ ...er, photo: undefined }))
+    try {
+      setPhoto(await fileToSquareJpeg(file))
+    } catch (err) {
+      setErrors((er) => ({ ...er, photo: err.message }))
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
+
+  const handleSave = async (e) => {
     e.preventDefault()
     setNotice('')
     setError('')
@@ -101,19 +170,43 @@ export default function ChemistsTab() {
       document.getElementById(`ch-${firstBad}`)?.focus()
       return
     }
-    setCreating(true)
-    const body = { action: 'create', name: form.name.trim(), phone: cleanEgyptPhoneInput(form.phone), password: form.password }
+    setSaving(true)
+    const name = form.name.trim()
+    const phone = cleanEgyptPhoneInput(form.phone)
+    const password = form.password
     // The password never stays in state after submit, win or lose.
     setForm((f) => ({ ...f, password: '' }))
     try {
-      await manageChemist(body)
-      setForm(EMPTY_FORM)
-      setNotice(`اتضاف الكيميائي ${body.name}`)
-      load()
+      if (formMode === 'create') {
+        const res = await manageChemist({ action: 'create', name, phone, password })
+        let msg = `اتضاف الكيميائي ${name}`
+        if (photo && photo !== 'remove' && res?.chemist?.id) {
+          try {
+            await manageChemist({ action: 'set_photo', chemist_id: res.chemist.id, image: photo.base64 })
+          } catch (err) {
+            msg += `، بس الصورة ما اترفعتش (${err.message}). جرّب تاني من «تعديل»`
+          }
+        }
+        closeForm()
+        setNotice(msg)
+      } else {
+        const c = editing
+        if (name !== c.name || phone !== c.phone) {
+          await manageChemist({ action: 'update', chemist_id: c.id, name, phone })
+        }
+        if (photo === 'remove') {
+          await manageChemist({ action: 'remove_photo', chemist_id: c.id })
+        } else if (photo) {
+          await manageChemist({ action: 'set_photo', chemist_id: c.id, image: photo.base64 })
+        }
+        closeForm()
+        setNotice(phone !== c.phone ? `اتحفظت بيانات ${name}. من دلوقتي بيدخل بالرقم الجديد` : `اتحفظت بيانات ${name}`)
+      }
     } catch (err) {
       setError(err.message)
     } finally {
-      setCreating(false)
+      setSaving(false)
+      load()
     }
   }
 
@@ -126,6 +219,26 @@ export default function ChemistsTab() {
     try {
       await manageChemist({ action: 'set_active', chemist_id: c.id, active: next })
       setNotice(next ? `اتفعّل حساب ${c.name}` : `اتوقف حساب ${c.name}`)
+      load()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setRowBusy('')
+    }
+  }
+
+  const handleDelete = async (c) => {
+    const ok = window.confirm(
+      `تمسح ${c.name}؟\nمش هيقدر يدخل تاني. لو ليه زيارات قديمة، هتفضل محفوظة باسمه في الحجوزات.`,
+    )
+    if (!ok) return
+    setNotice('')
+    setError('')
+    setRowBusy(c.id)
+    try {
+      const res = await manageChemist({ action: 'delete', chemist_id: c.id })
+      if (editing?.id === c.id) closeForm()
+      setNotice(res?.archived ? `اتمسح ${c.name}، وزياراته القديمة محفوظة` : `اتمسح ${c.name}`)
       load()
     } catch (err) {
       setError(err.message)
@@ -171,12 +284,16 @@ export default function ChemistsTab() {
 
   if (loading) return <p className="admin-loading">جاري التحميل...</p>
 
+  const currentPhotoUrl = editing?.photo_path ? chemistPhotoUrl(editing.photo_path) : null
+  const shownPhoto = photo === 'remove' ? null : photo?.previewUrl ?? currentPhotoUrl
+  const isEdit = formMode === 'edit'
+
   return (
     <div className="chemists-tab">
       <div className="admin-toolbar">
         <h2>الكيميائيين ({chemists.length})</h2>
-        {!formOpen && (
-          <button type="button" className="admin-btn admin-btn--primary chemists-tab__btn" onClick={() => setFormOpen(true)}>
+        {!formMode && (
+          <button type="button" className="admin-btn admin-btn--primary chemists-tab__btn" onClick={openCreate}>
             + كيميائي جديد
           </button>
         )}
@@ -193,9 +310,44 @@ export default function ChemistsTab() {
         </p>
       )}
 
-      {formOpen && (
-        <form className="admin-form chemists-tab__form" onSubmit={handleCreate} noValidate>
-          <h3>كيميائي جديد</h3>
+      {formMode && (
+        <form ref={formRef} className="admin-form chemists-tab__form" onSubmit={handleSave} noValidate>
+          <h3>{isEdit ? `تعديل بيانات ${editing.name}` : 'كيميائي جديد'}</h3>
+
+          <div className="chemists-tab__photo-field">
+            <Avatar name={form.name} src={shownPhoto} size={72} />
+            <div className="chemists-tab__photo-actions">
+              <span className="chemists-tab__photo-label">الصورة (بتظهر للعميل في صفحة التتبع)</span>
+              <div className="admin-table__actions">
+                <button
+                  type="button"
+                  className="admin-btn chemists-tab__btn"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={photoBusy || saving}
+                  aria-describedby={errors.photo ? 'ch-photo-err' : undefined}
+                >
+                  {photoBusy ? 'جاري التجهيز...' : shownPhoto ? 'غيّر الصورة' : 'ضيف صورة'}
+                </button>
+                {shownPhoto && (
+                  <button
+                    type="button"
+                    className="admin-btn chemists-tab__btn"
+                    onClick={() => setPhoto(currentPhotoUrl ? 'remove' : NO_PHOTO_CHANGE)}
+                    disabled={photoBusy || saving}
+                  >
+                    شيل الصورة
+                  </button>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" hidden onChange={handlePhotoPick} />
+              {errors.photo && (
+                <span id="ch-photo-err" className="chemists-tab__error" role="alert">
+                  {errors.photo}
+                </span>
+              )}
+            </div>
+          </div>
+
           <div className="chemists-tab__field">
             <label htmlFor="ch-name">الاسم</label>
             <input
@@ -224,46 +376,44 @@ export default function ChemistsTab() {
               onChange={(e) => set('phone', cleanEgyptPhoneInput(e.target.value))}
               autoComplete="off"
               aria-invalid={!!errors.phone}
-              aria-describedby={errors.phone ? 'ch-phone-err' : undefined}
+              aria-describedby={errors.phone ? 'ch-phone-err' : isEdit ? 'ch-phone-hint' : undefined}
             />
+            {isEdit && (
+              <span id="ch-phone-hint" className="admin-form__hint">
+                لو غيّرت الرقم، الكيميائي هيدخل بالرقم الجديد بنفس الباسورد
+              </span>
+            )}
             {errors.phone && (
               <span id="ch-phone-err" className="chemists-tab__error" role="alert">
                 {errors.phone}
               </span>
             )}
           </div>
-          <div className="chemists-tab__field">
-            <label htmlFor="ch-password">الباسورد</label>
-            <PasswordInput
-              id="ch-password"
-              value={form.password}
-              onChange={(v) => set('password', v)}
-              invalid={!!errors.password}
-              describedBy={errors.password ? 'ch-password-err' : 'ch-password-hint'}
-            />
-            <span id="ch-password-hint" className="admin-form__hint">
-              {MIN_PASSWORD} حروف أو أرقام على الأقل
-            </span>
-            {errors.password && (
-              <span id="ch-password-err" className="chemists-tab__error" role="alert">
-                {errors.password}
+          {!isEdit && (
+            <div className="chemists-tab__field">
+              <label htmlFor="ch-password">الباسورد</label>
+              <PasswordInput
+                id="ch-password"
+                value={form.password}
+                onChange={(v) => set('password', v)}
+                invalid={!!errors.password}
+                describedBy={errors.password ? 'ch-password-err' : 'ch-password-hint'}
+              />
+              <span id="ch-password-hint" className="admin-form__hint">
+                {MIN_PASSWORD} حروف أو أرقام على الأقل
               </span>
-            )}
-          </div>
+              {errors.password && (
+                <span id="ch-password-err" className="chemists-tab__error" role="alert">
+                  {errors.password}
+                </span>
+              )}
+            </div>
+          )}
           <div className="admin-form__actions">
-            <button type="submit" className="admin-btn admin-btn--primary chemists-tab__btn" disabled={creating}>
-              {creating ? 'جاري الحفظ...' : 'ضيف الكيميائي'}
+            <button type="submit" className="admin-btn admin-btn--primary chemists-tab__btn" disabled={saving || photoBusy}>
+              {saving ? 'جاري الحفظ...' : isEdit ? 'احفظ التعديلات' : 'ضيف الكيميائي'}
             </button>
-            <button
-              type="button"
-              className="admin-btn chemists-tab__btn"
-              disabled={creating}
-              onClick={() => {
-                setFormOpen(false)
-                setForm(EMPTY_FORM)
-                setErrors({})
-              }}
-            >
+            <button type="button" className="admin-btn chemists-tab__btn" disabled={saving} onClick={closeForm}>
               إغلاق
             </button>
           </div>
@@ -287,7 +437,12 @@ export default function ChemistsTab() {
             <tbody>
               {chemists.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.name}</td>
+                  <td>
+                    <span className="chemists-tab__who">
+                      <Avatar name={c.name} src={chemistPhotoUrl(c.photo_path)} />
+                      {c.name}
+                    </span>
+                  </td>
                   <td dir="ltr" style={{ textAlign: 'right' }}>
                     {c.phone}
                   </td>
@@ -324,6 +479,9 @@ export default function ChemistsTab() {
                       </form>
                     ) : (
                       <div className="admin-table__actions">
+                        <button type="button" className="admin-btn chemists-tab__btn" onClick={() => openEdit(c)} disabled={rowBusy === c.id || saving}>
+                          تعديل
+                        </button>
                         <button type="button" className="admin-btn chemists-tab__btn" onClick={() => openReset(c)} disabled={rowBusy === c.id}>
                           غيّر الباسورد
                         </button>
@@ -334,6 +492,15 @@ export default function ChemistsTab() {
                           disabled={rowBusy === c.id}
                         >
                           {c.active ? 'إيقاف' : 'تفعيل'}
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn--danger chemists-tab__btn"
+                          onClick={() => handleDelete(c)}
+                          disabled={rowBusy === c.id || saving}
+                          aria-label={`مسح ${c.name}`}
+                        >
+                          مسح
                         </button>
                       </div>
                     )}

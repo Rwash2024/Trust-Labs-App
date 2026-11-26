@@ -145,6 +145,22 @@
   font-weight: var(--font-weight-bold);
   color: var(--text-heading);
 }
+.tv__info-row {
+  align-items: center;
+}
+.tv__chemist {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.tv__chemist-photo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--color-primary);
+  background: var(--border-default);
+}
 
 .tv__call {
   display: flex;
